@@ -48,7 +48,56 @@ const MemoModal = ({
     );
 };
 
-// AI日報用インタビューウィザードモーダル
+// =======================================================
+// AI日報用インタビューウィザードモーダル（画面いっぱい・例文マス拡張版）
+// =======================================================
+
+// 各ステップで画面いっぱいに並ぶ豊富な例文カード
+const WIZARD_PRESETS = {
+    scenery: [
+        "朝イチはベタ凪、中盤から南西風がソヨソヨと吹き出し海面がパチャついた",
+        "日差し暖かく心地よい風、絶好の釣り日和で船上も終始穏やか",
+        "朝モヤが立ち込める静かな海上、中盤から晴れ間が広がり爽やかなナギ模様",
+        "うねりがやや残るものの風は弱く、船酔いもしにくい落ち着いたコンディション",
+        "小雨混じりの肌寒いスタート、後半は風波も収まり釣りやすい海況へ",
+        "日差し強くベタ凪の海況、潮の濁りも程よく魚の警戒心も薄い気配"
+    ],
+    tide: [
+        "上潮だけが滑って二枚潮気味、オモリの着底にひと工夫が必要な流れ",
+        "朝方はトロリと流れて良い反応、潮止まりを挟んで下げ潮がピリッと効いた",
+        "澄み潮で魚の警戒心が高め、潮の動き出しの一瞬にアタリが集中した",
+        "適度な濁り潮で終始流れるも、魚のタナが浮き沈みして丁寧な誘いが肝心だった",
+        "底潮が冷たいのかアタリは小さく繊細、じっくり違和感を取れる人に軍配",
+        "終日素直に流れる好潮で、潮先・潮尻問わず船中満遍なく竿が曲がった"
+    ],
+    activity: [
+        "開始早々からモーニングサービスあり、朝の時合いを逃さず連発",
+        "朝方は拾い釣りでガマンの時間、中盤以降にまとまった群れに当たり一気に加速",
+        "群れの移動が速く単発の拾い釣り、手返しの早さと集中力が勝負の分かれ目",
+        "数は控えめながらもズッシリとした良型主体、強烈な引き味を堪能",
+        "爆発力はないものの終日ポツポツとアタリが続き、飽きずに楽しめる展開"
+    ],
+    episode: [
+        "良型の一荷（ダブル）も飛び出し、船内のあちこちで歓声が上がる大盛り上がり",
+        "初挑戦のお客様も見事に本命を仕留め、笑顔あふれる嬉しい釣行",
+        "沖上がり間際の流しでドラマが起き、今日イチのナイスサイズを無事キャッチ",
+        "お互いにタモ入れを助け合い、和気あいあいとした温かい空気に包まれた一日"
+    ],
+    size: [
+        "良型主体で引き味抜群",
+        "中型主体に小ぶりが交じる",
+        "小ぶり・ワッペンサイズが目立った",
+        "ずっしりとした大型・良型揃い"
+    ],
+    topAngler: [
+        "激しい誘いには乗らず、ゆっくりとしたフォール（落とし込み）と長めのステイが的中",
+        "底ベッタリではなく底から1m前後を浮遊させ、漂わせるようなアプローチが大当たり",
+        "手返しの早さとエサ付けの丁寧さが群を抜き、アタリのチャンスを確実にものにした",
+        "居喰いのような微かな違和感を鋭く察知し、掛け逃しの少なさがトップ釣果へ繋がった",
+        "潮色に合わせた配色の仕掛け選びがズバリハマり、終始独走態勢"
+    ]
+};
+
 const AiInputWizardModal = ({
     showAiInputModal,
     setShowAiInputModal,
@@ -65,10 +114,39 @@ const AiInputWizardModal = ({
 }) => {
     if (!showAiInputModal) return null;
 
+    const currentStep = wizardSteps[aiCurrentStep];
+    const currentPresets = WIZARD_PRESETS[currentStep.id] || [];
+
+    // 例文カードをタップして入力欄へ追加する関数
+    const handleAddPreset = (text) => {
+        const fieldKey = currentStep.id;
+        const currentVal = aiInputData[fieldKey] || '';
+        let newVal = '';
+        if (!currentVal.trim()) {
+            newVal = text;
+        } else if (currentVal.endsWith('、') || currentVal.endsWith('。')) {
+            newVal = `${currentVal}${text}`;
+        } else {
+            newVal = `${currentVal}、${text}`;
+        }
+
+        setAiInputData(prev => ({ ...prev, [fieldKey]: newVal }));
+        if (targetRecordForAi) {
+            updateAiInputForRecord(targetRecordForAi.id, fieldKey, newVal);
+        }
+
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(15);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAiInputModal(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal">
+            {/* 画面いっぱい（h-[90vh] / max-w-md〜lg）に広げたモーダル */}
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[90vh] animate-slideUpModal overflow-hidden">
+                
+                {/* ヘッダー */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-amber-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
                     <div className="flex flex-col">
                         <h2 className="text-lg font-black text-amber-800 dark:text-amber-400 flex items-center">
@@ -78,16 +156,19 @@ const AiInputWizardModal = ({
                     </div>
                     <button onClick={() => setShowAiInputModal(false)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full shadow-sm text-gray-500 font-bold active:bg-gray-100 transition-colors">✕</button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-5 no-scrollbar flex flex-col">
-                    <div className="flex-1 space-y-4 animate-[fadeIn_0.2s_ease-out]">
-                        <div className="mb-6">
-                            <h3 className="text-lg font-black text-gray-800 dark:text-slate-100 mb-2">{wizardSteps[aiCurrentStep].title}</h3>
-                            <p className="text-sm font-bold text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{wizardSteps[aiCurrentStep].desc}</p>
+
+                {/* メインエリア */}
+                <div className="flex-1 overflow-y-auto p-4 no-scrollbar flex flex-col">
+                    <div className="flex-1 flex flex-col space-y-3 animate-[fadeIn_0.2s_ease-out]">
+                        <div className="mb-2 shrink-0">
+                            <h3 className="text-base sm:text-lg font-black text-gray-800 dark:text-slate-100 mb-1">{currentStep.title}</h3>
+                            <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{currentStep.desc}</p>
                         </div>
 
-                        {wizardSteps[aiCurrentStep].isMultiSelect ? (
-                            <div className="flex flex-col gap-2">
-                                {wizardSteps[aiCurrentStep].options.map((opt) => {
+                        {/* 1. パターン選択（複数選択） */}
+                        {currentStep.isMultiSelect ? (
+                            <div className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar pr-0.5">
+                                {currentStep.options.map((opt) => {
                                     const isSelected = (aiInputData.patterns || []).includes(opt.id);
                                     return (
                                         <button key={opt.id} onClick={() => {
@@ -101,58 +182,92 @@ const AiInputWizardModal = ({
                                             }
                                             setAiInputData(prev => ({ ...prev, patterns: next }));
                                             if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, 'patterns', next);
-                                        }} className={`p-3.5 rounded-xl border-2 text-left font-bold transition-all ${isSelected ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'} flex items-center justify-between`}>
-                                            <span className="text-sm leading-tight pr-2">{opt.label}</span>
-                                            <span className="text-xl shrink-0">{isSelected ? '☑' : '☐'}</span>
+                                        }} className={`p-3 rounded-xl border-2 text-left font-bold transition-all ${isSelected ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'} flex items-center justify-between`}>
+                                            <span className="text-xs sm:text-sm leading-tight pr-2">{opt.label}</span>
+                                            <span className="text-lg shrink-0">{isSelected ? '☑' : '☐'}</span>
                                         </button>
                                     );
                                 })}
                             </div>
-                        ) : wizardSteps[aiCurrentStep].isSelect ? (
-                            <div className="flex flex-col gap-2">
-                                {wizardSteps[aiCurrentStep].options.map((opt, i) => (
+                        ) : currentStep.isSelect ? (
+                            /* 2. 釣況選択（単一選択） */
+                            <div className="flex flex-col gap-2 my-auto">
+                                {currentStep.options.map((opt, i) => (
                                     <button key={i} onClick={() => {
-                                        setAiInputData(prev => ({ ...prev, [wizardSteps[aiCurrentStep].id]: opt }));
-                                        if (targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, wizardSteps[aiCurrentStep].id, opt);
+                                        setAiInputData(prev => ({ ...prev, [currentStep.id]: opt }));
+                                        if (targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, currentStep.id, opt);
                                         setTimeout(() => setAiCurrentStep(prev => prev + 1), 200);
-                                    }} className={`p-4 rounded-xl border-2 text-left font-bold transition-all ${aiInputData[wizardSteps[aiCurrentStep].id] === opt ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'}`}>
+                                    }} className={`p-3.5 rounded-xl border-2 text-left font-bold transition-all ${aiInputData[currentStep.id] === opt ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'}`}>
                                         {opt}
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            <textarea
-                                placeholder={wizardSteps[aiCurrentStep].placeholder}
-                                className="w-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-4 bg-gray-50 dark:bg-slate-800 text-base font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-amber-100 resize-none h-40 shadow-inner"
-                                value={aiInputData[wizardSteps[aiCurrentStep].id] || ''}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setAiInputData(prev => ({ ...prev, [wizardSteps[aiCurrentStep].id]: val }));
-                                    if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, wizardSteps[aiCurrentStep].id, val);
-                                }}
-                                autoFocus
-                            ></textarea>
+                            /* 3. 自由記述 ＋ 画面いっぱいの大きな例文マス群 */
+                            <div className="flex-1 flex flex-col min-h-0 gap-2.5">
+                                {/* テキスト入力欄 */}
+                                <div className="shrink-0">
+                                    <textarea
+                                        placeholder={currentStep.placeholder}
+                                        className="w-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3 bg-gray-50 dark:bg-slate-800 text-sm font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none h-24 shadow-inner"
+                                        value={aiInputData[currentStep.id] || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setAiInputData(prev => ({ ...prev, [currentStep.id]: val }));
+                                            if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, currentStep.id, val);
+                                        }}
+                                        autoFocus
+                                    ></textarea>
+                                </div>
+
+                                {/* 画面いっぱいに並ぶタップ可能な例文マス */}
+                                {currentPresets.length > 0 && (
+                                    <div className="flex-1 flex flex-col min-h-0 pt-0.5">
+                                        <div className="text-[11px] font-black text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1 shrink-0">
+                                            <span>💡</span>
+                                            <span>タップで追加できる例文：</span>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 pr-0.5">
+                                            {currentPresets.map((preset, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => handleAddPreset(preset)}
+                                                    className="w-full text-left p-2.5 rounded-xl border border-amber-200/80 dark:border-slate-700 bg-amber-50/40 hover:bg-amber-100/70 dark:bg-slate-800/90 dark:hover:bg-slate-750 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all active:scale-[0.98] shadow-2xs flex items-start gap-1.5"
+                                                >
+                                                    <span className="text-amber-600 dark:text-amber-400 font-black shrink-0">＋</span>
+                                                    <span className="leading-snug">{preset}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
+
+                    {/* 最後のステップのAPIキー入力 */}
                     {aiCurrentStep === wizardSteps.length - 1 && (
-                        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-                            <label className="text-xs font-black text-gray-500 dark:text-slate-400 flex justify-between items-center mb-1.5">
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-700 shrink-0">
+                            <label className="text-xs font-black text-gray-500 dark:text-slate-400 flex justify-between items-center mb-1">
                                 <span>🔑 Gemini APIキー</span>
                                 {userApiKey.trim() && <span className="text-[10px] font-bold text-emerald-500">✓ 入力済</span>}
                             </label>
-                            <input type="password" placeholder="APIキー" className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-gray-50 dark:bg-slate-800 text-sm font-medium text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-200" value={userApiKey} onChange={(e) => { setUserApiKey(e.target.value); localStorage.setItem('fishing_api_key', e.target.value); }} />
+                            <input type="password" placeholder="APIキー" className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-gray-50 dark:bg-slate-800 text-sm font-medium text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-200" value={userApiKey} onChange={(e) => { setUserApiKey(e.target.value); localStorage.setItem('fishing_api_key', e.target.value); }} />
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0 flex gap-3">
+
+                {/* モーダルフッター（戻る・次へボタン） */}
+                <div className="p-3 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0 flex gap-2">
                     {aiCurrentStep > 0 && (
-                        <button onClick={() => setAiCurrentStep(prev => prev - 1)} className="flex-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-black py-3.5 rounded-xl shadow-sm flex justify-center items-center text-base">
-                            <IconChevronLeft className="w-5 h-5 mr-1" /> 戻る
+                        <button onClick={() => setAiCurrentStep(prev => prev - 1)} className="flex-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-black py-3 rounded-xl shadow-sm flex justify-center items-center text-sm">
+                            <IconChevronLeft className="w-4 h-4 mr-1" /> 戻る
                         </button>
                     )}
                     {aiCurrentStep < wizardSteps.length - 1 ? (
-                        <button onClick={() => setAiCurrentStep(prev => prev + 1)} className="flex-[2] bg-amber-500 dark:bg-amber-600 text-white font-black py-3.5 rounded-xl shadow-md flex justify-center items-center text-base">
-                            次へ <IconChevronRight className="w-5 h-5 ml-1" />
+                        <button onClick={() => setAiCurrentStep(prev => prev + 1)} className="flex-[2] bg-amber-500 dark:bg-amber-600 text-white font-black py-3 rounded-xl shadow-md flex justify-center items-center text-sm">
+                            次へ <IconChevronRight className="w-4 h-4 ml-1" />
                         </button>
                     ) : (
                         <button onClick={() => {
@@ -169,7 +284,7 @@ const AiInputWizardModal = ({
                                 aiInputData.patterns,
                                 userApiKey
                             );
-                        }} className="flex-[2] bg-amber-500 dark:bg-amber-600 text-white font-black py-3.5 rounded-xl shadow-md flex justify-center items-center text-base">
+                        }} className="flex-[2] bg-amber-500 dark:bg-amber-600 text-white font-black py-3 rounded-xl shadow-md flex justify-center items-center text-sm">
                             文章を作成する
                         </button>
                     )}
