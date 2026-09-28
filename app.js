@@ -1857,70 +1857,70 @@ function App() {
                                     )}
 
                                     {/* ========================================== */}
-                                    {/* 2段アクションツールバー */}
-                                    {/* 上段：[メモ] [分析] [日報] [ボード] */}
-                                    {/* 下段：[共有] ----------------- [削除] */}
+                                    {/* 2段アクションツールバー（上段3・下段3 均等レイアウト） */}
+                                    {/* 上段：[釣行メモ] [AIカルテ] [日報作成] */}
+                                    {/* 下段：[共有]     [釣果ボード] [削除]   */}
                                     {/* ========================================== */}
-                                    <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2.5">
+                                    <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         
-                                        {/* 【上段】左から メモ ➔ 分析 ➔ 日報 ➔ ボード */}
-                                        <div className="flex items-center gap-1.5 w-full">
+                                        {/* 【上段】均等3分割：釣行メモ ➔ AIカルテ ➔ 日報作成 */}
+                                        <div className="grid grid-cols-3 gap-2 w-full">
                                             
-                                            {/* 1. メモボタン（分析済・日報と完全に同じアンバー配色に統一） */}
+                                            {/* 1. 釣行メモ（未入力: 釣行メモ / 入力済: メモ済✓） */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
-                                                className={`flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
+                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
                                                     r.detailedMemo && r.detailedMemo.trim() !== ''
                                                         ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700'
                                                         : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                                 }`}
                                             >
                                                 <span>📝</span>
-                                                <span>メモ</span>
+                                                <span>{r.detailedMemo && r.detailedMemo.trim() !== '' ? 'メモ済' : '釣行メモ'}</span>
                                                 {r.detailedMemo && r.detailedMemo.trim() !== '' && (
                                                     <span className="text-amber-600 dark:text-amber-400 font-black text-xs leading-none">✓</span>
                                                 )}
                                             </button>
 
-                                            {/* 2. AI分析ボタン（分析中に右側でくるくる回転） */}
-<button
-    type="button"
-    disabled={analyzingRecordId === r.id}
-    onClick={(e) => {
-        e.stopPropagation();
-        if (analyzingRecordId === r.id) return;
-        if (r.aiAnalysisResult) {
-            setCurrentAnalysis({ record: r, data: r.aiAnalysisResult });
-            setShowAnalysisModal(true);
-        } else {
-            handleRunAiAnalysis(r);
-        }
-    }}
-    className={`flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-2xs transition-all select-none ${
-        analyzingRecordId === r.id
-            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/80 cursor-wait'
-            : r.aiAnalysisResult
-            ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 active:scale-95'
-            : 'bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700 active:scale-95'
-    }`}
->
-    {analyzingRecordId === r.id ? (
-        <>
-            <span>分析中</span>
-            <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
-        </>
-    ) : (
-        <>
-            <span>📊</span>
-            <span>{r.aiAnalysisResult ? '分析済' : '分析'}</span>
-        </>
-    )}
-</button>
+                                            {/* 2. AIカルテ（未分析: AIカルテ / 分析済: 分析済） */}
+                                            <button
+                                                type="button"
+                                                disabled={analyzingRecordId === r.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (analyzingRecordId === r.id) return;
+                                                    if (r.aiAnalysisResult) {
+                                                        setCurrentAnalysis({ record: r, data: r.aiAnalysisResult });
+                                                        setShowAnalysisModal(true);
+                                                    } else {
+                                                        handleRunAiAnalysis(r);
+                                                    }
+                                                }}
+                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs transition-all select-none ${
+                                                    analyzingRecordId === r.id
+                                                        ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/80 cursor-wait'
+                                                        : r.aiAnalysisResult
+                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 active:scale-95'
+                                                        : 'bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700 active:scale-95'
+                                                }`}
+                                            >
+                                                {analyzingRecordId === r.id ? (
+                                                    <>
+                                                        <span>分析中</span>
+                                                        <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>📊</span>
+                                                        <span>{r.aiAnalysisResult ? '分析済' : 'AIカルテ'}</span>
+                                                    </>
+                                                )}
+                                            </button>
 
-                                            {/* 3. 日報ボタン（未作成: タップで作成 / 作成済: タップで日報表示・長押しで再作成） */}
+                                            {/* 3. 日報作成（未作成: 日報作成 / 作成済: 日報済） */}
                                             {generatingAiId === r.id ? (
-                                                <div className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
+                                                <div className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
                                                     <span>作成中</span>
                                                     <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
@@ -1960,9 +1960,9 @@ function App() {
                                                     onPointerUp={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
                                                     onPointerLeave={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
                                                     onPointerCancel={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                    className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
+                                                    className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
                                                 >
-                                                    <IconStar className="w-3.5 h-3.5 text-amber-500" />
+                                                    <IconStar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                                     <span>日報済</span>
                                                 </button>
                                             ) : (
@@ -1984,50 +1984,52 @@ function App() {
                                                         setAiCurrentStep(0);
                                                         setShowAiInputModal(true);
                                                     }}
-                                                    className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                    className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                                 >
-                                                    <span>📝</span>
-                                                    <span>日報</span>
+                                                    <span>📄</span>
+                                                    <span>日報作成</span>
                                                 </button>
                                             )}
 
-                                            {/* 4. 釣果ボードボタン（標準デザインのまま一番右に配置） */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); setShareImageRecord(r); }}
-                                                className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
-                                            >
-                                                <IconCamera className="w-3.5 h-3.5" />
-                                                <span>ボード</span>
-                                            </button>
-
                                         </div>
 
-                                        {/* 【下段】左下：共有 ―― 右下：削除（共有と同じ四角い枠付き） */}
-                                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                                            {/* 左下：共有 */}
+                                        {/* 【下段】均等3分割：共有 ➔ 釣果ボード ➔ 削除（上段と同じサイズ・規格） */}
+                                        <div className="grid grid-cols-3 gap-2 w-full pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
+                                            
+                                            {/* 1. 共有 */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); setSharedRecordId(sharedRecordId === r.id ? null : r.id); }}
-                                                className="px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                             >
-                                                <IconShare className="w-3.5 h-3.5" />
+                                                <IconShare className="w-3.5 h-3.5 shrink-0" />
                                                 <span>共有</span>
                                             </button>
 
-                                            {/* 右下：削除（共有と同じ四角い枠付きデザイン） */}
+                                            {/* 2. 釣果ボード */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setShareImageRecord(r); }}
+                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                            >
+                                                <IconCamera className="w-3.5 h-3.5 shrink-0" />
+                                                <span>釣果ボード</span>
+                                            </button>
+
+                                            {/* 3. 削除 */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setRecordToDelete(r);
                                                 }}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 bg-white hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/30 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all flex items-center gap-1 select-none active:scale-95"
+                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/30 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all flex items-center justify-center gap-1 select-none active:scale-95"
                                                 title="この日の記録を削除"
                                             >
-                                                <IconTrash className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
+                                                <IconTrash className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                                                 <span>削除</span>
                                             </button>
+
                                         </div>
 
                                     </div>
@@ -2100,7 +2102,7 @@ function App() {
                     </span>
                 </button>
 
-                {/* 3. 履歴タブ（カレンダー：サンセットアンバー） */}
+               {/* 3. 釣果・履歴タブ（カレンダー：サンセットアンバー） */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
@@ -2114,12 +2116,12 @@ function App() {
                             ? 'text-amber-500 dark:text-amber-400' 
                             : 'text-amber-600/70 dark:text-amber-400/60'
                     }`} />
-                    <span className={`text-xs tracking-tight ${
+                    <span className={`text-[11px] sm:text-xs tracking-tight ${
                         activeTab === 'history' 
                             ? 'font-black text-slate-900 dark:text-white' 
                             : 'font-bold text-slate-700 dark:text-slate-300'
                     }`}>
-                        履歴
+                        釣果・履歴
                     </span>
                 </button>
 
