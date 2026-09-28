@@ -1698,33 +1698,7 @@ function App() {
                                             <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100">{r.date} {getDayOfWeek(r.date)}</span>
                                             <div className="flex items-center gap-1.5">
                                                 {r.targetFish ? (
-                                                    <span 
-                                                        className="text-sm bg-sky-200/30 hover:bg-sky-200/60 dark:bg-sky-900/40 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-200 px-3 py-1 rounded-lg font-black select-none cursor-pointer border border-sky-300/80 dark:border-sky-700 active:scale-95 transition-all shadow-2xs"
-                                                        title="長押しでAI日報作成"
-                                                        onPointerDown={(e) => {
-                                                            e.stopPropagation();
-                                                            if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
-                                                            aiTimerRef.current = setTimeout(() => {
-                                                                if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-                                                                setTargetRecordForAi(r);
-                                                                setAiInputData({
-                                                                    condition: r.aiInput_condition || '',
-                                                                    scenery: r.aiInput_scenery || '',
-                                                                    tide: r.aiInput_tide || '',
-                                                                    activity: r.aiInput_activity || '',
-                                                                    episode: r.aiInput_episode || '',
-                                                                    size: r.aiInput_size || '',
-                                                                    topAngler: r.aiInput_topAngler || '',
-                                                                    patterns: r.aiInput_patterns || [1]
-                                                                });
-                                                                setAiCurrentStep(0);
-                                                                setShowAiInputModal(true);
-                                                            }, 1000);
-                                                        }}
-                                                        onPointerUp={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                        onPointerLeave={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                        onPointerCancel={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                    >
+                                                    <span className="text-sm bg-sky-200/30 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200 px-3 py-1 rounded-lg font-black select-none border border-sky-300/80 dark:border-sky-700 shadow-2xs">
                                                         {r.targetFish}
                                                     </span>
                                                 ) : (
@@ -1923,27 +1897,58 @@ function App() {
     )}
 </button>
 
-                                            {/* 3. 日報ボタン（作成中、または保存済み日報がある時のみ表示） */}
+                                            {/* 3. 日報ボタン（未作成時は8ステップインタビュー起動 / 作成済なら即表示） */}
                                             {generatingAiId === r.id ? (
-                                                <div className="flex-1 py-2 px-1 rounded-xl text-xs font-black flex items-center justify-center gap-0.5 bg-amber-50 dark:bg-slate-800 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 select-none">
-                                                    <span className="animate-spin text-xs">↻</span>
-                                                    <span className="text-[11px]">作成中</span>
+                                                <div className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
+                                                    <span>作成中</span>
+                                                    <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
-                                            ) : (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
+                                            ) : (
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
-                                                        setAiGeneratedText(r.aiGeneratedText || '');
-                                                        setShowAiModal(true);
+                                                        if (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) {
+                                                            // すでに日報作成済みの場合は、即座に確認モーダルを表示
+                                                            setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
+                                                            setAiGeneratedText(r.aiGeneratedText || '');
+                                                            setShowAiModal(true);
+                                                        } else {
+                                                            // 未作成の場合は、その日の記録を引き継いで8ステップインタビューを起動
+                                                            setTargetRecordForAi(r);
+                                                            setAiInputData({
+                                                                condition: r.aiInput_condition || '',
+                                                                scenery: r.aiInput_scenery || '',
+                                                                tide: r.aiInput_tide || '',
+                                                                activity: r.aiInput_activity || '',
+                                                                episode: r.aiInput_episode || '',
+                                                                size: r.aiInput_size || '',
+                                                                topAngler: r.aiInput_topAngler || '',
+                                                                patterns: r.aiInput_patterns || [1]
+                                                            });
+                                                            setAiCurrentStep(0);
+                                                            setShowAiInputModal(true);
+                                                        }
                                                     }}
-                                                    className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
+                                                    className={`flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
+                                                        (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText)
+                                                            ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700'
+                                                            : 'bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border-slate-200 dark:border-slate-700'
+                                                    }`}
                                                 >
-                                                    <IconStar className="w-3.5 h-3.5 text-amber-500" />
-                                                    <span>日報</span>
+                                                    {(r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
+                                                        <>
+                                                            <IconStar className="w-3.5 h-3.5 text-amber-500" />
+                                                            <span>日報済</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span>📝</span>
+                                                            <span>日報</span>
+                                                        </>
+                                                    )}
                                                 </button>
-                                            ) : null}
+                                            )}
 
                                             {/* 4. 釣果ボードボタン（標準デザインのまま一番右に配置） */}
                                             <button
