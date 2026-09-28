@@ -802,6 +802,14 @@ function SettingsPanel({
                                         APIキーを保存
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
                             
 
                                 {/* モデル選択 */}
