@@ -49,7 +49,7 @@ const MemoModal = ({
 };
 
 // =======================================================
-// AI日報用インタビューウィザードモーダル（船長専用クイックチップ版）
+// AI日報用インタビューウィザードモーダル（船長専用クイックチップ・文字拡大版）
 // =======================================================
 
 // 各ステップでパッと選べる単語タグ（クイックチップ）
@@ -78,7 +78,7 @@ const WIZARD_TAGS = {
     ],
     topAngler: [
         "スローな誘い", "長めのステイ", "底から1m浮かせ", "ベタ底キープ", 
-        "手返しの早さ", "マメなエサ付け", "微細アタリ感知", "ちょい宙",
+        "手返しの早さ", "マメなエサ付け", "微細アタリ感知", "ちょい宙"
     ]
 };
 
@@ -148,7 +148,7 @@ const AiInputWizardModal = ({
                             <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{currentStep.desc}</p>
                         </div>
 
-                        {/* 1. パターン選択（複数選択） */}
+                        {/* 1. パターン選択（Step 8: 複数選択・文字拡大版） */}
                         {currentStep.isMultiSelect ? (
                             <div className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar pr-0.5">
                                 {currentStep.options.map((opt) => {
@@ -165,9 +165,10 @@ const AiInputWizardModal = ({
                                             }
                                             setAiInputData(prev => ({ ...prev, patterns: next }));
                                             if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, 'patterns', next);
-                                        }} className={`p-3 rounded-xl border-2 text-left font-bold transition-all ${isSelected ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'} flex items-center justify-between`}>
-                                            <span className="text-xs sm:text-sm leading-tight pr-2">{opt.label}</span>
-                                            <span className="text-lg shrink-0">{isSelected ? '☑' : '☐'}</span>
+                                        }} className={`p-3.5 rounded-xl border-2 text-left font-black transition-all ${isSelected ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'} flex items-center justify-between`}>
+                                            {/* 文字サイズを text-sm sm:text-base へ拡大 */}
+                                            <span className="text-sm sm:text-base leading-snug pr-2">{opt.label}</span>
+                                            <span className="text-xl shrink-0">{isSelected ? '☑' : '☐'}</span>
                                         </button>
                                     );
                                 })}
@@ -180,19 +181,19 @@ const AiInputWizardModal = ({
                                         setAiInputData(prev => ({ ...prev, [currentStep.id]: opt }));
                                         if (targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, currentStep.id, opt);
                                         setTimeout(() => setAiCurrentStep(prev => prev + 1), 200);
-                                    }} className={`p-3.5 rounded-xl border-2 text-left font-bold transition-all ${aiInputData[currentStep.id] === opt ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'}`}>
+                                    }} className={`p-4 rounded-xl border-2 text-left font-black text-base sm:text-lg transition-all ${aiInputData[currentStep.id] === opt ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'}`}>
                                         {opt}
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            /* 3. 自由記述 ＋ クイックチップ（単語タグ） */
+                            /* 3. 自由記述 ＋ クイックチップ（Step 2〜7: 入力欄・チップ文字拡大版） */
                             <div className="flex-1 flex flex-col min-h-0 gap-3">
-                                {/* テキスト入力欄（広々ゆったり） */}
+                                {/* テキスト入力欄：文字サイズを text-base sm:text-lg へ拡大 */}
                                 <div className="flex-1 min-h-[140px]">
                                     <textarea
                                         placeholder={currentStep.placeholder}
-                                        className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-gray-50 dark:bg-slate-800 text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
+                                        className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-gray-50 dark:bg-slate-800 text-base sm:text-lg font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
                                         value={aiInputData[currentStep.id] || ''}
                                         onChange={(e) => {
                                             const val = e.target.value;
@@ -203,22 +204,22 @@ const AiInputWizardModal = ({
                                     ></textarea>
                                 </div>
 
-                                {/* クイックチップ群 */}
+                                {/* クイックチップ群：チップ文字を text-sm sm:text-base へ拡大 */}
                                 {currentTags.length > 0 && (
                                     <div className="shrink-0 pt-1">
-                                        <div className="text-[11px] font-black text-amber-700 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                        <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 mb-1.5 flex items-center gap-1">
                                             <span>🏷️</span>
                                             <span>タップで入力（単語チップ）：</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto no-scrollbar py-0.5">
+                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar py-0.5">
                                             {currentTags.map((tag, idx) => (
                                                 <button
                                                     key={idx}
                                                     type="button"
                                                     onClick={() => handleAddTag(tag)}
-                                                    className="px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-slate-700 bg-amber-50/60 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-amber-900 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1"
+                                                    className="px-3 py-2 rounded-xl border border-amber-200 dark:border-slate-700 bg-amber-50/70 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
                                                 >
-                                                    <span className="text-amber-500 font-black text-[10px]">＋</span>
+                                                    <span className="text-amber-600 dark:text-amber-400 font-black text-xs">＋</span>
                                                     <span>{tag}</span>
                                                 </button>
                                             ))}
