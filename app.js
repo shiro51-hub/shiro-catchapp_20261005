@@ -1370,6 +1370,23 @@ function App() {
                 aiGeneratedPatterns={aiGeneratedPatterns}
                 aiGeneratedText={aiGeneratedText}
                 handleCopyPattern={handleCopyPattern}
+                onRecreate={() => {
+                    setShowAiModal(false);
+                    if (targetRecordForAi) {
+                        setAiInputData({
+                            condition: targetRecordForAi.aiInput_condition || '',
+                            scenery: targetRecordForAi.aiInput_scenery || '',
+                            tide: targetRecordForAi.aiInput_tide || '',
+                            activity: targetRecordForAi.aiInput_activity || '',
+                            episode: targetRecordForAi.aiInput_episode || '',
+                            size: targetRecordForAi.aiInput_size || '',
+                            topAngler: targetRecordForAi.aiInput_topAngler || '',
+                            patterns: targetRecordForAi.aiInput_patterns || [1]
+                        });
+                        setAiCurrentStep(0);
+                        setShowAiInputModal(true);
+                    }
+                }}
             />
 
             {/* AI多角分析モーダル */}
@@ -1898,24 +1915,36 @@ function App() {
     )}
 </button>
 
-                                            {/* 3. 日報ボタン（未作成時は8ステップインタビュー起動 / 作成済なら即表示） */}
+                                            {/* 3. 日報ボタン（未作成なら作成 / 作成済なら表示 ＆ 右端の↻で再作成） */}
                                             {generatingAiId === r.id ? (
                                                 <div className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
                                                     <span>作成中</span>
                                                     <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) {
-                                                            // すでに日報作成済みの場合は、即座に確認モーダルを表示
+                                            ) : (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
+                                                <div className="flex-1 flex items-center gap-0.5">
+                                                    {/* 日報を見るボタン */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setTargetRecordForAi(r);
                                                             setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
                                                             setAiGeneratedText(r.aiGeneratedText || '');
                                                             setShowAiModal(true);
-                                                        } else {
-                                                            // 未作成の場合は、その日の記録を引き継いで8ステップインタビューを起動
+                                                        }}
+                                                        className="flex-1 py-2 px-1 rounded-l-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                        title="日報を表示"
+                                                    >
+                                                        <IconStar className="w-3.5 h-3.5 text-amber-500" />
+                                                        <span>日報済</span>
+                                                    </button>
+
+                                                    {/* ↻ 再作成ボタン（前回の回答を引き継いで8ステップインタビューを起動） */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             setTargetRecordForAi(r);
                                                             setAiInputData({
                                                                 condition: r.aiInput_condition || '',
@@ -1929,25 +1958,36 @@ function App() {
                                                             });
                                                             setAiCurrentStep(0);
                                                             setShowAiInputModal(true);
-                                                        }
+                                                        }}
+                                                        className="py-2 px-1.5 rounded-r-xl text-xs font-black flex items-center justify-center bg-amber-200/80 hover:bg-amber-300 dark:bg-amber-900/60 dark:hover:bg-amber-800 text-amber-900 dark:text-amber-100 border border-l-0 border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                        title="日報を再作成する"
+                                                    >
+                                                        <span className="text-xs font-black">↻</span>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setTargetRecordForAi(r);
+                                                        setAiInputData({
+                                                            condition: r.aiInput_condition || '',
+                                                            scenery: r.aiInput_scenery || '',
+                                                            tide: r.aiInput_tide || '',
+                                                            activity: r.aiInput_activity || '',
+                                                            episode: r.aiInput_episode || '',
+                                                            size: r.aiInput_size || '',
+                                                            topAngler: r.aiInput_topAngler || '',
+                                                            patterns: r.aiInput_patterns || [1]
+                                                        });
+                                                        setAiCurrentStep(0);
+                                                        setShowAiInputModal(true);
                                                     }}
-                                                    className={`flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
-                                                        (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText)
-                                                            ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700'
-                                                            : 'bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border-slate-200 dark:border-slate-700'
-                                                    }`}
+                                                    className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                                 >
-                                                    {(r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
-                                                        <>
-                                                            <IconStar className="w-3.5 h-3.5 text-amber-500" />
-                                                            <span>日報済</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span>📝</span>
-                                                            <span>日報</span>
-                                                        </>
-                                                    )}
+                                                    <span>📝</span>
+                                                    <span>日報</span>
                                                 </button>
                                             )}
 
