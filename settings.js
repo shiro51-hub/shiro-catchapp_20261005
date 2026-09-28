@@ -802,7 +802,7 @@ function SettingsPanel({
                                         APIキーを保存
                                     </button>
                                 </div>
-                            </div>
+                            
 
                                 {/* モデル選択 */}
                                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
