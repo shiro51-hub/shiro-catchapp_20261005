@@ -2085,7 +2085,7 @@ function App() {
                     }}
                 >
                     <div className="relative flex items-center justify-center mb-0.5">
-                        <span className={`text-[10px] font-black leading-none px-1.5 py-0.5 rounded-full h-4.5 flex items-center justify-center shadow-2xs transition-all ${
+                        <span className={`text-[10px] font-black leading-none px-2 py-0.5 rounded-full h-4.5 flex items-center justify-center shadow-2xs transition-all tracking-widest ${
                             activeTab === 'counter'
                                 ? 'bg-sky-500 text-white shadow-sky-500/20'
                                 : 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60 dark:border-sky-800'
