@@ -49,52 +49,36 @@ const MemoModal = ({
 };
 
 // =======================================================
-// AI日報用インタビューウィザードモーダル（画面いっぱい・例文マス拡張版）
+// AI日報用インタビューウィザードモーダル（船長専用クイックチップ版）
 // =======================================================
 
-// 各ステップで画面いっぱいに並ぶ豊富な例文カード
-const WIZARD_PRESETS = {
+// 各ステップでパッと選べる単語タグ（クイックチップ）
+const WIZARD_TAGS = {
     scenery: [
-        "朝イチはベタ凪、中盤から南西風がソヨソヨと吹き出し海面がパチャついた",
-        "日差し暖かく心地よい風、絶好の釣り日和で船上も終始穏やか",
-        "朝モヤが立ち込める静かな海上、中盤から晴れ間が広がり爽やかなナギ模様",
-        "うねりがやや残るものの風は弱く、船酔いもしにくい落ち着いたコンディション",
-        "小雨混じりの肌寒いスタート、後半は風波も収まり釣りやすい海況へ",
-        "日差し強くベタ凪の海況、潮の濁りも程よく魚の警戒心も薄い気配"
+        "ベタ凪", "穏やかなナギ",  "心地よい風",  "風波強く荒天",
+        "ソヨソヨ", "風波パチャつく", "うねり残る", "肌寒いスタート", 
+        "ポカポカ陽気", "爽快な青空", "どんより曇天", "小雨混じり"
     ],
     tide: [
-        "上潮だけが滑って二枚潮気味、オモリの着底にひと工夫が必要な流れ",
-        "朝方はトロリと流れて良い反応、潮止まりを挟んで下げ潮がピリッと効いた",
-        "澄み潮で魚の警戒心が高め、潮の動き出しの一瞬にアタリが集中した",
-        "適度な濁り潮で終始流れるも、魚のタナが浮き沈みして丁寧な誘いが肝心だった",
-        "底潮が冷たいのかアタリは小さく繊細、じっくり違和感を取れる人に軍配",
-        "終日素直に流れる好潮で、潮先・潮尻問わず船中満遍なく竿が曲がった"
+        "トロリ流れる", "トロトロ", "適度に流れる", "ピリッと効いた", 
+        "潮かっ飛ぶ", "上潮だけ速い", "二枚潮", "底潮動かず", 
+        "潮止まり", "素直な好潮", "たるい流れ", "終日動かず"
     ],
     activity: [
-        "開始早々からモーニングサービスあり、朝の時合いを逃さず連発",
-        "朝方は拾い釣りでガマンの時間、中盤以降にまとまった群れに当たり一気に加速",
-        "群れの移動が速く単発の拾い釣り、手返しの早さと集中力が勝負の分かれ目",
-        "数は控えめながらもズッシリとした良型主体、強烈な引き味を堪能",
-        "爆発力はないものの終日ポツポツとアタリが続き、飽きずに楽しめる展開"
+        "朝イチ連発", "中盤から加速", "拾い釣り", "一日ポツポツ継続", 
+        "食い渋り", "アタリ遠い",  "エサ取り活発", "お土産十分"
     ],
     episode: [
-        "良型の一荷（ダブル）も飛び出し、船内のあちこちで歓声が上がる大盛り上がり",
-        "初挑戦のお客様も見事に本命を仕留め、笑顔あふれる嬉しい釣行",
-        "沖上がり間際の流しでドラマが起き、今日イチのナイスサイズを無事キャッチ",
-        "お互いにタモ入れを助け合い、和気あいあいとした温かい空気に包まれた一日"
+        "一荷（ダブル）","ダブル・トリプル",  "良型交じり", "ゲスト多彩", 
+        "沖上がり間際に好調", "初挑戦健闘",  "特大サイズ浮上"
     ],
     size: [
-        "良型主体で引き味抜群",
-        "中型主体に小ぶりが交じる",
-        "小ぶり・ワッペンサイズが目立った",
-        "ずっしりとした大型・良型揃い"
+        "良型主体", "中型揃い", "大小交じり", "中小型交じり", 
+        "小型・ワッペン交じり", "型揃い", "サイズまちまち"
     ],
     topAngler: [
-        "激しい誘いには乗らず、ゆっくりとしたフォール（落とし込み）と長めのステイが的中",
-        "底ベッタリではなく底から1m前後を浮遊させ、漂わせるようなアプローチが大当たり",
-        "手返しの早さとエサ付けの丁寧さが群を抜き、アタリのチャンスを確実にものにした",
-        "居喰いのような微かな違和感を鋭く察知し、掛け逃しの少なさがトップ釣果へ繋がった",
-        "潮色に合わせた配色の仕掛け選びがズバリハマり、終始独走態勢"
+        "スローな誘い", "長めのステイ", "底から1m浮かせ", "ベタ底キープ", 
+        "手返しの早さ", "マメなエサ付け", "微細アタリ感知", "ちょい宙",
     ]
 };
 
@@ -115,19 +99,19 @@ const AiInputWizardModal = ({
     if (!showAiInputModal) return null;
 
     const currentStep = wizardSteps[aiCurrentStep];
-    const currentPresets = WIZARD_PRESETS[currentStep.id] || [];
+    const currentTags = WIZARD_TAGS[currentStep.id] || [];
 
-    // 例文カードをタップして入力欄へ追加する関数
-    const handleAddPreset = (text) => {
+    // タグをタップして入力欄へ追加する関数
+    const handleAddTag = (tagText) => {
         const fieldKey = currentStep.id;
         const currentVal = aiInputData[fieldKey] || '';
         let newVal = '';
         if (!currentVal.trim()) {
-            newVal = text;
-        } else if (currentVal.endsWith('、') || currentVal.endsWith('。')) {
-            newVal = `${currentVal}${text}`;
+            newVal = tagText;
+        } else if (currentVal.endsWith('、') || currentVal.endsWith('。') || currentVal.endsWith(' ')) {
+            newVal = `${currentVal}${tagText}`;
         } else {
-            newVal = `${currentVal}、${text}`;
+            newVal = `${currentVal}、${tagText}`;
         }
 
         setAiInputData(prev => ({ ...prev, [fieldKey]: newVal }));
@@ -143,7 +127,6 @@ const AiInputWizardModal = ({
     return (
         <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAiInputModal(false)}></div>
-            {/* 画面いっぱい（h-[90vh] / max-w-md〜lg）に広げたモーダル */}
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[90vh] animate-slideUpModal overflow-hidden">
                 
                 {/* ヘッダー */}
@@ -160,7 +143,7 @@ const AiInputWizardModal = ({
                 {/* メインエリア */}
                 <div className="flex-1 overflow-y-auto p-4 no-scrollbar flex flex-col">
                     <div className="flex-1 flex flex-col space-y-3 animate-[fadeIn_0.2s_ease-out]">
-                        <div className="mb-2 shrink-0">
+                        <div className="mb-1 shrink-0">
                             <h3 className="text-base sm:text-lg font-black text-gray-800 dark:text-slate-100 mb-1">{currentStep.title}</h3>
                             <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{currentStep.desc}</p>
                         </div>
@@ -203,13 +186,13 @@ const AiInputWizardModal = ({
                                 ))}
                             </div>
                         ) : (
-                            /* 3. 自由記述 ＋ 画面いっぱいの大きな例文マス群 */
-                            <div className="flex-1 flex flex-col min-h-0 gap-2.5">
-                                {/* テキスト入力欄 */}
-                                <div className="shrink-0">
+                            /* 3. 自由記述 ＋ クイックチップ（単語タグ） */
+                            <div className="flex-1 flex flex-col min-h-0 gap-3">
+                                {/* テキスト入力欄（広々ゆったり） */}
+                                <div className="flex-1 min-h-[140px]">
                                     <textarea
                                         placeholder={currentStep.placeholder}
-                                        className="w-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3 bg-gray-50 dark:bg-slate-800 text-sm font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none h-24 shadow-inner"
+                                        className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-gray-50 dark:bg-slate-800 text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
                                         value={aiInputData[currentStep.id] || ''}
                                         onChange={(e) => {
                                             const val = e.target.value;
@@ -220,23 +203,23 @@ const AiInputWizardModal = ({
                                     ></textarea>
                                 </div>
 
-                                {/* 画面いっぱいに並ぶタップ可能な例文マス */}
-                                {currentPresets.length > 0 && (
-                                    <div className="flex-1 flex flex-col min-h-0 pt-0.5">
-                                        <div className="text-[11px] font-black text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1 shrink-0">
-                                            <span>💡</span>
-                                            <span>タップで追加できる例文：</span>
+                                {/* クイックチップ群 */}
+                                {currentTags.length > 0 && (
+                                    <div className="shrink-0 pt-1">
+                                        <div className="text-[11px] font-black text-amber-700 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                            <span>🏷️</span>
+                                            <span>タップで入力（単語チップ）：</span>
                                         </div>
-                                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 pr-0.5">
-                                            {currentPresets.map((preset, idx) => (
+                                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto no-scrollbar py-0.5">
+                                            {currentTags.map((tag, idx) => (
                                                 <button
                                                     key={idx}
                                                     type="button"
-                                                    onClick={() => handleAddPreset(preset)}
-                                                    className="w-full text-left p-2.5 rounded-xl border border-amber-200/80 dark:border-slate-700 bg-amber-50/40 hover:bg-amber-100/70 dark:bg-slate-800/90 dark:hover:bg-slate-750 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all active:scale-[0.98] shadow-2xs flex items-start gap-1.5"
+                                                    onClick={() => handleAddTag(tag)}
+                                                    className="px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-slate-700 bg-amber-50/60 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-amber-900 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1"
                                                 >
-                                                    <span className="text-amber-600 dark:text-amber-400 font-black shrink-0">＋</span>
-                                                    <span className="leading-snug">{preset}</span>
+                                                    <span className="text-amber-500 font-black text-[10px]">＋</span>
+                                                    <span>{tag}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -258,7 +241,7 @@ const AiInputWizardModal = ({
                     )}
                 </div>
 
-                {/* モーダルフッター（戻る・次へボタン） */}
+                {/* モーダルフッター */}
                 <div className="p-3 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0 flex gap-2">
                     {aiCurrentStep > 0 && (
                         <button onClick={() => setAiCurrentStep(prev => prev - 1)} className="flex-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-black py-3 rounded-xl shadow-sm flex justify-center items-center text-sm">
