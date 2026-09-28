@@ -1915,36 +1915,30 @@ function App() {
     )}
 </button>
 
-                                            {/* 3. 日報ボタン（未作成なら作成 / 作成済なら表示 ＆ 右端の↻で再作成） */}
+                                            {/* 3. 日報ボタン（未作成: タップで作成 / 作成済: タップで日報表示・長押しで再作成） */}
                                             {generatingAiId === r.id ? (
                                                 <div className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
                                                     <span>作成中</span>
                                                     <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
                                             ) : (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
-                                                <div className="flex-1 flex items-center gap-0.5">
-                                                    {/* 日報を見るボタン */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setTargetRecordForAi(r);
-                                                            setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
-                                                            setAiGeneratedText(r.aiGeneratedText || '');
-                                                            setShowAiModal(true);
-                                                        }}
-                                                        className="flex-1 py-2 px-1 rounded-l-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none"
-                                                        title="日報を表示"
-                                                    >
-                                                        <IconStar className="w-3.5 h-3.5 text-amber-500" />
-                                                        <span>日報済</span>
-                                                    </button>
-
-                                                    {/* ↻ 再作成ボタン（前回の回答を引き継いで8ステップインタビューを起動） */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
+                                                <button
+                                                    type="button"
+                                                    title="タップで日報表示、長押しで再作成"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setTargetRecordForAi(r);
+                                                        setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
+                                                        setAiGeneratedText(r.aiGeneratedText || '');
+                                                        setShowAiModal(true);
+                                                    }}
+                                                    onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
+                                                        aiTimerRef.current = setTimeout(() => {
+                                                            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                                                                navigator.vibrate([30, 50, 30]);
+                                                            }
                                                             setTargetRecordForAi(r);
                                                             setAiInputData({
                                                                 condition: r.aiInput_condition || '',
@@ -1958,13 +1952,16 @@ function App() {
                                                             });
                                                             setAiCurrentStep(0);
                                                             setShowAiInputModal(true);
-                                                        }}
-                                                        className="py-2 px-1.5 rounded-r-xl text-xs font-black flex items-center justify-center bg-amber-200/80 hover:bg-amber-300 dark:bg-amber-900/60 dark:hover:bg-amber-800 text-amber-900 dark:text-amber-100 border border-l-0 border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none"
-                                                        title="日報を再作成する"
-                                                    >
-                                                        <span className="text-xs font-black">↻</span>
-                                                    </button>
-                                                </div>
+                                                        }, 750);
+                                                    }}
+                                                    onPointerUp={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
+                                                    onPointerLeave={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
+                                                    onPointerCancel={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
+                                                    className="flex-1 py-2 px-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
+                                                >
+                                                    <IconStar className="w-3.5 h-3.5 text-amber-500" />
+                                                    <span>日報済</span>
+                                                </button>
                                             ) : (
                                                 <button
                                                     type="button"
