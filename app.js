@@ -2039,11 +2039,11 @@ function App() {
                 )}
             </div>
 
-          {/* 下部ナビゲーションバー（マリンウォッシュ・シームレス型 ほんのり濃いめ版 ＆ 3タブ完全版） */}
+          {/* 下部ナビゲーションバー（底面密着版） */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
-                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/90 dark:bg-slate-900/95 backdrop-blur-md border-t border-sky-300 dark:border-slate-800 pb-safe z-50 flex h-14 items-center justify-around px-2 transition-transform duration-300 ease-out select-none shadow-[0_-2px_12px_rgba(56,189,248,0.12)] ${
+                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-sky-300 dark:border-slate-800 z-50 flex h-14 items-center justify-around px-2 transition-transform duration-300 ease-out select-none shadow-sm ${
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
