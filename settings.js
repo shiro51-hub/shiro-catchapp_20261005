@@ -753,17 +753,35 @@ function SettingsPanel({
                                 </div>
                             </div>
 
-                            {/* Gemini AI設定 */}
-                            <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-3">
+                            {/* Gemini AI設定（モデル選択が上・APIキーが下 / 文字拡大版） */}
+                            <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 
-                                {/* APIキー */}
+                                {/* 1. モデル選択（上段に配置 ＆ フォントサイズ拡大） */}
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">APIキー</label>
+                                    <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
+                                        <span>🤖 使用AIモデル（日報・多角分析用）</span>
+                                    </label>
+                                    <select
+                                        className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
+                                        value={selectedAiModel}
+                                        onChange={handleModelChange}
+                                    >
+                                        {aiModelOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* 2. APIキー（下段に配置） */}
+                                <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
+                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">🔑 Gemini APIキー</label>
                                     <div className="relative">
                                         <input
                                             type={showKey ? "text" : "password"}
-                                            className="w-full border border-gray-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2 font-mono text-sm bg-white dark:bg-slate-800"
+                                            className="w-full border border-gray-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2 font-mono text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
                                             placeholder="AIzaSy..."
                                             value={tempKey}
                                             onChange={(e) => setTempKey(e.target.value)}
@@ -771,18 +789,20 @@ function SettingsPanel({
                                         <button
                                             type="button"
                                             onClick={() => setShowKey(!showKey)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-bold select-none"
                                         >
                                             {showKey ? '隠す' : '表示'}
                                         </button>
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={handleSaveApiKey}
-                                        className="w-full mt-2 bg-sky-600 hover:bg-sky-700 text-white font-black py-2 rounded-lg text-sm shadow-sm transition-all active:scale-95"
+                                        className="w-full mt-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-sm shadow-sm transition-all active:scale-95"
                                     >
                                         APIキーを保存
                                     </button>
                                 </div>
+                            </div>
 
                                 {/* モデル選択 */}
                                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
