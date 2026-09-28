@@ -324,7 +324,7 @@ const AiResultModal = ({
 };
 
 // ==========================================
-// AI多角分析カルテモーダル（文字拡大＆右上コピー削除版）
+// AI多角分析カルテモーダル（ヘッダー拡大＆回転スピナー版）
 // ==========================================
 const AiAnalysisModal = ({
     showAnalysisModal,
@@ -332,7 +332,8 @@ const AiAnalysisModal = ({
     currentAnalysis,
     handleRunAiAnalysis,
     copyAnalysisText,
-    handleCopyPattern
+    handleCopyPattern,
+    isAnalyzing // 分析中判定を受け取る
 }) => {
     if (!showAnalysisModal || !currentAnalysis) return null;
 
@@ -341,31 +342,39 @@ const AiAnalysisModal = ({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAnalysisModal(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
                 
-                {/* ヘッダー：右上の「コピー」ボタンを削除し、再分析と閉じるボタンをゆったり配置 */}
+                {/* ヘッダー：タイトル・再分析ボタン・閉じるボタンをひと回り拡大 */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-emerald-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
-                    <h2 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center">
-                        <IconChart className="w-5 h-5 mr-1.5" /> AI釣況・多角分析カルテ
+                    <h2 className="text-lg sm:text-xl font-black text-emerald-800 dark:text-emerald-400 flex items-center">
+                        <IconChart className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 shrink-0" /> AI釣況・多角分析カルテ
                     </h2>
-                    <div className="flex items-center gap-2">
-                        {/* 🔄 再分析ボタンはそのまま維持 */}
+                    <div className="flex items-center gap-2.5">
+                        {/* 🔄 再分析ボタン（ひと回り拡大 ＆ 分析中は回転スピナー） */}
                         <button 
                             type="button"
+                            disabled={isAnalyzing}
                             onClick={() => {
+                                if (isAnalyzing) return;
                                 if (window.confirm(`${currentAnalysis.record.date} の釣況・メモデータをもとに再分析を実行しますか？`)) {
                                     handleRunAiAnalysis(currentAnalysis.record);
                                 }
                             }} 
-                            className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all flex items-center gap-1 select-none"
+                            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black shadow-sm transition-all flex items-center gap-1.5 select-none ${
+                                isAnalyzing
+                                    ? 'bg-emerald-700/80 text-white cursor-wait opacity-90'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95'
+                            }`}
                         >
-                            <span>🔄</span>
-                            <span>再分析</span>
+                            <span className={`text-sm leading-none inline-block ${isAnalyzing ? 'animate-spin' : ''}`}>
+                                🔄
+                            </span>
+                            <span>{isAnalyzing ? '再分析中...' : '再分析'}</span>
                         </button>
 
-                        {/* 閉じるボタン */}
+                        {/* ✕ 閉じるボタン（ひと回り拡大：w-9 h-9、text-base） */}
                         <button 
                             type="button"
                             onClick={() => setShowAnalysisModal(false)} 
-                            className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 hover:bg-gray-100 text-sm active:scale-95 transition-all"
+                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 hover:bg-gray-100 text-base active:scale-95 transition-all"
                             aria-label="閉じる"
                         >
                             ✕
@@ -373,7 +382,7 @@ const AiAnalysisModal = ({
                     </div>
                 </div>
 
-                {/* メインエリア：各項目の文章フォントサイズを拡大 */}
+                {/* メインエリア */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
                     
                     {/* 1. 難易度判定 */}
@@ -386,7 +395,7 @@ const AiAnalysisModal = ({
                         </p>
                     </div>
 
-                    {/* 2. トータル状況日報（総括文章 約400字：枠内の個別コピーボタンは維持） */}
+                    {/* 2. トータル状況日報 */}
                     {currentAnalysis.data.totalSummaryReport && (
                         <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 dark:from-slate-800 dark:via-slate-800/90 dark:to-amber-950/20 p-4 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 shadow-md space-y-2.5">
                             <div className="flex justify-between items-center border-b border-amber-200/80 dark:border-slate-700 pb-2">
@@ -401,7 +410,6 @@ const AiAnalysisModal = ({
                                     日報をコピー
                                 </button>
                             </div>
-                            {/* フォントサイズを拡大（text-xs ➔ text-sm sm:text-base） */}
                             <p className="text-sm sm:text-base leading-relaxed text-gray-800 dark:text-slate-200 font-medium whitespace-pre-wrap pt-0.5 select-text">
                                 {currentAnalysis.data.totalSummaryReport}
                             </p>
