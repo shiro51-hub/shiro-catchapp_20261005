@@ -2041,7 +2041,7 @@ function App() {
                 )}
             </div>
 
-          {/* 下部ナビゲーションバー（底面密着版） */}
+          {/* 下部ナビゲーションバー（底面密着 ＆ 全タブ等サイズ版） */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
@@ -2049,7 +2049,7 @@ function App() {
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
-                {/* 1. 釣り座タブ（錨：ディープマリンブルー） */}
+                {/* 1. 釣り座タブ */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
                         activeTab === 'input' 
@@ -2072,7 +2072,7 @@ function App() {
                     </span>
                 </button>
 
-                {/* 2. カウンタータブ（中央：スカイブルーバッジ） */}
+                {/* 2. カウンタータブ */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all relative ${
                         activeTab === 'counter' 
@@ -2102,7 +2102,7 @@ function App() {
                     </span>
                 </button>
 
-               {/* 3. 釣果・履歴タブ（カレンダー：サンセットアンバー） */}
+                {/* 3. 釣果・履歴タブ（フォントサイズを他と同じ text-xs に統一） */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
@@ -2116,7 +2116,7 @@ function App() {
                             ? 'text-amber-500 dark:text-amber-400' 
                             : 'text-amber-600/70 dark:text-amber-400/60'
                     }`} />
-                    <span className={`text-[11px] sm:text-xs tracking-tight ${
+                    <span className={`text-xs tracking-tight ${
                         activeTab === 'history' 
                             ? 'font-black text-slate-900 dark:text-white' 
                             : 'font-bold text-slate-700 dark:text-slate-300'
