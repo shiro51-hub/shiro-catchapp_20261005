@@ -323,7 +323,9 @@ const AiResultModal = ({
     );
 };
 
-// AI多角分析カルテモーダル
+// ==========================================
+// AI多角分析カルテモーダル（文字拡大＆右上コピー削除版）
+// ==========================================
 const AiAnalysisModal = ({
     showAnalysisModal,
     setShowAnalysisModal,
@@ -338,75 +340,114 @@ const AiAnalysisModal = ({
         <div className="fixed inset-0 z-[120] flex flex-col justify-end items-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAnalysisModal(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
+                
+                {/* ヘッダー：右上の「コピー」ボタンを削除し、再分析と閉じるボタンをゆったり配置 */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-emerald-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
                     <h2 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center">
                         <IconChart className="w-5 h-5 mr-1.5" /> AI釣況・多角分析カルテ
                     </h2>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                        {/* 🔄 再分析ボタンはそのまま維持 */}
                         <button 
+                            type="button"
                             onClick={() => {
                                 if (window.confirm(`${currentAnalysis.record.date} の釣況・メモデータをもとに再分析を実行しますか？`)) {
                                     handleRunAiAnalysis(currentAnalysis.record);
                                 }
                             }} 
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm active:bg-emerald-800 flex items-center gap-1"
+                            className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-all flex items-center gap-1 select-none"
                         >
-                            <span>🔄</span> 再分析
+                            <span>🔄</span>
+                            <span>再分析</span>
                         </button>
-                        <button onClick={copyAnalysisText} className="bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-lg text-xs font-bold border shadow-sm">コピー</button>
-                        <button onClick={() => setShowAnalysisModal(false)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm">✕</button>
+
+                        {/* 閉じるボタン */}
+                        <button 
+                            type="button"
+                            onClick={() => setShowAnalysisModal(false)} 
+                            className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 hover:bg-gray-100 text-sm active:scale-95 transition-all"
+                            aria-label="閉じる"
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
+
+                {/* メインエリア：各項目の文章フォントサイズを拡大 */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
-                    {/* 難易度判定 */}
-                    <div className="bg-emerald-100/60 dark:bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                        <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 block mb-1">📊 釣況難易度判定</span>
-                        <p className="font-black text-sm text-gray-800 dark:text-slate-100">{currentAnalysis.data.difficulty}</p>
+                    
+                    {/* 1. 難易度判定 */}
+                    <div className="bg-emerald-100/60 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <span className="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-300 block mb-1">
+                            📊 釣況難易度判定
+                        </span>
+                        <p className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100 leading-snug">
+                            {currentAnalysis.data.difficulty}
+                        </p>
                     </div>
 
-                    {/* トータル状況日報（総括文章 約400字） */}
+                    {/* 2. トータル状況日報（総括文章 約400字：枠内の個別コピーボタンは維持） */}
                     {currentAnalysis.data.totalSummaryReport && (
-                        <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 dark:from-slate-800 dark:via-slate-800/90 dark:to-amber-950/20 p-4 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 shadow-md space-y-2">
+                        <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 dark:from-slate-800 dark:via-slate-800/90 dark:to-amber-950/20 p-4 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 shadow-md space-y-2.5">
                             <div className="flex justify-between items-center border-b border-amber-200/80 dark:border-slate-700 pb-2">
-                                <h4 className="text-xs font-black text-amber-800 dark:text-amber-400 flex items-center">
+                                <h4 className="text-xs sm:text-sm font-black text-amber-800 dark:text-amber-400 flex items-center">
                                     <IconStar className="w-4 h-4 mr-1 text-amber-500" /> 📝 トータル状況日報（公式HP・日報用 400字要約）
                                 </h4>
                                 <button 
+                                    type="button"
                                     onClick={() => handleCopyPattern(currentAnalysis.data.totalSummaryReport)} 
-                                    className="bg-amber-100 dark:bg-slate-700 hover:bg-amber-200 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-lg text-xs font-black shrink-0 border border-amber-300 dark:border-slate-600 active:scale-95 transition-all"
+                                    className="bg-amber-100 dark:bg-slate-700 hover:bg-amber-200 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-lg text-xs font-black shrink-0 border border-amber-300 dark:border-slate-600 active:scale-95 transition-all shadow-2xs"
                                 >
                                     日報をコピー
                                 </button>
                             </div>
-                            <p className="text-xs sm:text-sm leading-relaxed text-gray-800 dark:text-slate-200 font-medium whitespace-pre-wrap pt-0.5">
+                            {/* フォントサイズを拡大（text-xs ➔ text-sm sm:text-base） */}
+                            <p className="text-sm sm:text-base leading-relaxed text-gray-800 dark:text-slate-200 font-medium whitespace-pre-wrap pt-0.5 select-text">
                                 {currentAnalysis.data.totalSummaryReport}
                             </p>
                         </div>
                     )}
 
-                    {/* 釣り座・座席バイアス分析 */}
-                    <div className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
-                        <h4 className="text-xs font-black text-sky-600 dark:text-sky-400 flex items-center">🧭 釣り座・座席バイアス分析</h4>
-                        <p className="text-xs leading-relaxed text-gray-700 dark:text-slate-300 font-medium">{currentAnalysis.data.seatBiasAnalysis}</p>
+                    {/* 3. 釣り座・座席バイアス分析 */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
+                        <h4 className="text-xs sm:text-sm font-black text-sky-600 dark:text-sky-400 flex items-center">
+                            🧭 釣り座・座席バイアス分析
+                        </h4>
+                        <p className="text-sm sm:text-base leading-relaxed text-gray-700 dark:text-slate-300 font-medium select-text">
+                            {currentAnalysis.data.seatBiasAnalysis}
+                        </p>
                     </div>
 
-                    {/* 海況・潮時相関分析 */}
-                    <div className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
-                        <h4 className="text-xs font-black text-blue-600 dark:text-blue-400 flex items-center">🌊 海況・潮時相関分析</h4>
-                        <p className="text-xs leading-relaxed text-gray-700 dark:text-slate-300 font-medium">{currentAnalysis.data.environmentCorrelation}</p>
+                    {/* 4. 海況・潮時相関分析 */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
+                        <h4 className="text-xs sm:text-sm font-black text-blue-600 dark:text-blue-400 flex items-center">
+                            🌊 海況・潮時相関分析
+                        </h4>
+                        <p className="text-sm sm:text-base leading-relaxed text-gray-700 dark:text-slate-300 font-medium select-text">
+                            {currentAnalysis.data.environmentCorrelation}
+                        </p>
                     </div>
 
-                    {/* 竿頭の勝因・テクニカル考察 */}
-                    <div className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
-                        <h4 className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center">👑 竿頭の勝因・テクニカル考察</h4>
-                        <p className="text-xs leading-relaxed text-gray-700 dark:text-slate-300 font-medium">{currentAnalysis.data.topAnglerFactors}</p>
+                    {/* 5. 竿頭の勝因・テクニカル考察 */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
+                        <h4 className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 flex items-center">
+                            👑 竿頭の勝因・テクニカル考察
+                        </h4>
+                        <p className="text-sm sm:text-base leading-relaxed text-gray-700 dark:text-slate-300 font-medium select-text">
+                            {currentAnalysis.data.topAnglerFactors}
+                        </p>
                     </div>
 
-                    {/* 次回攻略へのアドバイス＆船長カルテ */}
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-800 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-1.5">
-                        <h4 className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center">💡 次回攻略へのアドバイス＆船長カルテ</h4>
-                        <p className="text-xs leading-relaxed text-gray-800 dark:text-slate-200 font-bold">{currentAnalysis.data.captainAdvice}</p>
+                    {/* 6. 次回攻略へのアドバイス＆船長カルテ */}
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-1.5">
+                        <h4 className="text-xs sm:text-sm font-black text-emerald-700 dark:text-emerald-400 flex items-center">
+                            💡 次回攻略へのアドバイス＆船長カルテ
+                        </h4>
+                        <p className="text-sm sm:text-base leading-relaxed text-gray-800 dark:text-slate-200 font-bold select-text">
+                            {currentAnalysis.data.captainAdvice}
+                        </p>
                     </div>
+
                 </div>
             </div>
         </div>
