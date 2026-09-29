@@ -1140,50 +1140,43 @@ function App() {
         const prompt = promptLines.join('\n');
 
         try {
-            const definedModels = [
-                'gemini-2.5-flash',
-                'gemini-2.5-pro',
-                'gemini-3.5-flash',
-                'gemini-3.6-flash',
-                'gemini-3.7-flash',
+            // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列
+            try {
+            const modelsDescOrder = [
                 'gemini-3.8-flash',
-                'gemini-3.1-pro'
+                'gemini-3.7-flash',
+                'gemini-3.6-flash',
+                'gemini-3.5-flash',
+                'gemini-3.1-pro',
+                'gemini-2.5-pro',
+                'gemini-2.5-flash'
             ];
-
-            const currentSelected = typeof getActualModelName === 'function' 
-                ? getActualModelName(selectedAiModel) 
-                : 'gemini-2.5-flash';
-
-            const modelQueue = Array.from(new Set([currentSelected, ...definedModels]));
+            const currentSelected = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-3.8-flash';
+            const startIndex = modelsDescOrder.indexOf(currentSelected);
+            const modelQueue = startIndex !== -1 ? modelsDescOrder.slice(startIndex) : [currentSelected, ...modelsDescOrder];
 
             let text = null;
-            let lastError = null;
+            let lastErr = null;
 
             for (let i = 0; i < modelQueue.length; i++) {
                 const targetModel = modelQueue[i];
-
                 try {
                     if (i > 0) {
-                        setToastMessage(`混雑のため【${targetModel}】に切り替えて再試行中...`);
+                        setToastMessage(`混雑のため旧世代【${targetModel}】で日報を再生成中...`);
                         await new Promise(resolve => setTimeout(resolve, 1500));
                     }
-
-                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
-                    if (text) {
-                        break;
-                    }
+                    text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, targetModel, false);
+                    if (text) break;
                 } catch (err) {
-                    lastError = err;
-                    const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
-                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted')) {
-                        continue;
-                    }
+                    lastErr = err;
+                    const m = (err && err.message) ? err.message.toLowerCase() : '';
+                    if (m.includes('503') || m.includes('429') || m.includes('overloaded')) continue;
                     throw err;
                 }
             }
 
-            if (!text) {
-                throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
+            if (!text) throw lastErr || new Error('日報テキストを取得できませんでした');
+            // （以降の処理はそのまま）
             }
 
             let cleanJson = text.trim();
@@ -1227,7 +1220,6 @@ function App() {
         } finally {
             setAnalyzingRecordId(null);
         }
-    };
 
     const copyAnalysisText = () => {
         if (!currentAnalysis?.data) return;
