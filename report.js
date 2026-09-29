@@ -278,26 +278,57 @@ const AiInputWizardModal = ({
     );
 };
 
-// AI日報表示モーダル
+// ==========================================
+// AI日報表示モーダル（ヘッダー再作成ボタン設置版）
+// ==========================================
 const AiResultModal = ({
     showAiModal,
     setShowAiModal,
     aiGeneratedPatterns,
     aiGeneratedText,
-    handleCopyPattern
+    handleCopyPattern,
+    onRecreate // 再作成ハンドラーを受け取る
 }) => {
     if (!showAiModal) return null;
 
     return (
         <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAiModal(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal">
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
+                
+                {/* ヘッダー：AIカルテ同様に右上の✕の隣にエメラルドグリーンの再作成ボタンを配置 */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-amber-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
                     <h2 className="text-lg font-black text-amber-800 dark:text-amber-400 flex items-center">
                         <IconStar className="w-5 h-5 mr-1 text-amber-500" /> AI釣行日報
                     </h2>
-                    <button onClick={() => setShowAiModal(false)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full shadow-sm text-gray-500 font-bold">✕</button>
+                    
+                    <div className="flex items-center gap-2">
+                        {/* 🔄 再作成ボタン（AIカルテと同一規格のエメラルドグリーン） */}
+                        {typeof onRecreate === 'function' && (
+                            <button
+                                type="button"
+                                onClick={onRecreate}
+                                className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black shadow-sm transition-all flex items-center gap-1.5 select-none bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95"
+                                title="条件を変更して再度作成する"
+                            >
+                                <span className="text-sm leading-none">🔄</span>
+                                <span>再作成</span>
+                            </button>
+                        )}
+
+                        {/* ✕ 閉じるボタン */}
+                        <button 
+                            type="button"
+                            onClick={() => setShowAiModal(false)} 
+                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 hover:bg-gray-100 text-base active:scale-95 transition-all select-none"
+                            aria-label="閉じる"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
+
+                {/* 本文エリア */}
                 <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900/50 space-y-4 font-medium">
                     {aiGeneratedPatterns.length > 0 ? (
                         aiGeneratedPatterns.map((pattern, idx) => (
@@ -313,6 +344,8 @@ const AiResultModal = ({
                         <textarea readOnly className="w-full h-full min-h-[500px] bg-transparent resize-none focus:outline-none text-gray-800 dark:text-slate-200 leading-relaxed font-medium" value={aiGeneratedText}></textarea>
                     )}
                 </div>
+
+                {/* モーダルフッター */}
                 <div className="p-3 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0">
                     <button onClick={() => setShowAiModal(false)} className="w-full bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-black py-3 rounded-xl shadow-sm flex justify-center items-center text-base">
                         閉じる
@@ -322,7 +355,6 @@ const AiResultModal = ({
         </div>
     );
 };
-
 // ==========================================
 // AI多角分析カルテモーダル（ヘッダー拡大＆回転スピナー版）
 // ==========================================
