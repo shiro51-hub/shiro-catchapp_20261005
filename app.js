@@ -1136,7 +1136,6 @@ function App() {
             "必ず以下のJSON形式のみで出力してください（Markdownコードブロックや余計な文字は一切不要）。",
             '{"difficulty":"難易度評価","totalSummaryReport":"トータル状況日報","seatBiasAnalysis":"座席分析","environmentCorrelation":"海況相関","topAnglerFactors":"竿頭勝因","captainAdvice":"船長カルテ"}'
         ];
-        const prompt = promptLines.join('\n');
 
         const prompt = promptLines.join('\n');
 
