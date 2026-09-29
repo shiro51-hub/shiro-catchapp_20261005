@@ -1141,7 +1141,7 @@ function App() {
 
         try {
             // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列
-            try {
+            
             const modelsDescOrder = [
                 'gemini-3.8-flash',
                 'gemini-3.7-flash',
