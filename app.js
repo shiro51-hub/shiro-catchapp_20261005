@@ -314,15 +314,14 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長釣行メモモーダル（2行グリッド ＆ 履歴学習型・入力枠拡大版）
-// ※名前の重複を完全に回避するため MemoModalWithTags と命名
+// 船長釣行メモモーダル（Keep型・完全自動保存版）
 // ==========================================
-function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, copyMemoToClipboard, saveMemo }) {
+function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
     const [selectedCat, setSelectedCat] = React.useState('activity');
 
-    // タグの利用履歴（直近使った順の配列をローカルストレージから取得）
+    // タグの利用履歴
     const [recentTags, setRecentTags] = React.useState(() => {
         try {
             const saved = localStorage.getItem('yamashitamaru_memo_recent_tags');
@@ -369,25 +368,33 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     ];
 
-    // タグをタップした時の処理（メモ追記 ＋ 履歴学習）
+    // 入力やタグ追加のたびに即時自動保存
+    const updateTextAndSave = (nextText) => {
+        setTempMemo(nextText);
+        if (typeof onAutoSave === 'function') {
+            onAutoSave(nextText);
+        }
+    };
+
+    // タグをタップした時の処理
     const handleTagClick = (tagText) => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
         const stamp = `【${hh}:${mm}】 `;
 
-        setTempMemo((prev) => {
-            const text = prev || '';
-            if (!text.trim()) {
-                return `${stamp}${tagText} `;
-            }
-            if (text.endsWith('\n')) {
-                return `${text}${stamp}${tagText} `;
-            }
-            return `${text} ${tagText} `;
-        });
+        const currentText = tempMemo || '';
+        let nextText = '';
+        if (!currentText.trim()) {
+            nextText = `${stamp}${tagText} `;
+        } else if (currentText.endsWith('\n')) {
+            nextText = `${currentText}${stamp}${tagText} `;
+        } else {
+            nextText = `${currentText} ${tagText} `;
+        }
 
-        // 履歴学習：タップしたタグを先頭へ移動して保存（最大20件記憶）
+        updateTextAndSave(nextText);
+
         setRecentTags((prev) => {
             const updated = [tagText, ...prev.filter(t => t !== tagText)].slice(0, 20);
             try {
@@ -401,7 +408,14 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 選択されたカテゴリのタグ一覧を取得し、履歴にあるタグを手前（左側）へ優先ソート
+    // ✕ボタンで閉じる処理（確実に保存して閉じる）
+    const handleClose = () => {
+        if (typeof onAutoSave === 'function') {
+            onAutoSave(tempMemo);
+        }
+        setShowMemoModal(false);
+    };
+
     const currentCategoryObj = defaultCategories.find(c => c.id === selectedCat) || defaultCategories[0];
     const sortedTags = React.useMemo(() => {
         const baseTags = currentCategoryObj.tags;
@@ -417,22 +431,26 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                 
                 {/* モーダルヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                         <span className="text-base">📝</span>
-                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">船長釣行メモ</h3>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">釣行メモ</h3>
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span>✓</span> 自動保存中
+                        </span>
                     </div>
+                    {/* ✕ボタン */}
                     <button 
                         type="button"
-                        onClick={() => setShowMemoModal(false)}
-                        className="w-7 h-7 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-gray-600 dark:text-slate-300 font-bold hover:bg-gray-300 text-xs active:scale-95"
+                        onClick={handleClose}
+                        className="w-8 h-8 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 font-black text-sm active:scale-90 transition-transform shadow-xs"
+                        aria-label="保存して閉じる"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* クイック入力タグエリア（コンパクト化して高さを抑え、入力欄の広さを確保） */}
+                {/* クイック入力タグエリア */}
                 <div className="bg-slate-50 dark:bg-slate-900/40 p-2 border-b border-gray-200 dark:border-slate-700/80 flex flex-col gap-1.5 shrink-0">
-                    {/* 1段目：カテゴリタブ切り替え */}
                     <div className="flex gap-1 overflow-x-auto no-scrollbar">
                         {defaultCategories.map((cat) => (
                             <button
@@ -450,7 +468,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         ))}
                     </div>
 
-                    {/* 2段目：2行グリッド（直近タップしたタグが★付きで先頭に自動ソート） */}
                     <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-1 overflow-x-auto no-scrollbar py-0.5">
                         {sortedTags.map((tag, idx) => {
                             const isRecentlyUsed = recentTags.includes(tag);
@@ -474,42 +491,23 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                 </div>
 
                 {/* 本文入力欄 */}
-                <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-slate-800">
                     <textarea
                         className="w-full flex-1 p-3 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none leading-relaxed"
-                        placeholder="タグをタップすると時刻付きで自動入力されます。キーボードのマイクで音声入力も併用できます..."
+                        placeholder="タグをタップすると時刻付きで自動入力されます。入力内容は即座に自動保存されます..."
                         value={tempMemo}
-                        onChange={(e) => setTempMemo(e.target.value)}
+                        onChange={(e) => updateTextAndSave(e.target.value)}
                     />
-                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-1 flex items-center justify-between px-1 shrink-0">
+                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-2 flex items-center justify-between px-1 shrink-0">
                         <span>🎙️ 音声入力はキーボードのマイクをご利用ください</span>
                         <span>{tempMemo ? `${tempMemo.length}文字` : '0文字'}</span>
                     </div>
-                </div>
-
-                {/* モーダルフッター */}
-                <div className="p-2.5 bg-gray-50/80 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 flex gap-2 shrink-0">
-                    <button
-                        type="button"
-                        onClick={copyMemoToClipboard}
-                        className="px-4 py-2.5 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-black rounded-xl text-xs active:scale-95 transition-all"
-                    >
-                        コピー
-                    </button>
-                    <button
-                        type="button"
-                        onClick={saveMemo}
-                        className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all"
-                    >
-                        保存する
-                    </button>
                 </div>
 
             </div>
         </div>
     );
 }
-
 // ==========================================
 // アプリ本体
 // ==========================================
@@ -871,22 +869,22 @@ function App() {
         setShowMemoModal(true);
     };
 
-    const saveMemo = () => {
+    // メモの即時自動保存処理
+    const handleAutoSaveMemo = (newText) => {
+        const textToSave = typeof newText === 'string' ? newText : tempMemo;
         if (activeMemoRecordId) {
             setRecords(prev => {
-                const next = prev.map(r => r.id === activeMemoRecordId ? { ...r, detailedMemo: tempMemo } : r);
+                const next = prev.map(r => r.id === activeMemoRecordId ? { ...r, detailedMemo: textToSave } : r);
                 localStorage.setItem('fishing_records', JSON.stringify(next));
                 return next;
             });
             const target = records.find(r => r.id === activeMemoRecordId);
             if (target && target.date === date) {
-                setDetailedMemo(tempMemo);
+                setDetailedMemo(textToSave);
             }
         } else {
-            setDetailedMemo(tempMemo);
+            setDetailedMemo(textToSave);
         }
-        setShowMemoModal(false);
-        setToastMessage('メモを保存しました');
     };
 
     const copyMemoToClipboard = () => {
@@ -1339,14 +1337,13 @@ function App() {
                 selectedAiModel={selectedAiModel} setSelectedAiModel={setSelectedAiModel}
             />
 
-            {/* 詳細メモモーダル（定義名 MemoModalWithTags と完全に一致） */}
+            {/* 釣行メモモーダル（Keep型自動保存版） */}
             <MemoModalWithTags
                 showMemoModal={showMemoModal}
                 setShowMemoModal={setShowMemoModal}
                 tempMemo={tempMemo}
                 setTempMemo={setTempMemo}
-                copyMemoToClipboard={copyMemoToClipboard}
-                saveMemo={saveMemo}
+                onAutoSave={handleAutoSaveMemo}
             />
 
             {/* AI日報入力ウィザードモーダル */}
