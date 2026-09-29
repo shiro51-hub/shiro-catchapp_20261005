@@ -1138,6 +1138,8 @@ function App() {
         ];
         const prompt = promptLines.join('\n');
 
+        const prompt = promptLines.join('\n');
+
         try {
             const definedModels = [
                 'gemini-2.5-flash',
@@ -1148,56 +1150,83 @@ function App() {
                 'gemini-3.8-flash',
                 'gemini-3.1-pro'
             ];
-            const currentSelected = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-2.5-flash';
+
+            const currentSelected = typeof getActualModelName === 'function' 
+                ? getActualModelName(selectedAiModel) 
+                : 'gemini-2.5-flash';
+
             const modelQueue = Array.from(new Set([currentSelected, ...definedModels]));
 
             let text = null;
-            let lastErr = null;
+            let lastError = null;
 
             for (let i = 0; i < modelQueue.length; i++) {
                 const targetModel = modelQueue[i];
+
                 try {
                     if (i > 0) {
-                        setToastMessage(`混雑のため【${targetModel}】で日報を再生成中...`);
+                        setToastMessage(`混雑のため【${targetModel}】に切り替えて再試行中...`);
                         await new Promise(resolve => setTimeout(resolve, 1500));
                     }
-                    text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, targetModel, false);
-                    if (text) break;
+
+                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
+                    if (text) {
+                        break;
+                    }
                 } catch (err) {
-                    lastErr = err;
-                    const m = (err && err.message) ? err.message.toLowerCase() : '';
-                    if (m.includes('503') || m.includes('429') || m.includes('overloaded')) continue;
+                    lastError = err;
+                    const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
+                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted')) {
+                        continue;
+                    }
                     throw err;
                 }
             }
 
-            if (!text) throw lastErr || new Error('日報テキストを取得できませんでした');
-
-            if (text) {
-                const parts = text.split(/■■■/);
-                const patterns = [];
-                for (let i = 1; i < parts.length; i += 2) {
-                    const title = parts[i]?.trim();
-                    const content = parts[i+1]?.trim();
-                    if (title && content) patterns.push({ title, content });
-                }
-                const newPatterns = patterns.length > 0 ? patterns : [];
-                const newText = patterns.length === 0 ? text : '';
-
-                setAiGeneratedPatterns(newPatterns);
-                setAiGeneratedText(newText);
-                setRecords(prev => {
-                    const updated = prev.map(r => r.id === record.id ? { ...r, aiGeneratedPatterns: newPatterns, aiGeneratedText: newText } : r);
-                    localStorage.setItem('fishing_records', JSON.stringify(updated));
-                    return updated;
-                });
-                setShowAiModal(true);
+            if (!text) {
+                throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
             }
+
+            let cleanJson = text.trim();
+            if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replace(/^```json/, '');
+            if (cleanJson.startsWith('```')) cleanJson = cleanJson.replace(/^```/, '');
+            if (cleanJson.endsWith('```')) cleanJson = cleanJson.replace(/```$/, '');
+            
+            const start = cleanJson.indexOf('{');
+            const end = cleanJson.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                cleanJson = cleanJson.substring(start, end + 1);
+            }
+
+            const analysisData = JSON.parse(cleanJson);
+
+            setCurrentAnalysis({ record, data: analysisData });
+            setRecords(prev => {
+                const next = prev.map(r => r.id === record.id ? { ...r, aiAnalysisResult: analysisData } : r);
+                localStorage.setItem('fishing_records', JSON.stringify(next));
+                return next;
+            });
+            setShowAnalysisModal(true);
         } catch (e) {
-            console.error("AI Generation Error:", e);
-            setToastMessage(`文章の生成に失敗しました: ${e.message}`);
+            console.error("AI Analysis Error:", e);
+            const msg = (e && e.message) ? e.message.toLowerCase() : '';
+            let userFriendlyMsg = '通信エラーが発生しました。電波状況をご確認ください。';
+
+            if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout')) {
+                userFriendlyMsg = '電波が不安定か、通信が切断されました。\n電波の届きやすい場所で再度お試しください。';
+            } else if (msg.includes('api_key') || msg.includes('invalid') || msg.includes('403') || msg.includes('permission')) {
+                userFriendlyMsg = 'APIキーが無効、または認証に失敗しました。\n設定画面で正しいGemini APIキーをご確認ください。';
+            } else if (msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('429')) {
+                userFriendlyMsg = 'AIの利用上限に達したか、アクセスが集中しています。\n1〜2分ほど時間を置いてから再度お試しください。';
+            } else if (msg.includes('json') || msg.includes('parse')) {
+                userFriendlyMsg = 'AIからの回答の読み込みに失敗しました。\nもう一度「分析」ボタンを押してください。';
+            } else if (msg.includes('500') || msg.includes('503') || msg.includes('service unavailable')) {
+                userFriendlyMsg = 'AIサーバーが混雑またはメンテナンス中です。\nしばらく待ってからお試しください。';
+            }
+
+            setToastMessage(`【AI分析エラー】\n${userFriendlyMsg}`);
         } finally {
-            setGeneratingAiId(null);
+            setAnalyzingRecordId(null);
         }
 
     const copyAnalysisText = () => {
