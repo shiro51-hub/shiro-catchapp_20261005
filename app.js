@@ -996,9 +996,24 @@ function App() {
                 });
                 setShowAiModal(true);
             }
-        } catch (e) {
+       } catch (e) {
             console.error("AI Generation Error:", e);
-            setToastMessage(`文章の生成に失敗しました: ${e.message}`);
+            const msg = (e && e.message) ? e.message.toLowerCase() : '';
+            let userFriendlyMsg = '';
+
+            if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
+                userFriendlyMsg = '【AIアクセス制限（429）】\n短時間にリクエストが集中したため一時的に制限されています。\n約3〜5秒ほど待ってから再度お試しください。';
+            } else if (msg.includes('503') || msg.includes('overloaded') || msg.includes('service unavailable')) {
+                userFriendlyMsg = '【AIサーバー混雑（503）】\nGoogleのAIサーバーが混雑しています。\n少し時間を置いてから再度お試しください。';
+            } else if (msg.includes('403') || msg.includes('api_key') || msg.includes('invalid')) {
+                userFriendlyMsg = '【APIキー認証エラー（403）】\nAPIキーが無効または未設定です。\n設定画面でキーをご確認ください。';
+            } else if (msg.includes('network') || msg.includes('failed to fetch')) {
+                userFriendlyMsg = '【通信エラー】\n電波が途切れたか不安定です。\n電波状況の良い場所でお試しください。';
+            } else {
+                userFriendlyMsg = '【日報生成エラー】\nAIサーバーからの応答を取得できませんでした。\n通信環境を確認して再度お試しください。';
+            }
+
+            setToastMessage(userFriendlyMsg);
         } finally {
             setGeneratingAiId(null);
         }
@@ -1284,7 +1299,7 @@ function App() {
                         >
                             ✕
                         </button>
-                        <div className="text-sm sm:text-base font-bold leading-relaxed whitespace-pre-wrap pt-2 px-1 text-slate-100">
+                        <div className="text-sm sm:text-base font-bold leading-relaxed whitespace-pre-wrap break-words break-all pt-2 px-1 text-slate-100 max-h-[60vh] overflow-y-auto no-scrollbar">
                             {toastMessage}
                         </div>
                         <button 
