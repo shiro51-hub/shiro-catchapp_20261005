@@ -314,7 +314,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長釣行メモモーダル（Keep型・完全自動保存版）
+// 船長釣行メモモーダル（手動時刻スタンプ ＆ 自動保存版）
 // ==========================================
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
@@ -376,8 +376,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // タグをタップした時の処理
-    const handleTagClick = (tagText) => {
+    // 【新機能】現在時刻ボタンを押した時だけ時刻を挿入
+    const insertCurrentTime = () => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
@@ -386,9 +386,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         const currentText = tempMemo || '';
         let nextText = '';
         if (!currentText.trim()) {
-            nextText = `${stamp}${tagText} `;
+            nextText = stamp;
         } else if (currentText.endsWith('\n')) {
-            nextText = `${currentText}${stamp}${tagText} `;
+            nextText = `${currentText}${stamp}`;
+        } else {
+            nextText = `${currentText}\n${stamp}`;
+        }
+
+        updateTextAndSave(nextText);
+
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    };
+
+    // タグをタップした時の処理（時刻は勝手に入らず、単語のみ追加）
+    const handleTagClick = (tagText) => {
+        const currentText = tempMemo || '';
+        let nextText = '';
+        if (!currentText.trim()) {
+            nextText = `${tagText} `;
+        } else if (currentText.endsWith(' ') || currentText.endsWith('\n')) {
+            nextText = `${currentText}${tagText} `;
         } else {
             nextText = `${currentText} ${tagText} `;
         }
@@ -429,7 +448,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[720px] overflow-hidden">
                 
-                {/* モーダルヘッダー（シンプル版） */}
+                {/* モーダルヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-base">📝</span>
@@ -448,13 +467,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                 {/* クイック入力タグエリア */}
                 <div className="bg-slate-50 dark:bg-slate-900/40 p-2 border-b border-gray-200 dark:border-slate-700/80 flex flex-col gap-1.5 shrink-0">
-                    <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                    
+                    {/* カテゴリ選択バー ＋ 左端に【⏰ 時刻】ボタン */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        {/* 独立した時刻入力ボタン */}
+                        <button
+                            type="button"
+                            onClick={insertCurrentTime}
+                            className="px-2.5 py-1 rounded-md text-xs font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs whitespace-nowrap flex items-center gap-1 shrink-0 transition-transform"
+                            title="現在時刻をメモに挿入"
+                        >
+                            <span>⏰</span>
+                            <span>時刻</span>
+                        </button>
+
+                        <div className="w-[1px] h-5 bg-slate-300 dark:bg-slate-700 shrink-0 mx-0.5" />
+
                         {defaultCategories.map((cat) => (
                             <button
                                 key={cat.id}
                                 type="button"
                                 onClick={() => setSelectedCat(cat.id)}
-                                className={`px-2 py-1 rounded-md text-[11px] sm:text-xs font-black whitespace-nowrap transition-all ${
+                                className={`px-2 py-1 rounded-md text-[11px] sm:text-xs font-black whitespace-nowrap transition-all shrink-0 ${
                                     selectedCat === cat.id
                                         ? 'bg-sky-600 text-white shadow-sm'
                                         : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700'
@@ -465,6 +499,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         ))}
                     </div>
 
+                    {/* タグ一覧（2行スクロール） */}
                     <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-1 overflow-x-auto no-scrollbar py-0.5">
                         {sortedTags.map((tag, idx) => {
                             const isRecentlyUsed = recentTags.includes(tag);
@@ -491,7 +526,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                 <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-slate-800">
                     <textarea
                         className="w-full flex-1 p-3 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none leading-relaxed"
-                        placeholder="タグをタップすると時刻付きで自動入力されます。入力内容は即座に自動保存されます..."
+                        placeholder="メモを入力してください。「⏰ 時刻」を押すと現在時刻が挿入されます..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
                     />
@@ -1133,7 +1168,7 @@ function App() {
 
         const promptLines = [
             "あなたはベテラン遊漁船「山下丸」の船長兼データアナリストです。以下の釣果・海況・座席メモデータを精査し、客観的カルテおよび公式HP/日報用のトータル文章を作成してください。",
-            "【当日のデータ】",
+            "【本日の釣行データ】",
             "- 上限釣果（トップ）: " + record.max + " " + unit,
             "- 竿頭: " + (record.topAnglerName || 'なし') + " (" + record.max + " " + unit + ")",
             "- ポイント: " + (record.point || '久里浜沖周辺'),
@@ -1156,6 +1191,7 @@ function App() {
             "    ・文章の大半（全体の6〜7割）は【釣りの内容】に充て、魚の活性、アタリの出方、時間帯ごとの変化、メモにある船上の様子などを具体的に厚く描写してください。",
             "    ・終盤で竿頭の釣果（トップ数のみ）と工夫・ヒットパターンを紹介し、前向きに締めくくる。",
             "    【厳守ルール】",
+            "    ・日付・時制の表現：「当日」「この日」「当日は」という表現は一切禁止とします。必ず「本日」「今日」を用いて、下船直後のリアルタイムな報告として記述してください。",
             "    ・海水温度（水温）および水深は文章中に記載しないでください。",
             "    ・書き出し：「〇〇沖へと出船しました」「〇〇沖からスタートしました」等の表現で簡潔に始める。",
             "    ・釣果については「上限の釣果（トップの数）」のみを記載し、「〇〜〇」といった範囲表示や「平均釣果」は絶対に記載しないでください。",
