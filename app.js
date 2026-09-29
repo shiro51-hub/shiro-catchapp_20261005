@@ -1141,7 +1141,6 @@ function App() {
 
         try {
             // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列
-            
             const modelsDescOrder = [
                 'gemini-3.8-flash',
                 'gemini-3.7-flash',
@@ -1151,32 +1150,52 @@ function App() {
                 'gemini-2.5-pro',
                 'gemini-2.5-flash'
             ];
-            const currentSelected = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-3.8-flash';
+
+            // 現在選択中のモデルIDを取得
+            const currentSelected = typeof getActualModelName === 'function' 
+                ? getActualModelName(selectedAiModel) 
+                : 'gemini-3.8-flash';
+
+            // 選択中のモデルの位置を特定
             const startIndex = modelsDescOrder.indexOf(currentSelected);
-            const modelQueue = startIndex !== -1 ? modelsDescOrder.slice(startIndex) : [currentSelected, ...modelsDescOrder];
+
+            let modelQueue = [];
+            if (startIndex !== -1) {
+                // 選択中モデルを起点にして、それ以降（1つずつ古いモデル）を順番に並べる
+                modelQueue = modelsDescOrder.slice(startIndex);
+            } else {
+                modelQueue = [currentSelected, ...modelsDescOrder];
+            }
 
             let text = null;
-            let lastErr = null;
+            let lastError = null;
 
+            // 選択モデルから1つずつ古いモデルへと切り替えながら試行
             for (let i = 0; i < modelQueue.length; i++) {
                 const targetModel = modelQueue[i];
+
                 try {
                     if (i > 0) {
-                        setToastMessage(`混雑のため旧世代【${targetModel}】で日報を再生成中...`);
+                        setToastMessage(`サーバー混雑のため旧世代【${targetModel}】へ切り替えて再試行中...`);
                         await new Promise(resolve => setTimeout(resolve, 1500));
                     }
-                    text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, targetModel, false);
-                    if (text) break;
+
+                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
+                    if (text) {
+                        break;
+                    }
                 } catch (err) {
-                    lastErr = err;
-                    const m = (err && err.message) ? err.message.toLowerCase() : '';
-                    if (m.includes('503') || m.includes('429') || m.includes('overloaded')) continue;
+                    lastError = err;
+                    const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
+                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted')) {
+                        continue;
+                    }
                     throw err;
                 }
             }
 
-            if (!text) throw lastErr || new Error('日報テキストを取得できませんでした');
-            // （以降の処理はそのまま）
+            if (!text) {
+                throw lastError || new Error('利用可能なすべての世代のモデルで応答が得られませんでした');
             }
 
             let cleanJson = text.trim();
@@ -1220,6 +1239,7 @@ function App() {
         } finally {
             setAnalyzingRecordId(null);
         }
+    };
 
     const copyAnalysisText = () => {
         if (!currentAnalysis?.data) return;
