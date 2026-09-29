@@ -314,22 +314,20 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長メモモーダル（例文全廃・スマートタイムスタンプ＆履歴アシスト版）
+// 船長メモモーダル（フォント・ボタン拡大版）
 // ==========================================
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
     const textareaRef = React.useRef(null);
-    // 1手前に戻す（アンドゥ）用の履歴ステート
     const [history, setHistory] = React.useState([tempMemo || '']);
 
-    // 入力のたびに即時自動保存 ＆ アンドゥ履歴の蓄積
     const updateTextAndSave = (nextText, recordHistory = true) => {
         setTempMemo(nextText);
         if (recordHistory) {
             setHistory(prev => {
                 const next = [...prev, nextText];
-                return next.slice(-20); // 直近20手まで保持
+                return next.slice(-20);
             });
         }
         if (typeof onAutoSave === 'function') {
@@ -337,7 +335,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // ⏰ 現在時刻スタンプを挿入（自動改行＋入力欄フォーカス復帰）
     const insertCurrentTime = () => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
@@ -360,7 +357,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
             navigator.vibrate(20);
         }
 
-        // 挿入後すぐに入力欄へフォーカスを当てて音声入力・入力を継続可能にする
         setTimeout(() => {
             if (textareaRef.current) {
                 textareaRef.current.focus();
@@ -369,11 +365,10 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }, 50);
     };
 
-    // ↶ 1つ前の状態に戻す
     const handleUndo = () => {
         if (history.length > 1) {
             const nextHistory = [...history];
-            nextHistory.pop(); // 現在の状態を捨てる
+            nextHistory.pop();
             const prevText = nextHistory[nextHistory.length - 1];
             setHistory(nextHistory);
             updateTextAndSave(prevText, false);
@@ -383,15 +378,13 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 🗑️ 全消去（誤操作防止の安全確認付き）
     const handleClearAll = () => {
         if (!tempMemo || !tempMemo.trim()) return;
-        if (window.confirm('メモの内容をすべて消去しますか？\n（直後なら「元に戻す」で復元できます）')) {
+        if (window.confirm('メモの内容をすべて消去しますか？\n（直後なら「戻す」で復元できます）')) {
             updateTextAndSave('');
         }
     };
 
-    // ✕ボタンで閉じる処理
     const handleClose = () => {
         if (typeof onAutoSave === 'function') {
             onAutoSave(tempMemo);
@@ -403,57 +396,58 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[720px] overflow-hidden">
                 
-                {/* モーダルヘッダー */}
+                {/* モーダルヘッダー（領域そのまま・文字と✕を一回り拡大） */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
-                        <span className="text-base">📝</span>
-                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">船長メモ</h3>
+                        <span className="text-xl leading-none">📝</span>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ</h3>
                     </div>
-                    {/* ✕ボタン */}
+                    {/* ✕ボタン（領域はw-8 h-8のまま、文字をtext-base〜lgへ拡大） */}
                     <button 
                         type="button"
                         onClick={handleClose}
-                        className="w-8 h-8 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 font-black text-sm active:scale-90 transition-transform shadow-xs"
+                        className="w-8 h-8 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-800 dark:text-slate-100 font-black text-base sm:text-lg active:scale-90 transition-transform shadow-xs"
                         aria-label="保存して閉じる"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* ツールバー：⏰ 時刻ボタン ＋ ↶ 元に戻す ＆ 🗑️ クリア */}
+                {/* ツールバー（高さそのまま・各要素のフォントとアイコンを一回り拡大） */}
                 <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none">
+                    {/* 現在時刻を挿入（文字サイズ・アイコンを一回り拡大） */}
                     <button
                         type="button"
                         onClick={insertCurrentTime}
-                        className="py-1.5 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all"
+                        className="py-1.5 px-3 rounded-xl text-sm sm:text-base font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all"
                     >
-                        <span className="text-sm leading-none">⏰</span>
+                        <span className="text-base sm:text-lg leading-none">⏰</span>
                         <span>現在時刻を挿入</span>
                     </button>
 
                     <div className="flex items-center gap-1.5">
-                        {/* 1手戻すボタン */}
+                        {/* 1手戻すボタン（文字を一回り拡大） */}
                         <button
                             type="button"
                             onClick={handleUndo}
                             disabled={history.length <= 1}
-                            className={`py-1 px-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-0.5 ${
+                            className={`py-1 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center gap-1 ${
                                 history.length > 1
-                                    ? 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 shadow-2xs active:scale-90'
+                                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 shadow-2xs active:scale-90'
                                     : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
                             }`}
                             title="1手前に戻す"
                         >
-                            <span>↶</span>
+                            <span className="text-base leading-none">↶</span>
                             <span>戻す</span>
                         </button>
 
-                        {/* 全消去ボタン */}
+                        {/* 全消去ボタン（ゴミ箱アイコンを一回り拡大） */}
                         <button
                             type="button"
                             onClick={handleClearAll}
                             disabled={!tempMemo || !tempMemo.trim()}
-                            className={`py-1 px-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-0.5 ${
+                            className={`py-1 px-2 rounded-lg text-base border transition-all flex items-center justify-center ${
                                 tempMemo && tempMemo.trim()
                                     ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 shadow-2xs active:scale-90 hover:bg-rose-50'
                                     : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
@@ -465,7 +459,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                         <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
-                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 tabular-nums">
+                        {/* 文字数（text-xs ➔ text-sm へ拡大） */}
+                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tabular-nums">
                             {tempMemo ? `${tempMemo.length}字` : '0字'}
                         </span>
                     </div>
@@ -481,7 +476,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         onChange={(e) => updateTextAndSave(e.target.value)}
                         autoFocus
                     />
-                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-2 text-right px-1 shrink-0">
+                    <div className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-right px-1 shrink-0">
                         🎙️ 音声入力はキーボードのマイクをご利用ください
                     </div>
                 </div>
