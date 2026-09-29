@@ -1947,48 +1947,39 @@ function App() {
                                                     <span>作成中</span>
                                                     <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
-                                            ) : (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
-                                                <button
-                                                    type="button"
-                                                    title="タップで日報表示、長押しで再作成"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setTargetRecordForAi(r);
-                                                        setAiGeneratedPatterns(r.aiGeneratedPatterns || []);
-                                                        setAiGeneratedText(r.aiGeneratedText || '');
-                                                        setShowAiModal(true);
-                                                    }}
-                                                    onPointerDown={(e) => {
-                                                        e.stopPropagation();
-                                                        if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
-                                                        aiTimerRef.current = setTimeout(() => {
-                                                            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                                                                navigator.vibrate([30, 50, 30]);
-                                                            }
-                                                            setTargetRecordForAi(r);
-                                                            setAiInputData({
-                                                                condition: r.aiInput_condition || '',
-                                                                scenery: r.aiInput_scenery || '',
-                                                                tide: r.aiInput_tide || '',
-                                                                activity: r.aiInput_activity || '',
-                                                                episode: r.aiInput_episode || '',
-                                                                size: r.aiInput_size || '',
-                                                                topAngler: r.aiInput_topAngler || '',
-                                                                patterns: r.aiInput_patterns || [1]
-                                                            });
-                                                            setAiCurrentStep(0);
-                                                            setShowAiInputModal(true);
-                                                        }, 750);
-                                                    }}
-                                                    onPointerUp={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                    onPointerLeave={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                    onPointerCancel={() => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); }}
-                                                    className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
-                                                >
-                                                    <IconStar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                                    <span>日報済</span>
-                                                </button>
-                                            ) : (
+                                            {/* モーダルヘッダー */}
+                <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-base sm:text-lg">📄</span>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">
+                            AI釣果日報
+                        </h3>
+                    </div>
+
+                    {/* 右側ボタングループ：[再作成] ＋ [✕] */}
+                    <div className="flex items-center gap-1.5">
+                        {/* AIカルテと同等のエメラルドグリーン「再作成」ボタン */}
+                        <button
+                            type="button"
+                            onClick={onRecreate}
+                            className="py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-xs flex items-center gap-1 transition-all select-none"
+                            title="条件を変更して再度作成する"
+                        >
+                            <span className="text-xs sm:text-sm leading-none">🔄</span>
+                            <span>再作成</span>
+                        </button>
+
+                        {/* ✕ボタン */}
+                        <button
+                            type="button"
+                            onClick={() => setShowAiModal(false)}
+                            className="w-8 h-8 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-800 dark:text-slate-100 font-black text-base active:scale-90 transition-transform shadow-xs select-none"
+                            aria-label="閉じる"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
