@@ -1151,93 +1151,81 @@ function App() {
                 'gemini-2.5-flash'
             ];
 
-            // 現在選択中のモデルIDを取得
+            // 現在選択中のモデルを取得
             const currentSelected = typeof getActualModelName === 'function' 
                 ? getActualModelName(selectedAiModel) 
                 : 'gemini-3.8-flash';
 
-            // 選択中のモデルの位置を特定
             const startIndex = modelsDescOrder.indexOf(currentSelected);
-
-            let modelQueue = [];
-            if (startIndex !== -1) {
-                // 選択中モデルを起点にして、それ以降（1つずつ古いモデル）を順番に並べる
-                modelQueue = modelsDescOrder.slice(startIndex);
-            } else {
-                modelQueue = [currentSelected, ...modelsDescOrder];
-            }
+            const modelQueue = startIndex !== -1 
+                ? modelsDescOrder.slice(startIndex) 
+                : [currentSelected, ...modelsDescOrder];
 
             let text = null;
-            let lastError = null;
+            let lastErr = null;
 
-            // 選択モデルから1つずつ古いモデルへと切り替えながら試行
+            // 429制限・503過負荷時に古い世代へ自動シフトしながら再試行
             for (let i = 0; i < modelQueue.length; i++) {
                 const targetModel = modelQueue[i];
 
                 try {
                     if (i > 0) {
-                        setToastMessage(`サーバー混雑のため旧世代【${targetModel}】へ切り替えて再試行中...`);
-                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        setToastMessage(`混雑・制限のため【${targetModel}】へ切り替えて日報を生成中...`);
+                        // 429の解除待機（2.5秒）を挟んでから再送
+                        await new Promise(resolve => setTimeout(resolve, 2500));
                     }
 
-                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
+                    text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, targetModel, false);
                     if (text) {
-                        break;
+                        break; // 成功したらループ終了
                     }
                 } catch (err) {
-                    lastError = err;
+                    lastErr = err;
                     const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
-                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted')) {
+                    // 429(上限/過密) または 503(混雑) の場合は次の古いモデルへ切り替えて継続
+                    if (errMsg.includes('429') || errMsg.includes('503') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('overloaded')) {
                         continue;
                     }
+                    // キーの有効期限切れなど致命的なエラーは即スロー
                     throw err;
                 }
             }
 
             if (!text) {
-                throw lastError || new Error('利用可能なすべての世代のモデルで応答が得られませんでした');
+                throw lastErr || new Error('利用可能なすべての世代のモデルで応答を取得できませんでした');
             }
 
-            let cleanJson = text.trim();
-            if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replace(/^```json/, '');
-            if (cleanJson.startsWith('```')) cleanJson = cleanJson.replace(/^```/, '');
-            if (cleanJson.endsWith('```')) cleanJson = cleanJson.replace(/```$/, '');
-            
-            const start = cleanJson.indexOf('{');
-            const end = cleanJson.lastIndexOf('}');
-            if (start !== -1 && end !== -1) {
-                cleanJson = cleanJson.substring(start, end + 1);
+            const parts = text.split(/■■■/);
+            const patterns = [];
+            for (let i = 1; i < parts.length; i += 2) {
+                const title = parts[i]?.trim();
+                const content = parts[i+1]?.trim();
+                if (title && content) patterns.push({ title, content });
             }
+            const newPatterns = patterns.length > 0 ? patterns : [];
+            const newText = patterns.length === 0 ? text : '';
 
-            const analysisData = JSON.parse(cleanJson);
-
-            setCurrentAnalysis({ record, data: analysisData });
+            setAiGeneratedPatterns(newPatterns);
+            setAiGeneratedText(newText);
             setRecords(prev => {
-                const next = prev.map(r => r.id === record.id ? { ...r, aiAnalysisResult: analysisData } : r);
-                localStorage.setItem('fishing_records', JSON.stringify(next));
-                return next;
+                const updated = prev.map(r => r.id === record.id ? { ...r, aiGeneratedPatterns: newPatterns, aiGeneratedText: newText } : r);
+                localStorage.setItem('fishing_records', JSON.stringify(updated));
+                return updated;
             });
-            setShowAnalysisModal(true);
+            setShowAiModal(true);
         } catch (e) {
-            console.error("AI Analysis Error:", e);
+            console.error("AI Generation Error:", e);
             const msg = (e && e.message) ? e.message.toLowerCase() : '';
-            let userFriendlyMsg = '通信エラーが発生しました。電波状況をご確認ください。';
+            let userFriendlyMsg = `文章の生成に失敗しました: ${e.message}`;
 
-            if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout')) {
-                userFriendlyMsg = '電波が不安定か、通信が切断されました。\n電波の届きやすい場所で再度お試しください。';
-            } else if (msg.includes('api_key') || msg.includes('invalid') || msg.includes('403') || msg.includes('permission')) {
-                userFriendlyMsg = 'APIキーが無効、または認証に失敗しました。\n設定画面で正しいGemini APIキーをご確認ください。';
-            } else if (msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('429')) {
-                userFriendlyMsg = 'AIの利用上限に達したか、アクセスが集中しています。\n1〜2分ほど時間を置いてから再度お試しください。';
-            } else if (msg.includes('json') || msg.includes('parse')) {
-                userFriendlyMsg = 'AIからの回答の読み込みに失敗しました。\nもう一度「分析」ボタンを押してください。';
-            } else if (msg.includes('500') || msg.includes('503') || msg.includes('service unavailable')) {
-                userFriendlyMsg = 'AIサーバーが混雑またはメンテナンス中です。\nしばらく待ってからお試しください。';
+            if (msg.includes('429') || msg.includes('quota')) {
+                userFriendlyMsg = 'AIリクエストが一時的に混み合っています。約3〜5秒ほど置いてから再度お試しください。';
+            } else if (msg.includes('503') || msg.includes('overloaded')) {
+                userFriendlyMsg = 'AIサーバーが一時的に過負荷状態です。少し時間をおいてお試しください。';
             }
-
-            setToastMessage(`【AI分析エラー】\n${userFriendlyMsg}`);
+            setToastMessage(userFriendlyMsg);
         } finally {
-            setAnalyzingRecordId(null);
+            setGeneratingAiId(null);
         }
     };
 
