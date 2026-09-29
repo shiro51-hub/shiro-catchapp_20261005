@@ -877,27 +877,16 @@ function App() {
         setToastMessage('釣果記録を削除しました（画面表示もリセットされました）');
     };
 
-    // 自動タイムスタンプ付きでメモを開く
-    const openMemoModal = (record) => {
-        const targetId = record ? record.id : null;
-        setActiveMemoRecordId(targetId);
-
-        const currentText = record ? (record.detailedMemo || '') : (detailedMemo || '');
-        
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        const stamp = `【${hh}:${mm}】 `;
-
-        let initialText = currentText;
-        if (!initialText || initialText.trim() === '') {
-            initialText = stamp;
+    const openMemoModal = (record = null) => {
+        if (record) {
+            setActiveMemoRecordId(record.id);
+            // 余計な時刻スタンプを一切足さず、保存されているメモをそのままセット（無ければ空文字）
+            setTempMemo(record.detailedMemo || '');
         } else {
-            const spacer = initialText.endsWith('\n') ? '' : '\n';
-            initialText = `${initialText}${spacer}${stamp}`;
+            setActiveMemoRecordId(null);
+            // カウンター画面からの場合も、既存のメモをそのままセット（無ければ空文字）
+            setTempMemo(detailedMemo || '');
         }
-
-        setTempMemo(initialText);
         setShowMemoModal(true);
     };
 
