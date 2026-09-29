@@ -314,12 +314,18 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長釣行メモモーダル（手動時刻スタンプ ＆ 自動保存版）
+// 船長メモモーダル（アイデア1：アコーディオン型・横スクロール撤廃版）
 // ==========================================
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
-    const [selectedCat, setSelectedCat] = React.useState('activity');
+    // 開いているアコーディオンの管理（出番の多い「activity（釣況・活性）」は最初から開く）
+    const [openSections, setOpenSections] = React.useState({
+        activity: true,
+        tide: false,
+        point: false,
+        weather: false
+    });
 
     // タグの利用履歴
     const [recentTags, setRecentTags] = React.useState(() => {
@@ -331,7 +337,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     });
 
-    const defaultCategories = [
+    const categories = [
         {
             id: 'activity',
             name: '🔥 釣況・活性',
@@ -368,6 +374,14 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     ];
 
+    // アコーディオンの開閉切り替え
+    const toggleSection = (id) => {
+        setOpenSections(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
+
     // 入力やタグ追加のたびに即時自動保存
     const updateTextAndSave = (nextText) => {
         setTempMemo(nextText);
@@ -376,7 +390,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 【新機能】現在時刻ボタンを押した時だけ時刻を挿入
+    // 【独立】現在時刻ボタンを押した時だけ時刻を挿入
     const insertCurrentTime = () => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
@@ -427,7 +441,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // ✕ボタンで閉じる処理（確実に保存して閉じる）
+    // ✕ボタンで閉じる処理
     const handleClose = () => {
         if (typeof onAutoSave === 'function') {
             onAutoSave(tempMemo);
@@ -435,18 +449,9 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         setShowMemoModal(false);
     };
 
-    const currentCategoryObj = defaultCategories.find(c => c.id === selectedCat) || defaultCategories[0];
-    const sortedTags = React.useMemo(() => {
-        const baseTags = currentCategoryObj.tags;
-        const inRecent = baseTags.filter(t => recentTags.includes(t))
-                                 .sort((a, b) => recentTags.indexOf(a) - recentTags.indexOf(b));
-        const notInRecent = baseTags.filter(t => !recentTags.includes(t));
-        return [...inRecent, ...notInRecent];
-    }, [currentCategoryObj, recentTags]);
-
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[720px] overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[92dvh] max-h-[760px] overflow-hidden">
                 
                 {/* モーダルヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
@@ -454,7 +459,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         <span className="text-base">📝</span>
                         <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">船長メモ</h3>
                     </div>
-                    {/* ✕ボタン（タップで即時保存して閉じる） */}
+                    {/* ✕ボタン */}
                     <button 
                         type="button"
                         onClick={handleClose}
@@ -465,68 +470,69 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* クイック入力タグエリア */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 p-2 border-b border-gray-200 dark:border-slate-700/80 flex flex-col gap-1.5 shrink-0">
-                    
-                    {/* カテゴリ選択バー ＋ 左端に【⏰ 時刻】ボタン */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                        {/* 独立した時刻入力ボタン */}
-                        <button
-                            type="button"
-                            onClick={insertCurrentTime}
-                            className="px-2.5 py-1 rounded-md text-xs font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs whitespace-nowrap flex items-center gap-1 shrink-0 transition-transform"
-                            title="現在時刻をメモに挿入"
-                        >
-                            <span>⏰</span>
-                            <span>時刻</span>
-                        </button>
-
-                        <div className="w-[1px] h-5 bg-slate-300 dark:bg-slate-700 shrink-0 mx-0.5" />
-
-                        {defaultCategories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                type="button"
-                                onClick={() => setSelectedCat(cat.id)}
-                                className={`px-2 py-1 rounded-md text-[11px] sm:text-xs font-black whitespace-nowrap transition-all shrink-0 ${
-                                    selectedCat === cat.id
-                                        ? 'bg-sky-600 text-white shadow-sm'
-                                        : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700'
-                                }`}
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* タグ一覧（2行スクロール） */}
-                    <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-1 overflow-x-auto no-scrollbar py-0.5">
-                        {sortedTags.map((tag, idx) => {
-                            const isRecentlyUsed = recentTags.includes(tag);
-                            return (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => handleTagClick(tag)}
-                                    className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap border shadow-xs active:scale-95 transition-all shrink-0 flex items-center gap-0.5 ${
-                                        isRecentlyUsed
-                                            ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 active:bg-sky-200'
-                                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 active:bg-gray-100 dark:active:bg-slate-700'
-                                    }`}
-                                >
-                                    {isRecentlyUsed ? <span className="text-[10px] text-amber-500 font-black">★</span> : <span className="text-gray-400">＋</span>}
-                                    <span>{tag}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                {/* 上部操作エリア：大きく押しやすい【⏰ 現在時刻】ボタン */}
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 shrink-0">
+                    <button
+                        type="button"
+                        onClick={insertCurrentTime}
+                        className="w-full py-2 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-98 text-white shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                        <span className="text-base leading-none">⏰</span>
+                        <span>現在時刻スタンプを挿入</span>
+                    </button>
                 </div>
 
-                {/* 本文入力欄 */}
+                {/* 例文アコーディオンエリア（縦スクロールで完結・最大高さ制限） */}
+                <div className="max-h-[38vh] overflow-y-auto p-2 bg-slate-100/70 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-700 shrink-0 flex flex-col gap-1.5">
+                    {categories.map((cat) => {
+                        const isOpen = !!openSections[cat.id];
+                        return (
+                            <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
+                                {/* アコーディオン見出しヘッダー */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection(cat.id)}
+                                    className="w-full px-3 py-2 flex items-center justify-between text-left font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
+                                >
+                                    <span>{cat.name}</span>
+                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                                        {isOpen ? '▲ 閉じる' : '▼ 開く'}
+                                    </span>
+                                </button>
+
+                                {/* 展開時の単語ボタン一覧（画面幅に合わせて自然に折り返し） */}
+                                {isOpen && (
+                                    <div className="p-2 pt-1 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1.5">
+                                        {cat.tags.map((tag, idx) => {
+                                            const isRecentlyUsed = recentTags.includes(tag);
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => handleTagClick(tag)}
+                                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border shadow-2xs active:scale-95 transition-all flex items-center gap-1 ${
+                                                        isRecentlyUsed
+                                                            ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 active:bg-sky-200'
+                                                            : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    {isRecentlyUsed ? <span className="text-[10px] text-amber-500">★</span> : <span className="text-slate-400">＋</span>}
+                                                    <span>{tag}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* 本文入力欄（メモ本体） */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-slate-800">
                     <textarea
                         className="w-full flex-1 p-3 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none leading-relaxed"
-                        placeholder="メモを入力してください。「⏰ 時刻」を押すと現在時刻が挿入されます..."
+                        placeholder="メモを入力してください。上の単語を押すと文末に追加されます..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
                     />
