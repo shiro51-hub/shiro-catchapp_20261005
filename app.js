@@ -314,75 +314,12 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長メモモーダル（アイデア1：アコーディオン型・横スクロール撤廃版）
+// 船長メモモーダル（例文全廃・タイムスタンプ特化＆広大入力版）
 // ==========================================
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
-    // 開いているアコーディオンの管理（出番の多い「activity（釣況・活性）」は最初から開く）
-    const [openSections, setOpenSections] = React.useState({
-        activity: true,
-        tide: false,
-        point: false,
-        weather: false
-    });
-
-    // タグの利用履歴
-    const [recentTags, setRecentTags] = React.useState(() => {
-        try {
-            const saved = localStorage.getItem('yamashitamaru_memo_recent_tags');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
-
-    const categories = [
-        {
-            id: 'activity',
-            name: '🔥 釣況・活性',
-            tags: [
-                '時合い突入', 'バタバタヒット', '連チャン', '入れ食いタイム', '食い渋り', '当たり遠い',
-                '良型交じり', '型揃い', '良型', '尺ハギ', '小型・ワッペン多数', 'ベタ底',
-                'バラシあり', 'バラシ多い', '外道多数', 'エサ取り活発', 'エサそのまま'
-            ]
-        },
-        {
-            id: 'tide',
-            name: '🌊 潮況',
-            tags: [
-                '潮あまり流れず', '上層の潮速い', '二枚潮気味', '潮止まり', 'トロトロ流れる', '潮効いてきた',
-                '澄み潮', '適度な濁り', '濁り強い', '水温低下気味', '水温上昇'
-            ]
-        },
-        {
-            id: 'point',
-            name: '⚓ ポイント',
-            tags: [
-                'ポイント移動', '深場へ移動', '浅場へ移動',
-                '根周り集中', 'ツブ根攻め', '砂地フラット',
-                'ベタ底', 'ちょい宙'
-            ]
-        },
-        {
-            id: 'weather',
-            name: '🌤️ 天候',
-            tags: [
-                '北東風強まる', '南西風強まる', '南西風そよそよ', 'ウネリあり', '波立ってきた',
-                '晴天', '曇天', '雨', '雪'
-            ]
-        }
-    ];
-
-    // アコーディオンの開閉切り替え
-    const toggleSection = (id) => {
-        setOpenSections(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
-    };
-
-    // 入力やタグ追加のたびに即時自動保存
+    // 入力のたびに即時自動保存
     const updateTextAndSave = (nextText) => {
         setTempMemo(nextText);
         if (typeof onAutoSave === 'function') {
@@ -390,7 +327,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 【独立】現在時刻ボタンを押した時だけ時刻を挿入
+    // ⏰ 現在時刻スタンプを挿入
     const insertCurrentTime = () => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
@@ -414,33 +351,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // タグをタップした時の処理（時刻は勝手に入らず、単語のみ追加）
-    const handleTagClick = (tagText) => {
-        const currentText = tempMemo || '';
-        let nextText = '';
-        if (!currentText.trim()) {
-            nextText = `${tagText} `;
-        } else if (currentText.endsWith(' ') || currentText.endsWith('\n')) {
-            nextText = `${currentText}${tagText} `;
-        } else {
-            nextText = `${currentText} ${tagText} `;
-        }
-
-        updateTextAndSave(nextText);
-
-        setRecentTags((prev) => {
-            const updated = [tagText, ...prev.filter(t => t !== tagText)].slice(0, 20);
-            try {
-                localStorage.setItem('yamashitamaru_memo_recent_tags', JSON.stringify(updated));
-            } catch (e) {}
-            return updated;
-        });
-
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(15);
-        }
-    };
-
     // ✕ボタンで閉じる処理
     const handleClose = () => {
         if (typeof onAutoSave === 'function') {
@@ -451,7 +361,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[92dvh] max-h-[760px] overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[700px] overflow-hidden">
                 
                 {/* モーダルヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
@@ -470,75 +380,32 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* 上部操作エリア：大きく押しやすい【⏰ 現在時刻】ボタン */}
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 shrink-0">
+                {/* ツールバー：⏰ 現在時刻ボタンのみ配置 */}
+                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0">
                     <button
                         type="button"
                         onClick={insertCurrentTime}
-                        className="w-full py-2 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-98 text-white shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                        className="py-1.5 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all select-none"
                     >
-                        <span className="text-base leading-none">⏰</span>
-                        <span>現在時刻スタンプを挿入</span>
+                        <span className="text-sm leading-none">⏰</span>
+                        <span>現在時刻を挿入</span>
                     </button>
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                        {tempMemo ? `${tempMemo.length}文字` : '0文字'}
+                    </span>
                 </div>
 
-                {/* 例文アコーディオンエリア（縦スクロールで完結・最大高さ制限） */}
-                <div className="max-h-[38vh] overflow-y-auto p-2 bg-slate-100/70 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-700 shrink-0 flex flex-col gap-1.5">
-                    {categories.map((cat) => {
-                        const isOpen = !!openSections[cat.id];
-                        return (
-                            <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
-                                {/* アコーディオン見出しヘッダー */}
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection(cat.id)}
-                                    className="w-full px-3 py-2 flex items-center justify-between text-left font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
-                                >
-                                    <span>{cat.name}</span>
-                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
-                                        {isOpen ? '▲ 閉じる' : '▼ 開く'}
-                                    </span>
-                                </button>
-
-                                {/* 展開時の単語ボタン一覧（画面幅に合わせて自然に折り返し） */}
-                                {isOpen && (
-                                    <div className="p-2 pt-1 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1.5">
-                                        {cat.tags.map((tag, idx) => {
-                                            const isRecentlyUsed = recentTags.includes(tag);
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    type="button"
-                                                    onClick={() => handleTagClick(tag)}
-                                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border shadow-2xs active:scale-95 transition-all flex items-center gap-1 ${
-                                                        isRecentlyUsed
-                                                            ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 active:bg-sky-200'
-                                                            : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700'
-                                                    }`}
-                                                >
-                                                    {isRecentlyUsed ? <span className="text-[10px] text-amber-500">★</span> : <span className="text-slate-400">＋</span>}
-                                                    <span>{tag}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* 本文入力欄（メモ本体） */}
-                <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-slate-800">
+                {/* 広大な本文入力欄（画面の縦幅を最大限に活用） */}
+                <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
-                        className="w-full flex-1 p-3 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none leading-relaxed"
-                        placeholder="メモを入力してください。上の単語を押すと文末に追加されます..."
+                        className="w-full flex-1 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
+                        placeholder="メモを入力してください。「現在時刻を挿入」を押すと【HH:MM】が入ります。入力内容は自動保存されます..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
+                        autoFocus
                     />
-                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-2 flex items-center justify-between px-1 shrink-0">
-                        <span>🎙️ 音声入力はキーボードのマイクをご利用ください</span>
-                        <span>{tempMemo ? `${tempMemo.length}文字` : '0文字'}</span>
+                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-2 text-right px-1 shrink-0">
+                        🎙️ 音声入力はキーボードのマイクをご利用ください
                     </div>
                 </div>
 
