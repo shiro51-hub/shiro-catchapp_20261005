@@ -314,20 +314,30 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 // ==========================================
-// 船長メモモーダル（例文全廃・タイムスタンプ特化＆広大入力版）
+// 船長メモモーダル（例文全廃・スマートタイムスタンプ＆履歴アシスト版）
 // ==========================================
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
-    // 入力のたびに即時自動保存
-    const updateTextAndSave = (nextText) => {
+    const textareaRef = React.useRef(null);
+    // 1手前に戻す（アンドゥ）用の履歴ステート
+    const [history, setHistory] = React.useState([tempMemo || '']);
+
+    // 入力のたびに即時自動保存 ＆ アンドゥ履歴の蓄積
+    const updateTextAndSave = (nextText, recordHistory = true) => {
         setTempMemo(nextText);
+        if (recordHistory) {
+            setHistory(prev => {
+                const next = [...prev, nextText];
+                return next.slice(-20); // 直近20手まで保持
+            });
+        }
         if (typeof onAutoSave === 'function') {
             onAutoSave(nextText);
         }
     };
 
-    // ⏰ 現在時刻スタンプを挿入
+    // ⏰ 現在時刻スタンプを挿入（自動改行＋入力欄フォーカス復帰）
     const insertCurrentTime = () => {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
@@ -349,6 +359,36 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate(20);
         }
+
+        // 挿入後すぐに入力欄へフォーカスを当てて音声入力・入力を継続可能にする
+        setTimeout(() => {
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+                textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+            }
+        }, 50);
+    };
+
+    // ↶ 1つ前の状態に戻す
+    const handleUndo = () => {
+        if (history.length > 1) {
+            const nextHistory = [...history];
+            nextHistory.pop(); // 現在の状態を捨てる
+            const prevText = nextHistory[nextHistory.length - 1];
+            setHistory(nextHistory);
+            updateTextAndSave(prevText, false);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(10);
+            }
+        }
+    };
+
+    // 🗑️ 全消去（誤操作防止の安全確認付き）
+    const handleClearAll = () => {
+        if (!tempMemo || !tempMemo.trim()) return;
+        if (window.confirm('メモの内容をすべて消去しますか？\n（直後なら「元に戻す」で復元できます）')) {
+            updateTextAndSave('');
+        }
     };
 
     // ✕ボタンで閉じる処理
@@ -361,7 +401,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[700px] overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[720px] overflow-hidden">
                 
                 {/* モーダルヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
@@ -380,24 +420,61 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* ツールバー：⏰ 現在時刻ボタンのみ配置 */}
-                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0">
+                {/* ツールバー：⏰ 時刻ボタン ＋ ↶ 元に戻す ＆ 🗑️ クリア */}
+                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none">
                     <button
                         type="button"
                         onClick={insertCurrentTime}
-                        className="py-1.5 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all select-none"
+                        className="py-1.5 px-3 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all"
                     >
                         <span className="text-sm leading-none">⏰</span>
                         <span>現在時刻を挿入</span>
                     </button>
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
-                        {tempMemo ? `${tempMemo.length}文字` : '0文字'}
-                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                        {/* 1手戻すボタン */}
+                        <button
+                            type="button"
+                            onClick={handleUndo}
+                            disabled={history.length <= 1}
+                            className={`py-1 px-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-0.5 ${
+                                history.length > 1
+                                    ? 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 shadow-2xs active:scale-90'
+                                    : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
+                            }`}
+                            title="1手前に戻す"
+                        >
+                            <span>↶</span>
+                            <span>戻す</span>
+                        </button>
+
+                        {/* 全消去ボタン */}
+                        <button
+                            type="button"
+                            onClick={handleClearAll}
+                            disabled={!tempMemo || !tempMemo.trim()}
+                            className={`py-1 px-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-0.5 ${
+                                tempMemo && tempMemo.trim()
+                                    ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 shadow-2xs active:scale-90 hover:bg-rose-50'
+                                    : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
+                            }`}
+                            title="メモをすべて消去"
+                        >
+                            <span>🗑️</span>
+                        </button>
+
+                        <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-0.5" />
+
+                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 tabular-nums">
+                            {tempMemo ? `${tempMemo.length}字` : '0字'}
+                        </span>
+                    </div>
                 </div>
 
-                {/* 広大な本文入力欄（画面の縦幅を最大限に活用） */}
+                {/* 広大な本文入力欄 */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
+                        ref={textareaRef}
                         className="w-full flex-1 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
                         placeholder="メモを入力してください。「現在時刻を挿入」を押すと【HH:MM】が入ります。入力内容は自動保存されます..."
                         value={tempMemo}
