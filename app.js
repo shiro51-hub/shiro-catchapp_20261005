@@ -1078,7 +1078,7 @@ function App() {
     };
 
     // ==========================================
-    // AI分析 実行処理
+    // AI分析 実行処理（モデル順次切り替え＆エラー自動回避版）
     // ==========================================
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1227,6 +1227,7 @@ function App() {
         } finally {
             setAnalyzingRecordId(null);
         }
+    };
 
     const copyAnalysisText = () => {
         if (!currentAnalysis?.data) return;
