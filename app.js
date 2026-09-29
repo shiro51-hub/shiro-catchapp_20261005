@@ -429,16 +429,13 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[720px] overflow-hidden">
                 
-                {/* モーダルヘッダー */}
+                {/* モーダルヘッダー（シンプル版） */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-base">📝</span>
-                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">釣行メモ</h3>
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <span>✓</span> 自動保存中
-                        </span>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-sm sm:text-base">船長メモ</h3>
                     </div>
-                    {/* ✕ボタン */}
+                    {/* ✕ボタン（タップで即時保存して閉じる） */}
                     <button 
                         type="button"
                         onClick={handleClose}
@@ -1863,7 +1860,7 @@ function App() {
                                         {/* 【上段】均等3分割：釣行メモ ➔ AIカルテ ➔ 日報作成 */}
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             
-                                            {/* 1. 釣行メモ（未入力: 釣行メモ / 入力済: メモ済✓） */}
+                                            {/* 1. 船長メモ（カウンター画面と統一） */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
@@ -1874,7 +1871,7 @@ function App() {
                                                 }`}
                                             >
                                                 <span>📝</span>
-                                                <span>{r.detailedMemo && r.detailedMemo.trim() !== '' ? 'メモ済' : '釣行メモ'}</span>
+                                                <span>{r.detailedMemo && r.detailedMemo.trim() !== '' ? 'メモ済' : '船長メモ'}</span>
                                                 {r.detailedMemo && r.detailedMemo.trim() !== '' && (
                                                     <span className="text-amber-600 dark:text-amber-400 font-black text-xs leading-none">✓</span>
                                                 )}
