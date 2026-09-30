@@ -975,7 +975,72 @@ function App() {
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通りに指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
-            const text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, modelName, false);
+            // settings.js の登録モデル順マスター配列
+            const modelsDescOrder = [
+                'gemini-3.8-flash',
+                'gemini-3.7-flash',
+                'gemini-3.6-flash',
+                'gemini-3.5-flash',
+                'gemini-3.1-pro',
+                'gemini-2.5-pro',
+                'gemini-2.5-flash'
+            ];
+
+            // 選択中の希望モデルを開始位置としてキューを作成
+            const startIndex = modelsDescOrder.indexOf(modelName);
+            const modelQueue = startIndex !== -1 
+                ? modelsDescOrder.slice(startIndex) 
+                : [modelName, ...modelsDescOrder];
+
+            let text = null;
+            let lastError = null;
+
+            // モデル切り替えループ
+            for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
+                const currentModel = modelQueue[mIdx];
+                const isPreferredModel = (mIdx === 0);
+                // 希望モデルは最大3回、切り替え後の予備モデルは1回ずつ試行
+                const maxAttempts = isPreferredModel ? 3 : 1;
+
+                if (mIdx > 0) {
+                    setToastMessage(`混雑のため【${currentModel}】へ切り替えて作成中...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
+                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    try {
+                        if (isPreferredModel && attempt > 1) {
+                            setToastMessage(`サーバー混雑のため【${currentModel}】で再試行中... (${attempt}/${maxAttempts})`);
+                            await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+                        }
+
+                        text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, currentModel, false);
+                        if (text) break;
+                    } catch (err) {
+                        lastError = err;
+                        const errMsg = ((err && err.message) || String(err)).toLowerCase();
+                        const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429');
+
+                        // 混雑エラー以外（APIキー無効や権限エラー等）は即座に終了
+                        if (!isBusy) {
+                            throw err;
+                        }
+
+                        // 希望モデルでまだ試行回数が残っている場合はループを継続
+                        if (isPreferredModel && attempt < maxAttempts) {
+                            continue;
+                        }
+                    }
+                }
+
+                // テキストが取得できたらループ全体を終了
+                if (text) break;
+            }
+
+            if (!text && lastError) {
+                throw lastError;
+            }
+
             if (text) {
                 const parts = text.split(/■■■/);
                 const patterns = [];
