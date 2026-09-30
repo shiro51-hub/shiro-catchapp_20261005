@@ -1092,8 +1092,8 @@ function App() {
         setSharedRecordId(null);
     };
 
-    // ==========================================
-    // AI分析 実行処理（モデル順次切り替え＆エラー自動回避版）
+   // ==========================================
+    // AI分析 実行処理（モデル順次切り替え＆429/503自動回避版）
     // ==========================================
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1155,7 +1155,7 @@ function App() {
         const prompt = promptLines.join('\n');
 
         try {
-            // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列
+            // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列[cite: 2]
             const modelsDescOrder = [
                 'gemini-3.8-flash',
                 'gemini-3.7-flash',
@@ -1166,7 +1166,6 @@ function App() {
                 'gemini-2.5-flash'
             ];
 
-            // 現在選択中のモデルを取得
             const currentSelected = typeof getActualModelName === 'function' 
                 ? getActualModelName(selectedAiModel) 
                 : 'gemini-3.8-flash';
@@ -1177,70 +1176,76 @@ function App() {
                 : [currentSelected, ...modelsDescOrder];
 
             let text = null;
-            let lastErr = null;
+            let lastError = null;
 
-            // 429制限・503過負荷時に古い世代へ自動シフトしながら再試行
             for (let i = 0; i < modelQueue.length; i++) {
                 const targetModel = modelQueue[i];
 
                 try {
                     if (i > 0) {
-                        setToastMessage(`混雑・制限のため【${targetModel}】へ切り替えて日報を生成中...`);
-                        // 429の解除待機（2.5秒）を挟んでから再送
+                        setToastMessage(`混雑のため【${targetModel}】へ切り替えて再試行中...`);
                         await new Promise(resolve => setTimeout(resolve, 2500));
                     }
 
-                    text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, targetModel, false);
+                    // 正しく prompt を第2引数に渡す
+                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
                     if (text) {
-                        break; // 成功したらループ終了
+                        break;
                     }
                 } catch (err) {
-                    lastErr = err;
+                    lastError = err;
                     const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
-                    // 429(上限/過密) または 503(混雑) の場合は次の古いモデルへ切り替えて継続
-                    if (errMsg.includes('429') || errMsg.includes('503') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('overloaded')) {
+                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted') || errMsg.includes('quota')) {
                         continue;
                     }
-                    // キーの有効期限切れなど致命的なエラーは即スロー
                     throw err;
                 }
             }
 
             if (!text) {
-                throw lastErr || new Error('利用可能なすべての世代のモデルで応答を取得できませんでした');
+                throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
             }
 
-            const parts = text.split(/■■■/);
-            const patterns = [];
-            for (let i = 1; i < parts.length; i += 2) {
-                const title = parts[i]?.trim();
-                const content = parts[i+1]?.trim();
-                if (title && content) patterns.push({ title, content });
+            let cleanJson = text.trim();
+            if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replace(/^```json/, '');
+            if (cleanJson.startsWith('```')) cleanJson = cleanJson.replace(/^```/, '');
+            if (cleanJson.endsWith('```')) cleanJson = cleanJson.replace(/```$/, '');
+            
+            const start = cleanJson.indexOf('{');
+            const end = cleanJson.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                cleanJson = cleanJson.substring(start, end + 1);
             }
-            const newPatterns = patterns.length > 0 ? patterns : [];
-            const newText = patterns.length === 0 ? text : '';
 
-            setAiGeneratedPatterns(newPatterns);
-            setAiGeneratedText(newText);
+            const analysisData = JSON.parse(cleanJson);
+
+            setCurrentAnalysis({ record, data: analysisData });
             setRecords(prev => {
-                const updated = prev.map(r => r.id === record.id ? { ...r, aiGeneratedPatterns: newPatterns, aiGeneratedText: newText } : r);
-                localStorage.setItem('fishing_records', JSON.stringify(updated));
-                return updated;
+                const next = prev.map(r => r.id === record.id ? { ...r, aiAnalysisResult: analysisData } : r);
+                localStorage.setItem('fishing_records', JSON.stringify(next));
+                return next;
             });
-            setShowAiModal(true);
+            setShowAnalysisModal(true);
         } catch (e) {
-            console.error("AI Generation Error:", e);
+            console.error("AI Analysis Error:", e);
             const msg = (e && e.message) ? e.message.toLowerCase() : '';
-            let userFriendlyMsg = `文章の生成に失敗しました: ${e.message}`;
+            let userFriendlyMsg = '通信エラーが発生しました。電波状況をご確認ください。';
 
-            if (msg.includes('429') || msg.includes('quota')) {
-                userFriendlyMsg = 'AIリクエストが一時的に混み合っています。約3〜5秒ほど置いてから再度お試しください。';
-            } else if (msg.includes('503') || msg.includes('overloaded')) {
-                userFriendlyMsg = 'AIサーバーが一時的に過負荷状態です。少し時間をおいてお試しください。';
+            if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
+                userFriendlyMsg = '【AIアクセス制限（429）】\n短時間にアクセスが集中しました。\n数秒待ってから再度お試しください。';
+            } else if (msg.includes('500') || msg.includes('503') || msg.includes('service unavailable') || msg.includes('overloaded')) {
+                userFriendlyMsg = '【サーバー混雑（503）】\nAIサーバーが一時的に混み合っています。\nしばらく待ってからお試しください。';
+            } else if (msg.includes('api_key') || msg.includes('invalid') || msg.includes('403') || msg.includes('permission')) {
+                userFriendlyMsg = '【APIキーエラー】\nキーが無効または設定されていません。';
+            } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout')) {
+                userFriendlyMsg = '【電波エラー】\n通信が途切れました。電波の良い場所でお試しください。';
+            } else if (msg.includes('json') || msg.includes('parse')) {
+                userFriendlyMsg = '【データ読み込みエラー】\nもう一度「分析」ボタンを押してください。';
             }
+
             setToastMessage(userFriendlyMsg);
         } finally {
-            setGeneratingAiId(null);
+            setAnalyzingRecordId(null);
         }
     };
 
