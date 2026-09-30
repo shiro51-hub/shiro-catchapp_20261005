@@ -996,8 +996,8 @@ function App() {
                 });
                 setShowAiModal(true);
             }
-       } catch (e) {
-            console.error("AI Analysis Error:", e);
+        } catch (e) {
+            console.error("AI Generation Error:", e);
             const msg = (e && e.message) ? e.message : String(e);
             const lowerMsg = msg.toLowerCase();
             let userFriendlyMsg = '';
@@ -1007,15 +1007,14 @@ function App() {
             } else if (lowerMsg.includes('500') || lowerMsg.includes('503') || lowerMsg.includes('service unavailable') || lowerMsg.includes('overloaded')) {
                 userFriendlyMsg = '【サーバー混雑（503）】\nAIサーバーが一時的に混み合っています。\nしばらく待ってからお試しください。';
             } else if (lowerMsg.includes('api_key') || lowerMsg.includes('invalid') || lowerMsg.includes('403') || lowerMsg.includes('permission')) {
-                userFriendlyMsg = `【APIキー・認証エラー】\nTier 1のプロジェクトで発行されたAPIキーを再確認してください。\n詳細: ${msg}`;
+                userFriendlyMsg = `【APIキー・認証エラー】\nキーが無効か、Tier 1プロジェクトとの紐づけを確認してください。\n詳細: ${msg}`;
             } else {
-                // 原因不明のエラー時に生メッセージを併記して特定できるようにする
-                userFriendlyMsg = `【通信・実行エラー】\n電波状況またはAPI設定をご確認ください。\n詳細: ${msg}`;
+                userFriendlyMsg = `【日報生成エラー】\n詳細: ${msg}`;
             }
 
             setToastMessage(userFriendlyMsg);
         } finally {
-            setAnalyzingRecordId(null);
+            setGeneratingAiId(null);
         }
     };
 
@@ -1228,19 +1227,20 @@ function App() {
             setShowAnalysisModal(true);
         } catch (e) {
             console.error("AI Analysis Error:", e);
-            const msg = (e && e.message) ? e.message.toLowerCase() : '';
-            let userFriendlyMsg = '通信エラーが発生しました。電波状況をご確認ください。';
+            const msg = (e && e.message) ? e.message : String(e);
+            const lowerMsg = msg.toLowerCase();
+            let userFriendlyMsg = '';
 
-            if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
+            if (lowerMsg.includes('429') || lowerMsg.includes('quota') || lowerMsg.includes('resource_exhausted')) {
                 userFriendlyMsg = '【AIアクセス制限（429）】\n短時間にアクセスが集中しました。\n数秒待ってから再度お試しください。';
-            } else if (msg.includes('500') || msg.includes('503') || msg.includes('service unavailable') || msg.includes('overloaded')) {
+            } else if (lowerMsg.includes('500') || lowerMsg.includes('503') || lowerMsg.includes('service unavailable') || lowerMsg.includes('overloaded')) {
                 userFriendlyMsg = '【サーバー混雑（503）】\nAIサーバーが一時的に混み合っています。\nしばらく待ってからお試しください。';
-            } else if (msg.includes('api_key') || msg.includes('invalid') || msg.includes('403') || msg.includes('permission')) {
-                userFriendlyMsg = '【APIキーエラー】\nキーが無効または設定されていません。';
-            } else if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout')) {
-                userFriendlyMsg = '【電波エラー】\n通信が途切れました。電波の良い場所でお試しください。';
-            } else if (msg.includes('json') || msg.includes('parse')) {
-                userFriendlyMsg = '【データ読み込みエラー】\nもう一度「分析」ボタンを押してください。';
+            } else if (lowerMsg.includes('api_key') || lowerMsg.includes('invalid') || lowerMsg.includes('403') || lowerMsg.includes('permission')) {
+                userFriendlyMsg = `【APIキー・認証エラー】\nキーが無効か、Tier 1プロジェクトの権限を確認してください。\n詳細: ${msg}`;
+            } else if (lowerMsg.includes('failed to fetch') || lowerMsg.includes('network') || lowerMsg.includes('timeout')) {
+                userFriendlyMsg = `【通信・ネットワークエラー】\n電波が途切れたか不安定です。\n詳細: ${msg}`;
+            } else {
+                userFriendlyMsg = `【分析エラー】\n詳細: ${msg}`;
             }
 
             setToastMessage(userFriendlyMsg);
