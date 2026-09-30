@@ -1242,28 +1242,46 @@ function App() {
             let text = null;
             let lastError = null;
 
-            for (let i = 0; i < modelQueue.length; i++) {
-                const targetModel = modelQueue[i];
+            // モデル切り替えループ
+            for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
+                const targetModel = modelQueue[mIdx];
+                const isPreferredModel = (mIdx === 0);
+                // 希望モデルは最大3回、切り替え後の予備モデルは1回ずつ試行
+                const maxAttempts = isPreferredModel ? 3 : 1;
 
-                try {
-                    if (i > 0) {
-                        setToastMessage(`混雑のため【${targetModel}】へ切り替えて再試行中...`);
-                        await new Promise(resolve => setTimeout(resolve, 2500));
-                    }
-
-                    // 正しく prompt を第2引数に渡す
-                    text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
-                    if (text) {
-                        break;
-                    }
-                } catch (err) {
-                    lastError = err;
-                    const errMsg = (err && err.message) ? err.message.toLowerCase() : '';
-                    if (errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('overloaded') || errMsg.includes('resource_exhausted') || errMsg.includes('quota')) {
-                        continue;
-                    }
-                    throw err;
+                if (mIdx > 0) {
+                    setToastMessage(`混雑のため【${targetModel}】へ切り替えて再試行中...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
+
+                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    try {
+                        if (isPreferredModel && attempt > 1) {
+                            setToastMessage(`サーバー混雑のため【${targetModel}】で再試行中... (${attempt}/${maxAttempts})`);
+                            await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+                        }
+
+                        text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
+                        if (text) break;
+                    } catch (err) {
+                        lastError = err;
+                        const errMsg = ((err && err.message) || String(err)).toLowerCase();
+                        const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429') || errMsg.includes('resource_exhausted') || errMsg.includes('quota');
+
+                        // 混雑以外の致命的エラー（キー無効など）は即座に中断
+                        if (!isBusy) {
+                            throw err;
+                        }
+
+                        // 希望モデルでまだ試行回数が残っている場合はループを継続
+                        if (isPreferredModel && attempt < maxAttempts) {
+                            continue;
+                        }
+                    }
+                }
+
+                // 正常に取得できたらモデル探索ループ全体を終了
+                if (text) break;
             }
 
             if (!text) {
