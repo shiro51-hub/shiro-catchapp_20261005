@@ -1042,6 +1042,9 @@ function App() {
             }
 
             if (text) {
+                // リトライ時などに表示されたトーストメッセージを確実に消去
+                setToastMessage('');
+
                 const parts = text.split(/■■■/);
                 const patterns = [];
                 for (let i = 1; i < parts.length; i += 2) {
@@ -1060,6 +1063,7 @@ function App() {
                     return updated;
                 });
                 setShowAiModal(true);
+            }
             }
         } catch (e) {
             console.error("AI Generation Error:", e);
@@ -1300,6 +1304,9 @@ function App() {
             }
 
             const analysisData = JSON.parse(cleanJson);
+
+            // 分析完了と同時にトーストの「作成中/分析中」表示を消去
+            setToastMessage('');
 
             setCurrentAnalysis({ record, data: analysisData });
             setRecords(prev => {
