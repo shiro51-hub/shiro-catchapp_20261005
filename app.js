@@ -997,25 +997,25 @@ function App() {
                 setShowAiModal(true);
             }
        } catch (e) {
-            console.error("AI Generation Error:", e);
-            const msg = (e && e.message) ? e.message.toLowerCase() : '';
+            console.error("AI Analysis Error:", e);
+            const msg = (e && e.message) ? e.message : String(e);
+            const lowerMsg = msg.toLowerCase();
             let userFriendlyMsg = '';
 
-            if (msg.includes('429') || msg.includes('quota') || msg.includes('resource_exhausted')) {
-                userFriendlyMsg = '【AIアクセス制限（429）】\n短時間にリクエストが集中したため一時的に制限されています。\n約3〜5秒ほど待ってから再度お試しください。';
-            } else if (msg.includes('503') || msg.includes('overloaded') || msg.includes('service unavailable')) {
-                userFriendlyMsg = '【AIサーバー混雑（503）】\nGoogleのAIサーバーが混雑しています。\n少し時間を置いてから再度お試しください。';
-            } else if (msg.includes('403') || msg.includes('api_key') || msg.includes('invalid')) {
-                userFriendlyMsg = '【APIキー認証エラー（403）】\nAPIキーが無効または未設定です。\n設定画面でキーをご確認ください。';
-            } else if (msg.includes('network') || msg.includes('failed to fetch')) {
-                userFriendlyMsg = '【通信エラー】\n電波が途切れたか不安定です。\n電波状況の良い場所でお試しください。';
+            if (lowerMsg.includes('429') || lowerMsg.includes('quota') || lowerMsg.includes('resource_exhausted')) {
+                userFriendlyMsg = '【AIアクセス制限（429）】\n短時間にアクセスが集中しました。\n数秒待ってから再度お試しください。';
+            } else if (lowerMsg.includes('500') || lowerMsg.includes('503') || lowerMsg.includes('service unavailable') || lowerMsg.includes('overloaded')) {
+                userFriendlyMsg = '【サーバー混雑（503）】\nAIサーバーが一時的に混み合っています。\nしばらく待ってからお試しください。';
+            } else if (lowerMsg.includes('api_key') || lowerMsg.includes('invalid') || lowerMsg.includes('403') || lowerMsg.includes('permission')) {
+                userFriendlyMsg = `【APIキー・認証エラー】\nTier 1のプロジェクトで発行されたAPIキーを再確認してください。\n詳細: ${msg}`;
             } else {
-                userFriendlyMsg = '【日報生成エラー】\nAIサーバーからの応答を取得できませんでした。\n通信環境を確認して再度お試しください。';
+                // 原因不明のエラー時に生メッセージを併記して特定できるようにする
+                userFriendlyMsg = `【通信・実行エラー】\n電波状況またはAPI設定をご確認ください。\n詳細: ${msg}`;
             }
 
             setToastMessage(userFriendlyMsg);
         } finally {
-            setGeneratingAiId(null);
+            setAnalyzingRecordId(null);
         }
     };
 
