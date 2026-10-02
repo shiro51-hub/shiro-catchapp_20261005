@@ -82,12 +82,12 @@ function SettingsPanel({
 
         const base64Data = await fileToBase64(file);
 
-        // 画像解析に対応しているモデル（最新 ➔ 旧順）
+        // 最新の 3.8-flash を最優先で使用（最新 ➔ 旧順）
         const visionModels = [
             'gemini-3.8-flash',
             'gemini-3.7-flash',
             'gemini-3.6-flash',
-            'gemini-2.5-flash'
+            'gemini-3.5-flash'
         ];
 
         let lastErr = null;
