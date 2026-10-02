@@ -3,16 +3,14 @@
 // ==========================================
 
 const MODEL_NAME_MAP = {
-    'Gemini 2.5 Flash': 'gemini-2.5-flash',
-    'Gemini 2.5 Pro': 'gemini-2.5-pro',
-    'Gemini 3.5 Flash': 'gemini-3.5-flash',
-    'Gemini 3.6 Flash': 'gemini-3.6-flash',
-    'Gemini 3.7 Flash': 'gemini-3.7-flash',
     'Gemini 3.8 Flash': 'gemini-3.8-flash',
+    'Gemini 3.7 Flash': 'gemini-3.7-flash',
+    'Gemini 3.6 Flash': 'gemini-3.6-flash',
+    'Gemini 3.5 Flash': 'gemini-3.5-flash',
     'Gemini 3.1 Pro': 'gemini-3.1-pro'
 };
 
-const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-2.5-flash';
+const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-3.8-flash';
 
 const fetchWithBackoff = async (url, options, retries = 5) => {
     const delays = [1000, 2000, 4000, 8000, 16000];
@@ -37,7 +35,7 @@ const fetchWithBackoff = async (url, options, retries = 5) => {
     }
 };
 
-const callGeminiApi = async (apiKey, prompt, model = 'gemini-2.5-flash', isJson = false, base64Image = null, mimeType = 'image/jpeg', signal = null) => {
+const callGeminiApi = async (apiKey, prompt, model = 'gemini-3.8-flash', isJson = false, base64Image = null, mimeType = 'image/jpeg', signal = null) => {
     const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
     if (!cleanKey) throw new Error('APIキーが設定されていません。設定画面の「データ管理」からGemini APIキーを入力してください。');
     
