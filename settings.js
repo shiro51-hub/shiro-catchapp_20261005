@@ -73,7 +73,7 @@ function SettingsPanel({
         });
     };
 
-    // 共通 Gemini Vision 呼び出し
+    // 共通 Gemini Vision 呼び出し（最新モデル優先・自動リトライ＆フォールバック対応版）
     const callVisionApi = async (file, prompt) => {
         const activeKey = (userApiKey || '').trim();
         if (!activeKey) {
@@ -81,42 +81,79 @@ function SettingsPanel({
         }
 
         const base64Data = await fileToBase64(file);
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
-        const payload = {
-            contents: [{
-                parts: [
-                    { text: prompt },
-                    {
-                        inline_data: {
-                            mime_type: file.type || 'image/png',
-                            data: base64Data
+
+        // 画像解析に対応しているモデル（最新 ➔ 旧順）
+        const visionModels = [
+            'gemini-3.8-flash',
+            'gemini-3.7-flash',
+            'gemini-3.6-flash',
+            'gemini-2.5-flash'
+        ];
+
+        let lastErr = null;
+
+        for (let i = 0; i < visionModels.length; i++) {
+            const currentModel = visionModels[i];
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${activeKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        {
+                            inline_data: {
+                                mime_type: file.type || 'image/png',
+                                data: base64Data
+                            }
                         }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    response_mime_type: "application/json"
+                }
+            };
+
+            try {
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    const errMsg = err.error?.message || `HTTP ${response.status}`;
+                    // 混雑・制限（503, 429, 500）の場合は次のモデルへ切り替え
+                    if (response.status === 503 || response.status === 429 || response.status === 500) {
+                        lastErr = new Error(`モデル ${currentModel} が混雑中: ${errMsg}`);
+                        continue;
                     }
-                ]
-            }],
-            generationConfig: {
-                temperature: 0.1,
-                response_mime_type: "application/json"
+                    throw new Error(errMsg);
+                }
+
+                const resData = await response.json();
+                const text = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error('解析結果が得られませんでした');
+                
+                const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                return JSON.parse(clean);
+
+            } catch (err) {
+                lastErr = err;
+                const msg = ((err && err.message) || String(err)).toLowerCase();
+                if (msg.includes('503') || msg.includes('429') || msg.includes('overloaded')) {
+                    continue;
+                }
+                throw err;
             }
-        };
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.error?.message || `通信エラー: HTTP ${response.status}`);
         }
 
-        const resData = await response.json();
-        const text = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error('解析結果が得られませんでした');
-        
-        const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        return JSON.parse(clean);
+        throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
     // ==========================================
@@ -173,7 +210,7 @@ function SettingsPanel({
 【風速の抽出ルール（ハイブリッド幅表記）】
 時系列表の【風速】と【瞬間最大風速】の数値を参照し、もっとも穏やかな数値から突風のピークまでを「最小値〜最大値m/s」の幅（レンジ）形式で出力してください：
 ・windSpeed1（前半）: 【6時】と【9時】の時間帯に含まれる「風速」と「瞬間最大風速」のすべての数値の中から、【最も小さい数値】〜【最も大きい数値】を特定して出力（例: 通常2m/4m、瞬間5m/7m の場合は "2〜7m/s"）
-・windSpeed2（後半）: 【12時】と【15時】の時間帯に含まれる「風速」と「瞬間最大風速」のすべての数値の中から、【最も小さい数値】〜【最も大きい数値】を特定して出力（例: 通常3m/5m、瞬間6m/9m の場合は "3〜9m/s"）
+・windSpeed2（後半）: 【12時】と【15時】の時間帯に含まれる「風速」と「瞬間最大風速」のすべての数値の中から、【最も小さい数値】〜【最も大きい数値】を特定して出力（例: 通常3m/5m、瞬間6m/9m の場合は "3〜9m/s"）f
 
 【風向きアイコンの向きの判定ルール】
 画像のなかにある、風向きアイコンまたは矢印は、画像によって以下のいずれかのデザインになっています。
