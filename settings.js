@@ -42,14 +42,13 @@ function SettingsPanel({
     if (!isSettingsOpen) return null;
 
     // AIモデルの表示名とAPI識別子のマップ
+    // AIモデルの表示名とAPI識別子のマップ（最新 3系へ更新）
     const aiModelOptions = [
-        { label: "Gemini 2.5 Flash（推奨・高速）", value: "Gemini 2.5 Flash", id: "gemini-2.5-flash" },
-        { label: "Gemini 2.5 Pro（深層考察・高精度）", value: "Gemini 2.5 Pro", id: "gemini-2.5-pro" },
-        { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+        { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
         { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-        { label: "Gemini 3.7 Flash", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
-        { label: "Gemini 3.8 Flash", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 3.1 Pro", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
+        { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+        { label: "Gemini 3.1 Pro（深層考察・高精度）", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
     ];
 
     // 波高（波の状態）の選択肢
