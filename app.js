@@ -495,7 +495,7 @@ function App() {
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     const [theme, setTheme] = React.useState(() => localStorage.getItem('theme') || 'light');
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
-    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 2.5 Flash');
+    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
 
     // 下部ナビゲーションバーの表示・非表示状態
@@ -907,7 +907,7 @@ function App() {
             return;
         }
 
-        const modelName = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-2.5-flash';
+        const modelName = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-3.8-flash';
         const formatPrompt = selectedPatterns.map(id => getPatternPrompt(id)).join("\n\n");
         const systemPrompt = `※あなたはベテラン釣り船「山下丸」の船長です。海の男らしく、媚びないけれどお客様への温かみがある性格として、以下の釣行記録を作成してください。
 ■ 絶対厳守のルール
@@ -977,14 +977,12 @@ function App() {
         try {
             // settings.js の登録モデル順マスター配列
             const modelsDescOrder = [
-                'gemini-3.8-flash',
-                'gemini-3.7-flash',
-                'gemini-3.6-flash',
-                'gemini-3.5-flash',
-                'gemini-3.1-pro',
-                'gemini-2.5-pro',
-                'gemini-2.5-flash'
-            ];
+              'gemini-3.8-flash',
+              'gemini-3.7-flash',
+              'gemini-3.6-flash',
+              'gemini-3.5-flash',
+              'gemini-3.1-pro'
+          ];
 
             // 選択中の希望モデルを開始位置としてキューを作成
             const startIndex = modelsDescOrder.indexOf(modelName);
