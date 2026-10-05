@@ -1692,50 +1692,79 @@ function App() {
     const unit = getUnit(targetFish);
     const totalCount = stats.total || 0;
 
+    // --- 1. 左側：現在の釣果 文字サイズ自動可変ロジック ---
+    const scoreText = stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-';
+    // 文字の長さによって特大 ➔ 大 ➔ 中 へ段階的に小さくする
+    let scoreSizeClass = 'text-3xl sm:text-4xl'; // 基本：特大
+    if (scoreText.length >= 7) {
+        scoreSizeClass = 'text-xl sm:text-2xl';  // 桁が多い場合：中
+    } else if (scoreText.length >= 5) {
+        scoreSizeClass = 'text-2xl sm:text-3xl';  // やや長い場合：大
+    }
+
+    // --- 2. 右側：竿頭（名前） 文字サイズ自動可変ロジック ---
+    const topCount = stats.topNames.length;
+    const topCombinedName = stats.topNames.join('・');
+    let nameSizeClass = 'text-2xl sm:text-3xl'; // 1名・標準
+
+    if (topCount === 0) {
+        nameSizeClass = 'text-2xl text-gray-400';
+    } else if (topCount === 1) {
+        // 1名の場合：名前の長さで判定
+        if (topCombinedName.length <= 4) {
+            nameSizeClass = 'text-3xl sm:text-4xl'; // 短いお名前：限界まで特大
+        } else if (topCombinedName.length <= 7) {
+            nameSizeClass = 'text-2xl sm:text-3xl'; // 中くらい
+        } else {
+            nameSizeClass = 'text-lg sm:text-xl';   // 長いお名前：縮小
+        }
+    } else if (topCount === 2) {
+        // 同着2名の場合
+        nameSizeClass = topCombinedName.length > 8 ? 'text-sm sm:text-base' : 'text-base sm:text-lg';
+    } else {
+        // 同着3名以上の場合
+        nameSizeClass = 'text-xs sm:text-sm';
+    }
+
     return (
-        <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[80px] shrink-0">
-            {/* 左側：現在の釣果（スソ〜トップ ＋ 括弧で数字のみ） */}
-            <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2">
-                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider">現在の釣果</span>
-                <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-2xl sm:text-3xl font-black text-blue-900 dark:text-slate-100">
-                        {stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-'}
+        <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[85px] shrink-0">
+            
+            {/* 左枠：現在の釣果（自動フィット ＋ カッコ合計数字） */}
+            <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2 min-w-0">
+                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
+                    現在の釣果
+                </span>
+                <div className="flex items-baseline justify-center gap-1 w-full truncate">
+                    <span className={`${scoreSizeClass} font-black text-blue-900 dark:text-slate-100 tracking-tight leading-none`}>
+                        {scoreText}
                     </span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
                         {unit}
                     </span>
-                    {stats.anglers > 0 && totalCount > 0 && (
-                        <span className="text-xs sm:text-sm font-bold text-blue-700 dark:text-sky-300 ml-0.5">
+                    {totalCount > 0 && (
+                        <span className="text-xs font-bold text-blue-700 dark:text-sky-300 ml-1 shrink-0">
                             ({totalCount})
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* 右側：竿頭（枚数はカット、アイコンと名前のみ） */}
-            <div className="w-1/2 flex flex-col items-center justify-center px-2">
+            {/* 右枠：竿頭（自動フィット ＆ 枚数は完全カット） */}
+            <div className="w-1/2 flex flex-col items-center justify-center px-2 min-w-0">
                 <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
-                    <IconTrophy className="w-4 h-4 mr-1 text-amber-500" /> 竿頭
+                    <IconTrophy className="w-4 h-4 mr-1 text-amber-500 shrink-0" /> 竿頭
                 </span>
-                <div className="flex flex-wrap justify-center items-center gap-1 max-h-12 overflow-y-auto no-scrollbar w-full text-center">
-                    {stats.topNames.length > 0 ? (
-                        stats.topNames.map((name, idx) => {
-                            const nameSizeClass = stats.topNames.length === 1 
-                                ? 'text-xl sm:text-2xl' 
-                                : stats.topNames.length === 2 
-                                    ? 'text-base sm:text-lg' 
-                                    : 'text-xs sm:text-sm';
-                            return (
-                                <span key={idx} className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight`}>
-                                    {name}{idx < stats.topNames.length - 1 ? '・' : ''}
-                                </span>
-                            );
-                        })
+                <div className="w-full flex items-center justify-center text-center px-1">
+                    {topCount > 0 ? (
+                        <span className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight truncate`}>
+                            {topCombinedName}
+                        </span>
                     ) : (
                         <span className="text-2xl font-black text-gray-400">-</span>
                     )}
                 </div>
             </div>
+
         </div>
     );
 })()}
