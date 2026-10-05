@@ -1690,39 +1690,38 @@ function App() {
                         {(() => {
     const stats = getTopAnglerDetails(portSeats, starboardSeats);
     const unit = getUnit(targetFish);
-    const totalCount = stats.total || 0;
+
+    // 左右の座席の数値を直接合計して確実に船中合計を算出
+    const allSeats = [...(portSeats || []), ...(starboardSeats || [])];
+    const totalCount = allSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count, 10) || 0) : 0), 0);
 
     // --- 1. 左側：現在の釣果 文字サイズ自動可変ロジック ---
     const scoreText = stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-';
-    // 文字の長さによって特大 ➔ 大 ➔ 中 へ段階的に小さくする
-    let scoreSizeClass = 'text-3xl sm:text-4xl'; // 基本：特大
+    let scoreSizeClass = 'text-3xl sm:text-4xl';
     if (scoreText.length >= 7) {
-        scoreSizeClass = 'text-xl sm:text-2xl';  // 桁が多い場合：中
+        scoreSizeClass = 'text-xl sm:text-2xl';
     } else if (scoreText.length >= 5) {
-        scoreSizeClass = 'text-2xl sm:text-3xl';  // やや長い場合：大
+        scoreSizeClass = 'text-2xl sm:text-3xl';
     }
 
-    // --- 2. 右側：竿頭（名前） 文字サイズ自動可変ロジック ---
+    // --- 2. 右側：竿頭 文字サイズ自動可変ロジック ---
     const topCount = stats.topNames.length;
     const topCombinedName = stats.topNames.join('・');
-    let nameSizeClass = 'text-2xl sm:text-3xl'; // 1名・標準
+    let nameSizeClass = 'text-2xl sm:text-3xl';
 
     if (topCount === 0) {
         nameSizeClass = 'text-2xl text-gray-400';
     } else if (topCount === 1) {
-        // 1名の場合：名前の長さで判定
         if (topCombinedName.length <= 4) {
-            nameSizeClass = 'text-3xl sm:text-4xl'; // 短いお名前：限界まで特大
+            nameSizeClass = 'text-3xl sm:text-4xl';
         } else if (topCombinedName.length <= 7) {
-            nameSizeClass = 'text-2xl sm:text-3xl'; // 中くらい
+            nameSizeClass = 'text-2xl sm:text-3xl';
         } else {
-            nameSizeClass = 'text-lg sm:text-xl';   // 長いお名前：縮小
+            nameSizeClass = 'text-lg sm:text-xl';
         }
     } else if (topCount === 2) {
-        // 同着2名の場合
         nameSizeClass = topCombinedName.length > 8 ? 'text-sm sm:text-base' : 'text-base sm:text-lg';
     } else {
-        // 同着3名以上の場合
         nameSizeClass = 'text-xs sm:text-sm';
     }
 
@@ -1742,7 +1741,7 @@ function App() {
                         {unit}
                     </span>
                     {totalCount > 0 && (
-                        <span className="text-xs font-bold text-blue-700 dark:text-sky-300 ml-1 shrink-0">
+                        <span className="text-xs sm:text-sm font-bold text-blue-700 dark:text-sky-300 ml-1 shrink-0">
                             ({totalCount})
                         </span>
                     )}
