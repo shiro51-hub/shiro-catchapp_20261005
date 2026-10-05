@@ -1691,11 +1691,11 @@ function App() {
     const stats = getTopAnglerDetails(portSeats, starboardSeats);
     const unit = getUnit(targetFish);
 
-    // 左右の座席の数値を直接合計して確実に船中合計を算出
+    // 左右座席から船中合計匹数を合算
     const allSeats = [...(portSeats || []), ...(starboardSeats || [])];
     const totalCount = allSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count, 10) || 0) : 0), 0);
 
-    // --- 1. 左側：現在の釣果 文字サイズ自動可変ロジック ---
+    // 1. 左側：現在の釣果 文字サイズ自動可変ロジック
     const scoreText = stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-';
     let scoreSizeClass = 'text-3xl sm:text-4xl';
     if (scoreText.length >= 7) {
@@ -1704,7 +1704,7 @@ function App() {
         scoreSizeClass = 'text-2xl sm:text-3xl';
     }
 
-    // --- 2. 右側：竿頭 文字サイズ自動可変ロジック ---
+    // 2. 右側：竿頭 文字サイズ自動可変ロジック
     const topCount = stats.topNames.length;
     const topCombinedName = stats.topNames.join('・');
     let nameSizeClass = 'text-2xl sm:text-3xl';
@@ -1728,27 +1728,30 @@ function App() {
     return (
         <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[85px] shrink-0">
             
-            {/* 左枠：現在の釣果（自動フィット ＋ カッコ合計数字） */}
+            {/* 左枠：現在の釣果（メイン数字・単位・船中合計すべて同色 ＆ 単位と合計を一回り拡大） */}
             <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2 min-w-0">
                 <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
                     現在の釣果
                 </span>
-                <div className="flex items-baseline justify-center gap-1 w-full truncate">
+                <div className="flex items-baseline justify-center gap-1.5 w-full truncate">
+                    {/* スソ〜トップ */}
                     <span className={`${scoreSizeClass} font-black text-blue-900 dark:text-slate-100 tracking-tight leading-none`}>
                         {scoreText}
                     </span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                    {/* 単位（枚・尾など）：一回り拡大 ＋ メインと同色 */}
+                    <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0">
                         {unit}
                     </span>
+                    {/* 船中合計：一回り拡大 ＋ メインと同色 */}
                     {totalCount > 0 && (
-                        <span className="text-xs sm:text-sm font-bold text-blue-700 dark:text-sky-300 ml-1 shrink-0">
+                        <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0 ml-0.5">
                             ({totalCount})
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* 右枠：竿頭（自動フィット ＆ 枚数は完全カット） */}
+            {/* 右枠：竿頭（自動フィット ＆ 枚数はカット） */}
             <div className="w-1/2 flex flex-col items-center justify-center px-2 min-w-0">
                 <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
                     <IconTrophy className="w-4 h-4 mr-1 text-amber-500 shrink-0" /> 竿頭
