@@ -489,8 +489,35 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 // アプリ本体
 // ==========================================
 function App() {
-    const [activeTab, setActiveTab] = React.useState(() => localStorage.getItem('fishing_last_tab') || 'input');
+    // 1. 起動時：日付が変わっていたら必ず「釣り座（input）」、同日なら前回のタブを開く
+    const [activeTab, setActiveTab] = React.useState(() => {
+        const today = typeof getTodayString === 'function' ? getTodayString() : new Date().toISOString().split('T')[0];
+        const lastActiveDate = localStorage.getItem('fishing_last_active_date');
+        
+        // 日付が変わっている（または初回起動）の場合は必ず「釣り座」タブから開始
+        if (lastActiveDate !== today) {
+            localStorage.setItem('fishing_last_active_date', today);
+            localStorage.setItem('fishing_last_tab', 'input');
+            return 'input';
+        }
+        
+        // 同日内の利用であれば前回のタブを復元
+        return localStorage.getItem('fishing_last_tab') || 'input';
+    });
+
+    // 2. カウンターの入力方式（タップ / スライド / テンキー）を復元
     const [counterMode, setCounterMode] = React.useState(() => localStorage.getItem('fishing_counter_mode') || 'tap');
+
+    // ★追加1：開いているタブが変わったら即座にスマホへ保存（これで「勝手に履歴に戻る」を防止）
+    React.useEffect(() => {
+        localStorage.setItem('fishing_last_tab', activeTab);
+    }, [activeTab]);
+
+    // ★追加2：カウンターの入力方式が変わったら即座にスマホへ保存（これで「勝手にスライドに戻る」を防止）
+    React.useEffect(() => {
+        localStorage.setItem('fishing_counter_mode', counterMode);
+    }, [counterMode]);
+
     const [inputSide, setInputSide] = React.useState('both');
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     const [theme, setTheme] = React.useState(() => localStorage.getItem('theme') || 'light');
