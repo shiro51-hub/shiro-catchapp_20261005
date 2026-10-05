@@ -1688,44 +1688,57 @@ function App() {
                 {activeTab === 'counter' && (
                     <div className="flex flex-col flex-1 space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         {(() => {
-                            const stats = getTopAnglerDetails(portSeats, starboardSeats);
-                            const unit = getUnit(targetFish);
+    const stats = getTopAnglerDetails(portSeats, starboardSeats);
+    const unit = getUnit(targetFish);
+    const totalCount = stats.total || 0;
 
+    return (
+        <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[80px] shrink-0">
+            {/* 左側：現在の釣果（スソ〜トップ ＋ 括弧で数字のみ） */}
+            <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2">
+                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider">現在の釣果</span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-2xl sm:text-3xl font-black text-blue-900 dark:text-slate-100">
+                        {stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                        {unit}
+                    </span>
+                    {stats.anglers > 0 && totalCount > 0 && (
+                        <span className="text-xs sm:text-sm font-bold text-blue-700 dark:text-sky-300 ml-0.5">
+                            ({totalCount})
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* 右側：竿頭（枚数はカット、アイコンと名前のみ） */}
+            <div className="w-1/2 flex flex-col items-center justify-center px-2">
+                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
+                    <IconTrophy className="w-4 h-4 mr-1 text-amber-500" /> 竿頭
+                </span>
+                <div className="flex flex-wrap justify-center items-center gap-1 max-h-12 overflow-y-auto no-scrollbar w-full text-center">
+                    {stats.topNames.length > 0 ? (
+                        stats.topNames.map((name, idx) => {
+                            const nameSizeClass = stats.topNames.length === 1 
+                                ? 'text-xl sm:text-2xl' 
+                                : stats.topNames.length === 2 
+                                    ? 'text-base sm:text-lg' 
+                                    : 'text-xs sm:text-sm';
                             return (
-                                <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[80px] shrink-0">
-                                    <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2">
-                                        <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider">現在の釣果</span>
-                                        <div className="text-3xl sm:text-4xl font-black text-blue-900 dark:text-slate-100 mt-0.5">
-                                            {stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-'} <span className="text-sm font-normal">{unit}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="w-1/2 flex flex-col items-center justify-center px-2">
-                                        <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
-                                            <IconTrophy className="w-4 h-4 mr-1 text-amber-500" /> 竿頭 {stats.max > 0 ? `(${stats.max}${unit})` : ''}
-                                        </span>
-                                        <div className="flex flex-wrap justify-center items-center gap-1 max-h-12 overflow-y-auto no-scrollbar w-full text-center">
-                                            {stats.topNames.length > 0 ? (
-                                                stats.topNames.map((name, idx) => {
-                                                    const nameSizeClass = stats.topNames.length === 1 
-                                                        ? 'text-xl sm:text-2xl' 
-                                                        : stats.topNames.length === 2 
-                                                            ? 'text-base sm:text-lg' 
-                                                            : 'text-xs sm:text-sm';
-                                                    return (
-                                                        <span key={idx} className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight`}>
-                                                            {name}{idx < stats.topNames.length - 1 ? '・' : ''}
-                                                        </span>
-                                                    );
-                                                })
-                                            ) : (
-                                                <span className="text-2xl font-black text-gray-400">-</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                <span key={idx} className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight`}>
+                                    {name}{idx < stats.topNames.length - 1 ? '・' : ''}
+                                </span>
                             );
-                        })()}
+                        })
+                    ) : (
+                        <span className="text-2xl font-black text-gray-400">-</span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+})()}
 
                         {/* 潮時リアルタイムアラートバー */}
                         <TideAlertBanner
