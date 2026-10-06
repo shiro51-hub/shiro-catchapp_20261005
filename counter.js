@@ -150,10 +150,10 @@ const CounterCardTap = ({ side, seat, index, onCountDelta, onClear, totalSeats }
                 </div>
             </div>
 
-            {/* 左舷は「左下隅」、右舷は「右下隅」にマイナスボタンを配置 */}
+            {/* 左舷は「左下隅」、右舷は「右下隅」にマイナスボタンを配置（ダークモード時のみ落ち着いたスレートグレー） */}
             <button 
                 type="button"
-                className={`absolute w-9 h-9 flex items-center justify-center bg-white/80 dark:bg-slate-800/80 border-gray-200 dark:border-slate-500 font-black text-lg text-gray-800 dark:text-slate-100 active:bg-gray-200 dark:active:bg-slate-700 active:scale-90 transition-all select-none ${minusBtnPositionClass}`} 
+                className={`absolute w-9 h-9 flex items-center justify-center bg-white/80 dark:bg-slate-700 border-gray-200 dark:border-slate-600 font-black text-lg text-gray-800 dark:text-slate-300 active:bg-gray-200 dark:active:bg-slate-600 active:scale-90 transition-all select-none ${minusBtnPositionClass}`} 
                 onClick={handleMinusTap}
                 title="1減らす"
             >
