@@ -238,7 +238,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 ["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"]
 
 不明な項目は空文字 "" にしてください。
-{"weather1":"前半天気","weather2":"後半天気","windDir1":"前半の矢印の向き","windDir2":"後半の矢印の向き","windSpeed1":"前半風速幅(例: 2〜7m)","windSpeed2":"後半風速幅(例: 3〜9m)","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
+{"weather1":"前半天気","weather2":"後半天気","windCheck":"矢印の先端と左右の傾きの目視確認メモ","windDir1":"前半の矢印の向き","windDir2":"後半の矢印の向き","windSpeed1":"前半風速幅(例: 2〜7m)","windSpeed2":"後半風速幅(例: 3〜9m)","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
 
             const parsed = await callVisionApi(file, prompt);
 
