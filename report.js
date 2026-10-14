@@ -89,10 +89,8 @@ const AiInputWizardModal = ({
         draggingIdxRef.current = null;
     }, [aiCurrentStep, showAiInputModal]);
 
-    if (!showAiInputModal) return null;
-
-    const currentStep = wizardSteps[aiCurrentStep];
-    const currentTags = customTagsMap[currentStep.id] || [];
+    const currentStep = (wizardSteps && wizardSteps[aiCurrentStep]) || {};
+    const currentTags = (currentStep.id && customTagsMap[currentStep.id]) || [];
 
     // カスタムチップの保存処理
     const saveCustomTags = (updatedMap) => {
@@ -105,6 +103,7 @@ const AiInputWizardModal = ({
     // タグをタップして入力欄へ追加する関数
     const handleAddTag = (tagText) => {
         const fieldKey = currentStep.id;
+        if (!fieldKey) return;
         const currentVal = aiInputData[fieldKey] || '';
         let newVal = '';
         if (!currentVal.trim()) {
@@ -128,8 +127,8 @@ const AiInputWizardModal = ({
     // 新しい単語チップを登録する関数
     const handleCreateTag = () => {
         const trimmed = newTagInput.trim();
-        if (!trimmed) return;
         const fieldKey = currentStep.id;
+        if (!trimmed || !fieldKey) return;
         const existing = customTagsMap[fieldKey] || [];
         if (existing.includes(trimmed)) {
             setNewTagInput('');
@@ -149,6 +148,7 @@ const AiInputWizardModal = ({
     // 不要な単語チップを削除する関数
     const handleDeleteTag = (tagToDelete) => {
         const fieldKey = currentStep.id;
+        if (!fieldKey) return;
         const existing = customTagsMap[fieldKey] || [];
         const updated = {
             ...customTagsMap,
@@ -160,10 +160,10 @@ const AiInputWizardModal = ({
         }
     };
 
-   // チップの順番を入れ替える共通関数
+    // チップの順番を入れ替える共通関数
     const moveTagOrder = (fromIdx, toIdx) => {
-        if (fromIdx === null || toIdx === null || fromIdx === toIdx) return;
         const fieldKey = currentStep.id;
+        if (!fieldKey || fromIdx === null || toIdx === null || fromIdx === toIdx) return;
         const list = [...(customTagsMap[fieldKey] || [])];
         if (fromIdx < 0 || fromIdx >= list.length || toIdx < 0 || toIdx >= list.length) return;
 
@@ -198,7 +198,7 @@ const AiInputWizardModal = ({
 
     // 指・マウスを動かしている最中のリアルタイム入れ替え判定
     React.useEffect(() => {
-        if (!isEditingTags || draggingIdx === null) return;
+        if (!showAiInputModal || !isEditingTags || draggingIdx === null) return;
 
         const handleGlobalPointerMove = (e) => {
             if (draggingIdxRef.current === null) return;
@@ -235,7 +235,10 @@ const AiInputWizardModal = ({
             window.removeEventListener('touchmove', handleGlobalPointerMove);
             window.removeEventListener('touchend', handleGlobalPointerUp);
         };
-    }, [isEditingTags, draggingIdx, customTagsMap, aiCurrentStep]);
+    }, [showAiInputModal, isEditingTags, draggingIdx, customTagsMap, aiCurrentStep]);
+
+    // すべてのReactフック（useState / useEffect）の後に配置することで画面消失エラーを防止
+    if (!showAiInputModal) return null;
 
     return (
         <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
