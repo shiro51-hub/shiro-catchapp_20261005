@@ -321,7 +321,7 @@ const AiInputWizardModal = ({
 
                                 {/* 単語チップ管理エリア：編集モード時は画面の残りスペースいっぱいに広げる */}
                                 <div className={`flex flex-col min-h-0 pt-1 ${isEditingTags ? 'flex-1' : 'shrink-0'}`}>
-                                    <div className="flex justify-between items-center mb-2 shrink-0">
+                                    <div className="flex justify-between items-center mb-2.5 shrink-0">
                                         <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                             <span>🏷️</span>
                                             <span>{isEditingTags ? 'ドラッグ または ◀▶ で移動 / ✕で削除' : 'タップで入力（単語チップ）'}</span>
@@ -329,13 +329,23 @@ const AiInputWizardModal = ({
                                         <button
                                             type="button"
                                             onClick={() => setIsEditingTags(prev => !prev)}
-                                            className={`px-3 py-1 rounded-lg text-xs font-black border transition-all active:scale-95 select-none ${
+                                            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black border-2 transition-all active:scale-95 select-none shadow-sm flex items-center gap-1 ${
                                                 isEditingTags
-                                                    ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                                                    : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-slate-600'
+                                                    ? 'bg-amber-600 text-white border-amber-700 dark:bg-amber-700 dark:border-amber-600'
+                                                    : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-slate-600 hover:bg-amber-50 dark:hover:bg-slate-700'
                                             }`}
                                         >
-                                            {isEditingTags ? '✓ 完了' : '✏️ 編集'}
+                                            {isEditingTags ? (
+                                                <>
+                                                    <span className="text-sm">✓</span>
+                                                    <span>完了</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="text-sm">✏️</span>
+                                                    <span>編集する</span>
+                                                </>
+                                            )}
                                         </button>
                                     </div>
 
