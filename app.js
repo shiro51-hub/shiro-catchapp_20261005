@@ -1592,7 +1592,33 @@ function App() {
                             </button>
                         </div>
 
-                        {inputSide === 'both' ? (
+                        {/* 座席の描画エリア（未設定時はワンタップ設定カードを表示） */}
+                        {portSeats.length === 0 && starboardSeats.length === 0 ? (
+                            <div className="my-6 p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-sky-300 dark:border-slate-600 shadow-sm text-center flex flex-col items-center justify-center space-y-4 animate-[fadeIn_0.2s_ease-out]">
+                                <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-3xl shadow-inner">
+                                    ⚙️
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                                        本日の準備を始めましょう
+                                    </h3>
+                                    <p className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">
+                                        左右舷の席数や釣り物がまだ設定されていません
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSettingsOpen(true)}
+                                    className="w-full max-w-xs py-3.5 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 active:from-sky-600 active:to-blue-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 select-none"
+                                >
+                                    <span>👉</span>
+                                    <span>本日の基本設定を入力する</span>
+                                </button>
+                                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                                    ※右上の ⚙️ アイコンからも設定できます
+                                </span>
+                            </div>
+                        ) : inputSide === 'both' ? (
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     {portSeats.map((s, i) => <SeatInput key={`p-${i}`} side="port" seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode="both" onToggleVisibility={handleToggleVisibility} />)}
@@ -1852,7 +1878,7 @@ function App() {
                                                 {(r.sizeMin || r.sizeMax) && (
                                                     <div className="flex items-baseline text-slate-800 dark:text-slate-100">
                                                         <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
-                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
+                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜${r.sizeMax || '?'}</span>
                                                         <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
                                                     </div>
                                                 )}
