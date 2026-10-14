@@ -978,7 +978,7 @@ function App() {
 5. 分析：竿頭の釣り方や好釣果の要因、決め手、コツ、工夫した点などを分析して書く。
 6. 締め：釣れた人・釣れなかった人双方に配慮し、「またのご乗船お待ちしております」と前向きに締める。
 ■ 出力フォーマット
-必ず以下の■■■タイトル■■■という区切り文字で区切って、それぞれ明確に切り口やトーンを変えた指定パターンの文章を出力してください。余計な挨拶やマークダウン(```など)は含めないでください。${formatPrompt}`;
+必ず以下の■■■タイトル■■■という区切り文字で区切って、それぞれ明確に切り口やトーンを変えた指定パターンの文章を出力してください。余計な挨拶やコードブロック記号は含めないでください。${formatPrompt}`;
 
         const unit = getUnit(record.targetFish);
 
@@ -1162,7 +1162,7 @@ function App() {
 
     const shareToLine = (record) => {
         const text = generateShareText(record);
-        window.open(`[https://line.me/R/msg/text/?$](https://line.me/R/msg/text/?$){encodeURIComponent(text)}`, '_blank');
+        window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
         setSharedRecordId(null);
     };
 
@@ -1981,8 +1981,8 @@ function App() {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
-                                                        e.stopPropagation(); // 跳ね返り防止（アコーディオンが閉じるのを防ぐ）
-                                                        setShareImageRecord(r); // ボード作成モーダルを開く
+                                                        e.stopPropagation();
+                                                        setShareImageRecord(r);
                                                     }}
                                                     className="w-full py-2.5 px-3 rounded-xl border border-sky-300 dark:border-slate-600 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-800 dark:text-sky-300 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-all"
                                                 >
@@ -2126,7 +2126,7 @@ function App() {
                                                 <span>共有</span>
                                             </button>
 
-                                            {/* 2. 新設：☁️ クラウド保存（GASへ最新データを送信） */}
+                                            {/* 2. ☁️ クラウド保存 */}
                                             <button
                                                 type="button"
                                                 disabled={cloudSavingId === r.id}
