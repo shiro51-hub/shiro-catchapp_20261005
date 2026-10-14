@@ -104,8 +104,9 @@ function SettingsPanel({
 
     if (!isSettingsOpen) return null;
 
-    // AIモデルの表示名とAPI識別子のマップ（最新 3系へ更新）
+    // AIモデルの表示名とAPI識別子のマップ
     const aiModelOptions = [
+        { label: "Gemini 4 Argon（次世代最上位・超高精度）", value: "Gemini 4 Argon", id: "gemini-4-argon" },
         { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
         { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
         { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
