@@ -52,36 +52,6 @@ const MemoModal = ({
 // AI日報用インタビューウィザードモーダル（カスタム単語チップ対応版）
 // =======================================================
 
-// 初期状態の単語タグ（デフォルト値）
-const DEFAULT_WIZARD_TAGS = {
-    scenery: [
-        "ベタ凪", "穏やかなナギ", "心地よい風", "風波強く荒天",
-        "ソヨソヨ", "風波パチャつく", "うねり残る", "肌寒いスタート", 
-        "ポカポカ陽気", "爽快な青空", "どんより曇天", "小雨交じり"
-    ],
-    tide: [
-        "トロリ流れる", "トロトロ", "適度に流れる", "ピリッと効いた", 
-        "潮かっ飛ぶ", "上潮だけ速い", "二枚潮", "底潮動かず", 
-        "潮止まり", "素直な好潮", "たるい流れ", "終日動かず"
-    ],
-    activity: [
-        "朝イチ連発", "中盤から加速", "拾い釣り", "一日ポツポツ継続", 
-        "食い渋り", "アタリ遠い", "エサ取り活発", "お土産十分"
-    ],
-    episode: [
-        "一荷（ダブル）", "ダブル・トリプル", "良型交じり", "ゲスト多彩", 
-        "沖上がり間際に好調", "初挑戦健闘", "特大サイズ浮上"
-    ],
-    size: [
-        "良型主体", "中型揃い", "大小交じり", "中小型交じり", 
-        "小型・ワッペン交じり", "型揃い", "サイズまちまち"
-    ],
-    topAngler: [
-        "スローな誘い", "長めのステイ", "底から1m浮かせ", "ベタ底キープ", 
-        "手返しの早さ", "マメなエサ付け", "微細アタリ感知", "ちょい宙"
-    ]
-};
-
 const AiInputWizardModal = ({
     showAiInputModal,
     setShowAiInputModal,
@@ -96,17 +66,16 @@ const AiInputWizardModal = ({
     setUserApiKey,
     handleAiGenerate
 }) => {
-    // 船長カスタムチップの保存・読み込みステート
+    // 船長カスタムチップの保存・読み込みステート（初期値リストなし・シンプル版）
     const [customTagsMap, setCustomTagsMap] = React.useState(() => {
         try {
             const saved = localStorage.getItem('fishing_custom_wizard_tags');
             if (saved) {
-                return { ...DEFAULT_WIZARD_TAGS, ...JSON.parse(saved) };
+                return JSON.parse(saved);
             }
         } catch (e) {}
-        return DEFAULT_WIZARD_TAGS;
+        return {};
     });
-
     const [isEditingTags, setIsEditingTags] = React.useState(false);
     const [newTagInput, setNewTagInput] = React.useState('');
     const [draggingIdx, setDraggingIdx] = React.useState(null);
