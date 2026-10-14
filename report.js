@@ -109,11 +109,15 @@ const AiInputWizardModal = ({
 
     const [isEditingTags, setIsEditingTags] = React.useState(false);
     const [newTagInput, setNewTagInput] = React.useState('');
+    const [draggingIdx, setDraggingIdx] = React.useState(null);
+    const draggingIdxRef = React.useRef(null);
 
-    // ステップが切り替わったら編集モードを閉じる
+    // ステップが切り替わったら編集モードとドラッグ状態をリセット
     React.useEffect(() => {
         setIsEditingTags(false);
         setNewTagInput('');
+        setDraggingIdx(null);
+        draggingIdxRef.current = null;
     }, [aiCurrentStep, showAiInputModal]);
 
     if (!showAiInputModal) return null;
@@ -187,15 +191,61 @@ const AiInputWizardModal = ({
         }
     };
 
-    // 現在のステップのチップを初期状態に戻す関数
-    const handleResetStepTags = () => {
+    // チップの順番を入れ替える共通関数
+    const moveTagOrder = (fromIdx, toIdx) => {
+        if (fromIdx === null || toIdx === null || fromIdx === toIdx) return;
         const fieldKey = currentStep.id;
-        if (!window.confirm('この項目の単語チップを初期状態に戻しますか？')) return;
+        const list = [...(customTagsMap[fieldKey] || [])];
+        if (fromIdx < 0 || fromIdx >= list.length || toIdx < 0 || toIdx >= list.length) return;
+
+        const [movedItem] = list.splice(fromIdx, 1);
+        list.splice(toIdx, 0, movedItem);
+
         const updated = {
             ...customTagsMap,
-            [fieldKey]: DEFAULT_WIZARD_TAGS[fieldKey] || []
+            [fieldKey]: list
         };
         saveCustomTags(updated);
+        draggingIdxRef.current = toIdx;
+        setDraggingIdx(toIdx);
+
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(10);
+        }
+    };
+
+    // スマホ指スライド（タッチ）でのドラッグ開始
+    const handleTouchStartChip = (idx) => {
+        if (!isEditingTags) return;
+        draggingIdxRef.current = idx;
+        setDraggingIdx(idx);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    };
+
+    // スマホ指スライド（タッチ）中の位置判定＆入れ替え
+    const handleTouchMoveChip = (e) => {
+        if (!isEditingTags || draggingIdxRef.current === null) return;
+        const touch = e.touches[0];
+        if (!touch) return;
+
+        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!targetEl) return;
+
+        const chipEl = targetEl.closest('[data-tag-index]');
+        if (chipEl) {
+            const overIdx = parseInt(chipEl.getAttribute('data-tag-index'), 10);
+            if (!isNaN(overIdx) && overIdx !== draggingIdxRef.current) {
+                moveTagOrder(draggingIdxRef.current, overIdx);
+            }
+        }
+    };
+
+    // スマホ指スライド終了
+    const handleTouchEndChip = () => {
+        draggingIdxRef.current = null;
+        setDraggingIdx(null);
     };
 
     return (
@@ -260,7 +310,7 @@ const AiInputWizardModal = ({
                                 ))}
                             </div>
                         ) : (
-                            /* 3. 自由記述 ＋ カスタム単語チップ（追加・削除対応版） */
+                            /* 3. 自由記述 ＋ カスタム単語チップ（ドラッグ移動・追加・削除対応版） */
                             <div className="flex-1 flex flex-col min-h-0 gap-3">
                                 {/* テキスト入力欄 */}
                                 <div className="flex-1 min-h-[120px]">
@@ -282,30 +332,19 @@ const AiInputWizardModal = ({
                                     <div className="flex justify-between items-center mb-2">
                                         <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                             <span>🏷️</span>
-                                            <span>{isEditingTags ? 'チップの追加・削除' : 'タップで入力（単語チップ）'}</span>
+                                            <span>{isEditingTags ? 'ドラッグで移動 / ✕で削除' : 'タップで入力（単語チップ）'}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            {isEditingTags && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleResetStepTags}
-                                                    className="text-xs font-bold text-gray-500 dark:text-slate-400 underline px-1.5 py-1"
-                                                >
-                                                    初期値に戻す
-                                                </button>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsEditingTags(prev => !prev)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all active:scale-95 ${
-                                                    isEditingTags
-                                                        ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                                                        : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-slate-600'
-                                                }`}
-                                            >
-                                                {isEditingTags ? '✓ 完了' : '✏️ 追加・削除'}
-                                            </button>
-                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingTags(prev => !prev)}
+                                            className={`px-3 py-1 rounded-lg text-xs font-black border transition-all active:scale-95 select-none ${
+                                                isEditingTags
+                                                    ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                                                    : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-slate-600'
+                                            }`}
+                                        >
+                                            {isEditingTags ? '✓ 完了' : '✏️ 編集'}
+                                        </button>
                                     </div>
 
                                     {/* 編集モード時：新しい単語の追加フォーム */}
@@ -336,22 +375,54 @@ const AiInputWizardModal = ({
 
                                     {/* チップ一覧 */}
                                     {currentTags.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar py-0.5">
+                                        <div 
+                                            className={`flex flex-wrap gap-2 max-h-44 overflow-y-auto no-scrollbar py-0.5 select-none ${isEditingTags ? 'touch-none' : ''}`}
+                                            onTouchMove={handleTouchMoveChip}
+                                            onTouchEnd={handleTouchEndChip}
+                                            onTouchCancel={handleTouchEndChip}
+                                        >
                                             {currentTags.map((tag, idx) => (
                                                 isEditingTags ? (
-                                                    <button
-                                                        key={idx}
-                                                        type="button"
-                                                        onClick={() => handleDeleteTag(tag)}
-                                                        className="px-3 py-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-sm sm:text-base font-bold text-rose-900 dark:text-rose-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
-                                                        title="タップでこのチップを削除"
+                                                    <div
+                                                        key={tag}
+                                                        data-tag-index={idx}
+                                                        draggable={true}
+                                                        onDragStart={() => {
+                                                            draggingIdxRef.current = idx;
+                                                            setDraggingIdx(idx);
+                                                        }}
+                                                        onDragEnter={() => {
+                                                            if (draggingIdxRef.current !== null && draggingIdxRef.current !== idx) {
+                                                                moveTagOrder(draggingIdxRef.current, idx);
+                                                            }
+                                                        }}
+                                                        onDragOver={(e) => e.preventDefault()}
+                                                        onDragEnd={handleTouchEndChip}
+                                                        onTouchStart={() => handleTouchStartChip(idx)}
+                                                        className={`px-3 py-2 rounded-xl border text-sm sm:text-base font-bold transition-all flex items-center gap-2 cursor-move ${
+                                                            draggingIdx === idx
+                                                                ? 'border-amber-500 bg-amber-200 dark:bg-amber-800 text-amber-950 dark:text-white scale-105 shadow-md opacity-90 z-10'
+                                                                : 'border-amber-300 dark:border-slate-600 bg-amber-50/90 dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-2xs'
+                                                        }`}
                                                     >
+                                                        <span className="text-amber-600/70 dark:text-amber-400/70 text-xs leading-none">⠿</span>
                                                         <span>{tag}</span>
-                                                        <span className="text-rose-600 dark:text-rose-400 font-black text-xs bg-rose-200/70 dark:bg-rose-900/80 rounded-full w-4 h-4 flex items-center justify-center">✕</span>
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onTouchStart={(e) => e.stopPropagation()}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteTag(tag);
+                                                            }}
+                                                            className="ml-0.5 text-rose-600 dark:text-rose-400 font-black text-xs bg-rose-200/80 hover:bg-rose-300 dark:bg-rose-950/90 rounded-full w-5 h-5 flex items-center justify-center active:scale-90 transition-transform"
+                                                            title="このチップを削除"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
                                                 ) : (
                                                     <button
-                                                        key={idx}
+                                                        key={tag}
                                                         type="button"
                                                         onClick={() => handleAddTag(tag)}
                                                         className="px-3 py-2 rounded-xl border border-amber-200 dark:border-slate-700 bg-amber-50/70 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
@@ -364,7 +435,7 @@ const AiInputWizardModal = ({
                                         </div>
                                     ) : (
                                         <div className="text-xs font-bold text-gray-400 dark:text-slate-500 py-3 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
-                                            単語チップはありません（「✏️ 追加・削除」から登録できます）
+                                            単語チップはありません（「✏️ 編集」から登録できます）
                                         </div>
                                     )}
                                 </div>
