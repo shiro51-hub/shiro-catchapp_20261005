@@ -787,51 +787,98 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     {/* タブ 3: システム */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            {/* ☁️ Googleドライブ保存設定 ＆ 直接復元 */}
-                            <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
+                            {/* ☁️ Googleドライブ保存設定（レイアウト最適化版） */}
+                            <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
                                 <div className="flex justify-between items-center">
-                                    <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ保存設定</span>
-                                    <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">上書き同期</span>
+                                    <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
+                                    <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">クラウド連携</span>
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                                    発行したGASのウェブアプリURLを登録しておくと、クラウドへの保存と直接復元が行えます。
-                                </p>
-                                <div>
-                                    <input
-                                        type="url"
-                                        className="w-full border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 font-mono text-xs bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                                        placeholder="https://script.google.com/macros/s/.../exec"
-                                        value={tempGasUrl}
-                                        onChange={(e) => setTempGasUrl(e.target.value)}
-                                    />
-                                    
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
+
+                                {/* メイン操作：クラウド保存 ＆ ドライブから復元（横並び2分割） */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const targetUrl = (gasBackupUrl || tempGasUrl || '').trim();
+                                            if (!targetUrl) {
+                                                setToastMessage('受取URLが設定されていません。下の入力欄に登録してください。');
+                                                return;
+                                            }
+                                            setToastMessage('Googleドライブへ全データを保存中...');
+                                            try {
+                                                let currentRecords = records;
+                                                const savedRaw = localStorage.getItem('fishing_records');
+                                                if (savedRaw) {
+                                                    try {
+                                                        const parsed = JSON.parse(savedRaw);
+                                                        if (Array.isArray(parsed)) currentRecords = parsed;
+                                                    } catch (e) {}
+                                                }
+                                                const exportPayload = {
+                                                    app: "yamashitamaru",
+                                                    version: "2.0",
+                                                    exportedAt: new Date().toISOString(),
+                                                    records: currentRecords || []
+                                                };
+                                                fetch(targetUrl, {
+                                                    method: 'POST',
+                                                    mode: 'no-cors',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify(exportPayload)
+                                                }).then(() => {
+                                                    setToastMessage('Googleドライブに最新データを保存しました！');
+                                                }).catch((err) => {
+                                                    setToastMessage(`保存に失敗しました: ${err.message}`);
+                                                });
+                                            } catch (e) {
+                                                setToastMessage(`エラー: ${e.message}`);
+                                            }
+                                        }}
+                                        className="bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>☁️</span>
+                                        <span>クラウド保存</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={isCloudRestoring}
+                                        onClick={handleRestoreFromCloud}
+                                        className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                    >
+                                        {isCloudRestoring ? (
+                                            <>
+                                                <span className="animate-spin">↻</span>
+                                                <span>復元中...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>📥</span>
+                                                <span>ドライブから復元</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* 下段：初期設定用URL枠（横結合でコンパクト化） */}
+                                <div className="pt-2 border-t border-sky-200/60 dark:border-slate-800">
+                                    <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 block mb-1">
+                                        🔗 GASウェブアプリURL（初回登録用）
+                                    </label>
+                                    <div className="flex gap-1.5">
+                                        <input
+                                            type="url"
+                                            className="flex-1 border border-gray-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 min-w-0"
+                                            placeholder="https://script.google.com/macros/s/.../exec"
+                                            value={tempGasUrl}
+                                            onChange={(e) => setTempGasUrl(e.target.value)}
+                                        />
                                         <button
                                             type="button"
                                             onClick={handleSaveGasUrl}
-                                            className="w-full bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95"
+                                            className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all active:scale-95 border border-slate-300 dark:border-slate-600"
                                         >
-                                            受取URLを保存
-                                        </button>
-
-                                        {/* ★新設：クラウドからワンタップ直接復元ボタン */}
-                                        <button
-                                            type="button"
-                                            disabled={isCloudRestoring}
-                                            onClick={handleRestoreFromCloud}
-                                            className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1"
-                                        >
-                                            {isCloudRestoring ? (
-                                                <>
-                                                    <span className="animate-spin">↻</span>
-                                                    <span>取得中...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span>☁️</span>
-                                                    <span>ドライブから復元</span>
-                                                </>
-                                            )}
+                                            保存
                                         </button>
                                     </div>
                                 </div>
