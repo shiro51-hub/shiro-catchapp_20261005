@@ -568,7 +568,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                             </div>
 
                             <div className="bg-emerald-50/60 dark:bg-slate-900/60 p-3 rounded-xl border border-emerald-200/80 dark:border-slate-500 space-y-2 shadow-2xs">
-                                <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">釣り座の席数設定（0〜15席）</span>
+                                <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">座席表の釣座設定（0〜15席）</span>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-xs font-bold text-red-500 dark:text-red-400 block mb-1">左舷 席数</label>
