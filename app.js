@@ -1714,24 +1714,52 @@ function App() {
                             lowTide2={lowTide2}
                         />
 
-                        <div className="grid grid-cols-2 gap-2 flex-1">
-                            {counterMode === 'slide' ? (
-                                <>
-                                    <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterCardSlide key={`cp-${i}`} side="port" seat={s} index={i} onCountDelta={handleCountDelta} totalSeats={portSeats.length} />)}</div>
-                                    <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterCardSlide key={`cs-${i}`} side="starboard" seat={s} index={i} onCountDelta={handleCountDelta} totalSeats={starboardSeats.length} />)}</div>
-                                </>
-                            ) : counterMode === 'tap' ? (
-                                <>
-                                    <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterCardTap key={`ctp-${i}`} side="port" seat={s} index={i} onCountDelta={handleCountDelta} onClear={(s, idx) => handleSeatChange(s, idx, 'count', '')} totalSeats={portSeats.length} />)}</div>
-                                    <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterCardTap key={`cts-${i}`} side="starboard" seat={s} index={i} onCountDelta={handleCountDelta} onClear={(s, idx) => handleSeatChange(s, idx, 'count', '')} totalSeats={starboardSeats.length} />)}</div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterKeypadCard key={`kp-${i}`} side="port" seat={s} index={i} onSeatChange={handleSeatChange} totalSeats={portSeats.length} />)}</div>
-                                    <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterKeypadCard key={`ks-${i}`} side="starboard" seat={s} index={i} onSeatChange={handleSeatChange} totalSeats={starboardSeats.length} />)}</div>
-                                </>
-                            )}
-                        </div>
+                        {/* カウンターカード描画エリア（未設定時は待機＆設定誘導カードを表示） */}
+                        {portSeats.length === 0 && starboardSeats.length === 0 ? (
+                            <div className="my-4 p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-sky-300 dark:border-slate-600 shadow-sm text-center flex flex-col items-center justify-center space-y-4 animate-[fadeIn_0.2s_ease-out] flex-1">
+                                <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-3xl shadow-inner">
+                                    🎣
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                                        カウンター待機中
+                                    </h3>
+                                    <p className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        釣り座の席数が設定されていないため<br />カウンターを表示できません
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSettingsOpen(true)}
+                                    className="w-full max-w-xs py-3.5 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 active:from-sky-600 active:to-blue-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 select-none"
+                                >
+                                    <span>⚙️</span>
+                                    <span>席数を設定して開始する</span>
+                                </button>
+                                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                                    ※「座席表」または右上の ⚙️ から席数を登録できます
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2 flex-1">
+                                {counterMode === 'slide' ? (
+                                    <>
+                                        <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterCardSlide key={`cp-${i}`} side="port" seat={s} index={i} onCountDelta={handleCountDelta} totalSeats={portSeats.length} />)}</div>
+                                        <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterCardSlide key={`cs-${i}`} side="starboard" seat={s} index={i} onCountDelta={handleCountDelta} totalSeats={starboardSeats.length} />)}</div>
+                                    </>
+                                ) : counterMode === 'tap' ? (
+                                    <>
+                                        <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterCardTap key={`ctp-${i}`} side="port" seat={s} index={i} onCountDelta={handleCountDelta} onClear={(s, idx) => handleSeatChange(s, idx, 'count', '')} totalSeats={portSeats.length} />)}</div>
+                                        <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterCardTap key={`cts-${i}`} side="starboard" seat={s} index={i} onCountDelta={handleCountDelta} onClear={(s, idx) => handleSeatChange(s, idx, 'count', '')} totalSeats={starboardSeats.length} />)}</div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex flex-col gap-1.5">{portSeats.map((s, i) => <CounterKeypadCard key={`kp-${i}`} side="port" seat={s} index={i} onSeatChange={handleSeatChange} totalSeats={portSeats.length} />)}</div>
+                                        <div className="flex flex-col gap-1.5">{starboardSeats.map((s, i) => <CounterKeypadCard key={`ks-${i}`} side="starboard" seat={s} index={i} onSeatChange={handleSeatChange} totalSeats={starboardSeats.length} />)}</div>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex items-stretch gap-2 shrink-0">
                             <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-2.5 flex flex-col justify-between">
