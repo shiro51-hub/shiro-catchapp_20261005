@@ -160,7 +160,7 @@ const AiInputWizardModal = ({
         }
     };
 
-    // チップの順番を入れ替える共通関数
+   // チップの順番を入れ替える共通関数
     const moveTagOrder = (fromIdx, toIdx) => {
         if (fromIdx === null || toIdx === null || fromIdx === toIdx) return;
         const fieldKey = currentStep.id;
@@ -179,13 +179,16 @@ const AiInputWizardModal = ({
         setDraggingIdx(toIdx);
 
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(10);
+            navigator.vibrate(12);
         }
     };
 
-    // スマホ指スライド（タッチ）でのドラッグ開始
-    const handleTouchStartChip = (idx) => {
+    // 指・マウス共通のポインタードラッグ開始（親コンテナで一括追跡）
+    const handlePointerDownChip = (e, idx) => {
         if (!isEditingTags) return;
+        // 削除ボタンや前後ボタンの上を押した時はドラッグを開始しない
+        if (e.target.closest('button')) return;
+        e.preventDefault();
         draggingIdxRef.current = idx;
         setDraggingIdx(idx);
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -193,29 +196,46 @@ const AiInputWizardModal = ({
         }
     };
 
-    // スマホ指スライド（タッチ）中の位置判定＆入れ替え
-    const handleTouchMoveChip = (e) => {
-        if (!isEditingTags || draggingIdxRef.current === null) return;
-        const touch = e.touches[0];
-        if (!touch) return;
+    // 指・マウスを動かしている最中のリアルタイム入れ替え判定
+    React.useEffect(() => {
+        if (!isEditingTags || draggingIdx === null) return;
 
-        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!targetEl) return;
+        const handleGlobalPointerMove = (e) => {
+            if (draggingIdxRef.current === null) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        const chipEl = targetEl.closest('[data-tag-index]');
-        if (chipEl) {
-            const overIdx = parseInt(chipEl.getAttribute('data-tag-index'), 10);
-            if (!isNaN(overIdx) && overIdx !== draggingIdxRef.current) {
-                moveTagOrder(draggingIdxRef.current, overIdx);
+            const targetEl = document.elementFromPoint(clientX, clientY);
+            if (!targetEl) return;
+
+            const chipEl = targetEl.closest('[data-tag-index]');
+            if (chipEl) {
+                const overIdx = parseInt(chipEl.getAttribute('data-tag-index'), 10);
+                if (!isNaN(overIdx) && overIdx !== draggingIdxRef.current) {
+                    moveTagOrder(draggingIdxRef.current, overIdx);
+                }
             }
-        }
-    };
+        };
 
-    // スマホ指スライド終了
-    const handleTouchEndChip = () => {
-        draggingIdxRef.current = null;
-        setDraggingIdx(null);
-    };
+        const handleGlobalPointerUp = () => {
+            draggingIdxRef.current = null;
+            setDraggingIdx(null);
+        };
+
+        window.addEventListener('pointermove', handleGlobalPointerMove, { passive: false });
+        window.addEventListener('pointerup', handleGlobalPointerUp);
+        window.addEventListener('pointercancel', handleGlobalPointerUp);
+        window.addEventListener('touchmove', handleGlobalPointerMove, { passive: false });
+        window.addEventListener('touchend', handleGlobalPointerUp);
+
+        return () => {
+            window.removeEventListener('pointermove', handleGlobalPointerMove);
+            window.removeEventListener('pointerup', handleGlobalPointerUp);
+            window.removeEventListener('pointercancel', handleGlobalPointerUp);
+            window.removeEventListener('touchmove', handleGlobalPointerMove);
+            window.removeEventListener('touchend', handleGlobalPointerUp);
+        };
+    }, [isEditingTags, draggingIdx, customTagsMap, aiCurrentStep]);
 
     return (
         <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
@@ -301,7 +321,7 @@ const AiInputWizardModal = ({
                                     <div className="flex justify-between items-center mb-2">
                                         <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                             <span>🏷️</span>
-                                            <span>{isEditingTags ? 'ドラッグで移動 / ✕で削除' : 'タップで入力（単語チップ）'}</span>
+                                            <span>{isEditingTags ? '指でスライド移動（または◀▶）/ ✕で削除' : 'タップで入力（単語チップ）'}</span>
                                         </div>
                                         <button
                                             type="button"
@@ -345,40 +365,60 @@ const AiInputWizardModal = ({
                                     {/* チップ一覧 */}
                                     {currentTags.length > 0 ? (
                                         <div 
-                                            className={`flex flex-wrap gap-2 max-h-44 overflow-y-auto no-scrollbar py-0.5 select-none ${isEditingTags ? 'touch-none' : ''}`}
-                                            onTouchMove={handleTouchMoveChip}
-                                            onTouchEnd={handleTouchEndChip}
-                                            onTouchCancel={handleTouchEndChip}
+                                            className={`flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar py-1 select-none ${isEditingTags ? 'touch-none' : ''}`}
                                         >
                                             {currentTags.map((tag, idx) => (
                                                 isEditingTags ? (
                                                     <div
                                                         key={tag}
                                                         data-tag-index={idx}
-                                                        draggable={true}
-                                                        onDragStart={() => {
-                                                            draggingIdxRef.current = idx;
-                                                            setDraggingIdx(idx);
-                                                        }}
-                                                        onDragEnter={() => {
-                                                            if (draggingIdxRef.current !== null && draggingIdxRef.current !== idx) {
-                                                                moveTagOrder(draggingIdxRef.current, idx);
-                                                            }
-                                                        }}
-                                                        onDragOver={(e) => e.preventDefault()}
-                                                        onDragEnd={handleTouchEndChip}
-                                                        onTouchStart={() => handleTouchStartChip(idx)}
-                                                        className={`px-3 py-2 rounded-xl border text-sm sm:text-base font-bold transition-all flex items-center gap-2 cursor-move ${
+                                                        onPointerDown={(e) => handlePointerDownChip(e, idx)}
+                                                        style={{ touchAction: 'none', WebkitUserSelect: 'none' }}
+                                                        className={`px-2.5 py-2 rounded-xl border text-sm sm:text-base font-bold transition-transform flex items-center gap-1.5 cursor-grab active:cursor-grabbing ${
                                                             draggingIdx === idx
-                                                                ? 'border-amber-500 bg-amber-200 dark:bg-amber-800 text-amber-950 dark:text-white scale-105 shadow-md opacity-90 z-10'
+                                                                ? 'border-amber-500 bg-amber-300 dark:bg-amber-700 text-amber-950 dark:text-white scale-110 shadow-lg z-20 ring-2 ring-amber-400'
                                                                 : 'border-amber-300 dark:border-slate-600 bg-amber-50/90 dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-2xs'
                                                         }`}
                                                     >
-                                                        <span className="text-amber-600/70 dark:text-amber-400/70 text-xs leading-none">⠿</span>
-                                                        <span>{tag}</span>
+                                                        {/* 左へ移動ボタン */}
+                                                        {idx > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    moveTagOrder(idx, idx - 1);
+                                                                    setDraggingIdx(null);
+                                                                    draggingIdxRef.current = null;
+                                                                }}
+                                                                className="text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-slate-700 rounded px-1 py-0.5 text-[11px] font-black active:scale-90"
+                                                                title="前へ移動"
+                                                            >
+                                                                ◀
+                                                            </button>
+                                                        )}
+
+                                                        <span className="px-0.5">{tag}</span>
+
+                                                        {/* 右へ移動ボタン */}
+                                                        {idx < currentTags.length - 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    moveTagOrder(idx, idx + 1);
+                                                                    setDraggingIdx(null);
+                                                                    draggingIdxRef.current = null;
+                                                                }}
+                                                                className="text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-slate-700 rounded px-1 py-0.5 text-[11px] font-black active:scale-90"
+                                                                title="次へ移動"
+                                                            >
+                                                                ▶
+                                                            </button>
+                                                        )}
+
+                                                        {/* 削除ボタン */}
                                                         <button
                                                             type="button"
-                                                            onTouchStart={(e) => e.stopPropagation()}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteTag(tag);
