@@ -555,7 +555,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                                     className={`px-3.5 py-1.5 rounded-lg font-black text-sm shadow-sm active:scale-95 transition-all flex items-center gap-1.5 border-2 select-none ${
                                         theme === 'dark'
-                                            ? 'bg-slate-800 text-amber-300 border-amber-400/80 shadow-amber-950/40 hover:border-amber-300'
+                                            ? 'bg-slate-800 text-sky-300 border-sky-500/60 shadow-slate-950/40 hover:border-sky-400'
                                             : 'bg-white text-sky-700 border-sky-400 shadow-sky-100 hover:border-sky-500'
                                     }`}
                                 >
