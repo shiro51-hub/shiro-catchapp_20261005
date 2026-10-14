@@ -785,199 +785,29 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* タブ 3: システム */}
+                    {/* タブ 2: 気象・潮時 */}
+                    {activeSettingsTab === 'weather' && (
+                        ...
+                    )}
+
+                    {/* ★★★ ここから新しく置き換わった「タブ 3: システム」が入ります ★★★ */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            {/* ☁️ Googleドライブ保存設定（レイアウト最適化版） */}
-                            <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
-                                    <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">クラウド連携</span>
-                                </div>
-
-                                {/* メイン操作：クラウド保存 ＆ ドライブから復元（横並び2分割） */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const targetUrl = (gasBackupUrl || tempGasUrl || '').trim();
-                                            if (!targetUrl) {
-                                                setToastMessage('受取URLが設定されていません。下の入力欄に登録してください。');
-                                                return;
-                                            }
-                                            setToastMessage('Googleドライブへ全データを保存中...');
-                                            try {
-                                                let currentRecords = records;
-                                                const savedRaw = localStorage.getItem('fishing_records');
-                                                if (savedRaw) {
-                                                    try {
-                                                        const parsed = JSON.parse(savedRaw);
-                                                        if (Array.isArray(parsed)) currentRecords = parsed;
-                                                    } catch (e) {}
-                                                }
-                                                const exportPayload = {
-                                                    app: "yamashitamaru",
-                                                    version: "2.0",
-                                                    exportedAt: new Date().toISOString(),
-                                                    records: currentRecords || []
-                                                };
-                                                fetch(targetUrl, {
-                                                    method: 'POST',
-                                                    mode: 'no-cors',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify(exportPayload)
-                                                }).then(() => {
-                                                    setToastMessage('Googleドライブに最新データを保存しました！');
-                                                }).catch((err) => {
-                                                    setToastMessage(`保存に失敗しました: ${err.message}`);
-                                                });
-                                            } catch (e) {
-                                                setToastMessage(`エラー: ${e.message}`);
-                                            }
-                                        }}
-                                        className="bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
-                                    >
-                                        <span>☁️</span>
-                                        <span>クラウド保存</span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={isCloudRestoring}
-                                        onClick={handleRestoreFromCloud}
-                                        className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
-                                    >
-                                        {isCloudRestoring ? (
-                                            <>
-                                                <span className="animate-spin">↻</span>
-                                                <span>復元中...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>📥</span>
-                                                <span>ドライブから復元</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-
-                                {/* 下段：初期設定用URL枠（横結合でコンパクト化） */}
-                                <div className="pt-2 border-t border-sky-200/60 dark:border-slate-800">
-                                    <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 block mb-1">
-                                        🔗 GASウェブアプリURL（初回登録用）
-                                    </label>
-                                    <div className="flex gap-1.5">
-                                        <input
-                                            type="url"
-                                            className="flex-1 border border-gray-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 min-w-0"
-                                            placeholder="https://script.google.com/macros/s/.../exec"
-                                            value={tempGasUrl}
-                                            onChange={(e) => setTempGasUrl(e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleSaveGasUrl}
-                                            className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all active:scale-95 border border-slate-300 dark:border-slate-600"
-                                        >
-                                            保存
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* データ管理・バックアップ */}
-                            <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-100 dark:border-slate-500 space-y-2.5">
-                                <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">データ管理・メンテナンス</span>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                                    釣果記録の保存・復元、または初期化を行います。
-                                </p>
-                                
-                                <div className="grid grid-cols-2 gap-2 pt-1">
-                                    <button
-                                        type="button"
-                                        onClick={handleExportData}
-                                        className="w-full bg-sky-100 hover:bg-sky-200 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 font-black py-2.5 rounded-xl shadow-xs text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                                    >
-                                        <span>📥</span> データを保存
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                                        className="w-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-black py-2.5 rounded-xl shadow-xs text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                                    >
-                                        <span>📤</span> データを復元
-                                    </button>
-                                    
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        className="hidden"
-                                        onChange={handleFileImport}
-                                    />
-                                </div>
-
-                                <div className="pt-2 border-t border-sky-200/50 dark:border-slate-800 flex justify-center">
-                                    <button
-                                        type="button"
-                                        onClick={handleFullReset}
-                                        className="w-1/2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/70 font-bold py-1.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                                    >
-                                        <span>⚠️</span> アプリを初期化
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Gemini AI設定 */}
-                            <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
-                                <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
-                                
-                                <div>
-                                    <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
-                                        <span>🤖 使用AIモデル（日報・多角分析用）</span>
-                                    </label>
-                                    <select
-                                        className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
-                                        value={selectedAiModel}
-                                        onChange={handleModelChange}
-                                    >
-                                        {aiModelOptions.map((opt) => (
-                                            <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">🔑 Gemini APIキー</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showKey ? "text" : "password"}
-                                            className="w-full border border-gray-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2 font-mono text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                                            placeholder="AIzaSy..."
-                                            value={tempKey}
-                                            onChange={(e) => setTempKey(e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowKey(!showKey)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-bold select-none"
-                                        >
-                                            {showKey ? '隠す' : '表示'}
-                                        </button>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveApiKey}
-                                        className="w-full mt-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-sm shadow-sm transition-all active:scale-95"
-                                    >
-                                        APIキーを保存
-                                    </button>
-                                </div>
-                            </div>
+                            {/* 1. Gemini AI設定 */}
+                            ...
+                            {/* 2. ☁️ Googleドライブ同期・復元 */}
+                            ...
+                            {/* 3. データ管理・メンテナンス */}
+                            ...
                         </div>
                     )}
+                    {/* ★★★ ここまで ★★★ */}
+
+                </div>
+            </div>
+        </div>
+    );
+}
                 </div>
             </div>
         </div>
