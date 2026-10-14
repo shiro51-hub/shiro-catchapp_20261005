@@ -26,17 +26,66 @@ function SettingsPanel({
     const [tempKey, setTempKey] = React.useState(userApiKey || '');
     const [showKey, setShowKey] = React.useState(false);
     const [tempGasUrl, setTempGasUrl] = React.useState(gasBackupUrl || '');
+    const [isCloudRestoring, setIsCloudRestoring] = React.useState(false);
 
     React.useEffect(() => {
         setTempGasUrl(gasBackupUrl || '');
     }, [gasBackupUrl]);
 
-    // ★GASの受取URL保存処理（重複を解消）
+    // GASの受取URL保存処理
     const handleSaveGasUrl = () => {
         const cleaned = (tempGasUrl || '').trim();
         setGasBackupUrl(cleaned);
         localStorage.setItem('fishing_gas_backup_url', cleaned);
         setToastMessage('Googleドライブ受取URLを保存しました');
+    };
+
+    // ★Googleドライブからワンタップ直接復元する処理
+    const handleRestoreFromCloud = async () => {
+        const targetUrl = (gasBackupUrl || tempGasUrl || '').trim();
+        if (!targetUrl) {
+            setToastMessage('Googleドライブの受取URLが設定されていません。\nURLを入力して「受取URLを保存」を押してください。');
+            return;
+        }
+
+        if (!window.confirm('Googleドライブの最新バックアップから釣果データを復元しますか？\n（現在の端末データは上書きされます）')) {
+            return;
+        }
+
+        setIsCloudRestoring(true);
+        setToastMessage('Googleドライブからバックアップを取得中...');
+
+        try {
+            const res = await fetch(targetUrl, { method: 'GET' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+
+            let importedList = [];
+            if (Array.isArray(data)) {
+                importedList = data;
+            } else if (data && Array.isArray(data.records)) {
+                importedList = data.records;
+            } else if (data && data.status === 'error') {
+                throw new Error(data.message || 'データが見つかりません');
+            } else {
+                throw new Error('バックアップの形式が認識できません');
+            }
+
+            if (importedList.length === 0) {
+                setToastMessage('復元できる釣果データが見つかりませんでした');
+                return;
+            }
+
+            localStorage.setItem('fishing_records', JSON.stringify(importedList));
+            setRecords(importedList);
+            setToastMessage(`復元完了！\n${importedList.length}件の釣果データをGoogleドライブから復元しました。`);
+            setIsSettingsOpen(false);
+        } catch (err) {
+            console.error(err);
+            setToastMessage(`ドライブからの復元に失敗しました:\n${err.message}`);
+        } finally {
+            setIsCloudRestoring(false);
+        }
     };
     
     const [isAnalyzingTide, setIsAnalyzingTide] = React.useState(false);
@@ -85,7 +134,7 @@ function SettingsPanel({
         });
     };
 
-    // 共通 Gemini Vision 呼び出し（最新モデル優先・自動リトライ＆フォールバック対応版）
+    // 共通 Gemini Vision 呼び出し
     const callVisionApi = async (file, prompt) => {
         const activeKey = (userApiKey || '').trim();
         if (!activeKey) {
@@ -94,7 +143,6 @@ function SettingsPanel({
 
         const base64Data = await fileToBase64(file);
 
-        // 最新の 3.8-flash を最優先で使用（最新 ➔ 旧順）
         const visionModels = [
             'gemini-3.8-flash',
             'gemini-3.7-flash',
@@ -167,9 +215,7 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
-    // ==========================================
     // 潮時表 画像解析
-    // ==========================================
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -200,9 +246,7 @@ function SettingsPanel({
         }
     };
 
-    // ==========================================
     // 気象予報 画像解析
-    // ==========================================
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -302,9 +346,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         }
     };
 
-    // ==========================================
-    // バックアップ保存（エクスポート）
-    // ==========================================
+    // バックアップ保存（ローカルファイルへのエクスポート）
     const handleExportData = () => {
         try {
             let currentRecords = records;
@@ -502,12 +544,9 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                 {/* スクロールコンテンツ */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm sm:text-base no-scrollbar bg-white dark:bg-slate-800">
 
-                    {/* ========================================== */}
                     {/* タブ 1: 基本設定 */}
-                    {/* ========================================== */}
                     {activeSettingsTab === 'basic' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            {/* 画面テーマ切り替えスイッチ */}
                             <div className="flex justify-between items-center p-3 bg-amber-50/70 dark:bg-slate-900/60 rounded-xl border border-amber-200/80 dark:border-slate-500 shadow-2xs">
                                 <div>
                                     <span className="font-black text-sm block text-gray-800 dark:text-slate-100">画面テーマ</span>
@@ -530,7 +569,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </button>
                             </div>
 
-                            {/* 釣り座席数設定 */}
                             <div className="bg-emerald-50/60 dark:bg-slate-900/60 p-3 rounded-xl border border-emerald-200/80 dark:border-slate-500 space-y-2 shadow-2xs">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">釣り座の席数設定（0〜15席）</span>
                                 <div className="grid grid-cols-2 gap-2">
@@ -557,11 +595,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 基本海況・ポイント */}
                             <div className="bg-sky-50/80 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">基本海況・ポイント設定</span>
-                                
-                                {/* 1段目：釣り物 */}
                                 <div>
                                     <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">🎣 釣り物 (候補・手入力)</label>
                                     <input
@@ -574,7 +609,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     />
                                 </div>
 
-                                {/* 2段目：ポイント ＋ 水深 */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">ポイント (候補・手入力)</label>
@@ -599,7 +633,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                {/* 3段目：水温 ＋ 潮色 */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">水温 (℃)</label>
@@ -627,13 +660,9 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* ========================================== */}
                     {/* タブ 2: 気象・潮時 */}
-                    {/* ========================================== */}
                     {activeSettingsTab === 'weather' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            
-                            {/* 上段：潮時ブロック */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-900 dark:text-sky-300 block text-sm">🌊 潮時データ</span>
@@ -684,7 +713,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 下段：気象・風波ブロック */}
                             <div className="bg-amber-50/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
                                 <span className="font-black text-amber-900 dark:text-amber-300 block text-sm">☀️ 気象・風・波データ</span>
 
@@ -756,19 +784,17 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* ========================================== */}
                     {/* タブ 3: システム */}
-                    {/* ========================================== */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            {/* ☁️ Googleドライブ受取URL設定 */}
+                            {/* ☁️ Googleドライブ保存設定 ＆ 直接復元 */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ保存設定</span>
                                     <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">上書き同期</span>
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                                    発行したGASのウェブアプリURLを貼り付けて保存してください。履歴カードの「クラウド保存」からワンタップで上書きできるようになります。
+                                    発行したGASのウェブアプリURLを登録しておくと、クラウドへの保存と直接復元が行えます。
                                 </p>
                                 <div>
                                     <input
@@ -778,13 +804,36 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         value={tempGasUrl}
                                         onChange={(e) => setTempGasUrl(e.target.value)}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveGasUrl}
-                                        className="w-full mt-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95"
-                                    >
-                                        受取URLを保存
-                                    </button>
+                                    
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveGasUrl}
+                                            className="w-full bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95"
+                                        >
+                                            受取URLを保存
+                                        </button>
+
+                                        {/* ★新設：クラウドからワンタップ直接復元ボタン */}
+                                        <button
+                                            type="button"
+                                            disabled={isCloudRestoring}
+                                            onClick={handleRestoreFromCloud}
+                                            className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1"
+                                        >
+                                            {isCloudRestoring ? (
+                                                <>
+                                                    <span className="animate-spin">↻</span>
+                                                    <span>取得中...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>☁️</span>
+                                                    <span>ドライブから復元</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -831,11 +880,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* Gemini AI設定（モデル選択が上・APIキーが下 / 文字拡大版） */}
+                            {/* Gemini AI設定 */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 
-                                {/* 1. モデル選択（上段に配置 ＆ フォントサイズ拡大） */}
                                 <div>
                                     <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
                                         <span>🤖 使用AIモデル（日報・多角分析用）</span>
@@ -853,7 +901,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </select>
                                 </div>
 
-                                {/* 2. APIキー（下段に配置） */}
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
                                     <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">🔑 Gemini APIキー</label>
                                     <div className="relative">
