@@ -791,7 +791,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
 
-                            {/* 1. Gemini AI設定（最上段へ移動） */}
+                            {/* 1. Gemini AI設定（最上段） */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 
@@ -840,11 +840,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 2. ☁️ Googleドライブ同期・復元（中段） */}
+                            {/* 2. ☁️ Googleドライブ同期・復元（中段 / クラウド連携バッジ削除版） */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
-                                    <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">クラウド連携</span>
                                 </div>
 
                                 {/* メイン操作：クラウド保存 ＆ ドライブから復元 */}
