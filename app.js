@@ -23,12 +23,11 @@ const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
 
 // ==========================================
 // デジタル釣果ボード（SNS画像）作成モーダル
-// （※中身のロジック・レイアウトは一切変更していません）
 // ==========================================
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
     const [isGenerating, setIsGenerating] = React.useState(false);
-    const [cardTheme, setCardTheme] = React.useState('dark'); // 'dark' or 'light'
+    const [cardTheme, setCardTheme] = React.useState('dark');
     const cardRef = React.useRef(null);
 
     React.useEffect(() => {
@@ -92,7 +91,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                     style={{ width: '100%', maxWidth: '420px', minWidth: '330px', boxSizing: 'border-box' }}
                 >
                     <div className="p-4 pb-5 flex flex-col gap-3 relative z-10">
-                        {/* ヘッダー：日付をロゴ直下にキュッと接近配置 */}
+                        {/* ヘッダー */}
                         <div className={`flex justify-between items-center border-b pb-2.5 ${isDark ? 'border-slate-700/80' : 'border-blue-400/40'}`}>
                             <div className="flex flex-col items-center">
                                 <img 
@@ -112,7 +111,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                             </div>
                         </div>
 
-                        {/* 成績サマリー枠：【上：釣果 ＆ 竿頭】＋【下：型 ＆ 平均のゆったり2分割】 */}
+                        {/* 成績サマリー枠 */}
                         <div className={`rounded-lg px-3.5 pt-2.5 pb-3.5 border shadow-sm flex flex-col gap-2.5 ${isDark ? 'bg-slate-800/85 border-slate-600/80' : 'bg-black/20 border-white/20'}`}>
                             {topCount <= 2 ? (
                                 <div className="flex justify-between items-end gap-2">
@@ -514,11 +513,11 @@ function App() {
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
 
-    // ★Googleドライブ上書き保存用のステート
+    // Googleドライブ上書き保存用のステート
     const [gasBackupUrl, setGasBackupUrl] = React.useState(() => localStorage.getItem('fishing_gas_backup_url') || '');
     const [cloudSavingId, setCloudSavingId] = React.useState(null);
 
-    // ★Googleドライブへ最新データを上書き保存する関数
+    // Googleドライブへ最新データを上書き保存する関数
     const handleSaveRecordToCloud = async (record) => {
         const targetUrl = (gasBackupUrl || '').trim();
         if (!targetUrl) {
@@ -1436,7 +1435,7 @@ function App() {
                 </div>
             )}
 
-            {/* 設定パネル：gasBackupUrl, setGasBackupUrl を追加渡し */}
+            {/* 設定パネル */}
             <SettingsPanel
                 isSettingsOpen={isSettingsOpen} setIsSettingsOpen={setIsSettingsOpen}
                 portCount={portSeatCount} starboardCount={starboardSeatCount} onCountChange={handleSeatCountChange}
@@ -1901,7 +1900,8 @@ function App() {
                                                 {(r.sizeMin || r.sizeMax) && (
                                                     <div className="flex items-baseline text-slate-800 dark:text-slate-100">
                                                         <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
-                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜${r.sizeMax || '?'}</span>
+                                                        {/* ★「$」を除去して修正 */}
+                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
                                                         <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
                                                     </div>
                                                 )}
@@ -1914,7 +1914,7 @@ function App() {
                                         </div>
                                     </div>
 
-                                    {/* ★詳細展開エリア */}
+                                    {/* 詳細展開エリア */}
                                     {isExpanded && (
                                         <div className="p-3 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out] space-y-3">
                                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1976,7 +1976,7 @@ function App() {
                                                 <span>平均: <span className="font-black text-gray-800 dark:text-slate-100">{r.avg || 0}</span> {unit}</span>
                                             </div>
 
-                                            {/* ★詳細の最下部に移動：跳ね返り防止付き「📸 釣果ボードを作成」 */}
+                                            {/* 釣果ボードを作成 */}
                                             <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
                                                 <button
                                                     type="button"
@@ -2012,8 +2012,6 @@ function App() {
 
                                     {/* 2段アクションツールバー */}
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
-                                        
-                                        {/* 【上段】均等3分割：船長メモ ➔ AIカルテ ➔ 日報作成 */}
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             <button
                                                 type="button"
@@ -2113,10 +2111,7 @@ function App() {
                                             )}
                                         </div>
 
-                                        {/* 【下段】均等3分割：共有 ➔ ☁️ クラウド保存 ➔ 削除 */}
                                         <div className="grid grid-cols-3 gap-2 w-full pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-                                            
-                                            {/* 1. 共有 */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); setSharedRecordId(sharedRecordId === r.id ? null : r.id); }}
@@ -2126,7 +2121,6 @@ function App() {
                                                 <span>共有</span>
                                             </button>
 
-                                            {/* 2. ☁️ クラウド保存 */}
                                             <button
                                                 type="button"
                                                 disabled={cloudSavingId === r.id}
@@ -2154,7 +2148,6 @@ function App() {
                                                 )}
                                             </button>
 
-                                            {/* 3. 削除 */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -2167,9 +2160,7 @@ function App() {
                                                 <IconTrash className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
                                                 <span>削除</span>
                                             </button>
-
                                         </div>
-
                                     </div>
                                 </div>
                             );
