@@ -31,6 +31,7 @@ function SettingsPanel({
         setTempGasUrl(gasBackupUrl || '');
     }, [gasBackupUrl]);
 
+    // ★GASの受取URL保存処理（重複を解消）
     const handleSaveGasUrl = () => {
         const cleaned = (tempGasUrl || '').trim();
         setGasBackupUrl(cleaned);
@@ -139,7 +140,6 @@ function SettingsPanel({
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
                     const errMsg = err.error?.message || `HTTP ${response.status}`;
-                    // 混雑・制限（503, 429, 500）の場合は次のモデルへ切り替え
                     if (response.status === 503 || response.status === 429 || response.status === 500) {
                         lastErr = new Error(`モデル ${currentModel} が混雑中: ${errMsg}`);
                         continue;
@@ -416,13 +416,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         setUserApiKey(cleaned);
         localStorage.setItem('fishing_api_key', cleaned);
         setToastMessage('Gemini APIキーを保存しました');
-    };
-
-    const handleSaveGasUrl = () => {
-        const cleaned = (tempGasUrl || '').trim();
-        setGasBackupUrl(cleaned);
-        localStorage.setItem('fishing_gas_backup_url', cleaned);
-        setToastMessage('Googleドライブ受取URLを保存しました');
     };
 
     const handleModelChange = (e) => {
