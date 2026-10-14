@@ -301,14 +301,14 @@ const AiInputWizardModal = ({
                                     </button>
                                 ))}
                             </div>
-                        ) : (
-                            /* 3. 自由記述 ＋ カスタム単語チップ（ドラッグ移動・追加・削除対応版） */
-                            <div className="flex-1 flex flex-col min-h-0 gap-3">
-                                {/* テキスト入力欄 */}
-                                <div className="flex-1 min-h-[120px]">
+                       ) : (
+                            /* 3. 自由記述 ＋ カスタム単語チップ（全チップ表示・ドラッグ＆矢印移動対応版） */
+                            <div className="flex-1 flex flex-col min-h-0 gap-2.5">
+                                {/* テキスト入力欄：編集モード時は自動でコンパクトに畳んでチップ一覧を広く見せる */}
+                                <div className={`transition-all duration-200 ${isEditingTags ? 'h-14 shrink-0' : 'flex-1 min-h-[110px]'}`}>
                                     <textarea
                                         placeholder={currentStep.placeholder}
-                                        className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-gray-50 dark:bg-slate-800 text-base sm:text-lg font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
+                                        className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3 bg-gray-50 dark:bg-slate-800 text-base sm:text-lg font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
                                         value={aiInputData[currentStep.id] || ''}
                                         onChange={(e) => {
                                             const val = e.target.value;
@@ -319,12 +319,12 @@ const AiInputWizardModal = ({
                                     ></textarea>
                                 </div>
 
-                                {/* 単語チップ管理エリア */}
-                                <div className="shrink-0 pt-1">
-                                    <div className="flex justify-between items-center mb-2">
+                                {/* 単語チップ管理エリア：編集モード時は画面の残りスペースいっぱいに広げる */}
+                                <div className={`flex flex-col min-h-0 pt-1 ${isEditingTags ? 'flex-1' : 'shrink-0'}`}>
+                                    <div className="flex justify-between items-center mb-2 shrink-0">
                                         <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                             <span>🏷️</span>
-                                            <span>{isEditingTags ? '指でスライド移動（または◀▶）/ ✕で削除' : 'タップで入力（単語チップ）'}</span>
+                                            <span>{isEditingTags ? 'ドラッグ または ◀▶ で移動 / ✕で削除' : 'タップで入力（単語チップ）'}</span>
                                         </div>
                                         <button
                                             type="button"
@@ -341,7 +341,7 @@ const AiInputWizardModal = ({
 
                                     {/* 編集モード時：新しい単語の追加フォーム */}
                                     {isEditingTags && (
-                                        <div className="flex gap-1.5 mb-2.5 animate-[fadeIn_0.15s_ease-out]">
+                                        <div className="flex gap-1.5 mb-2.5 shrink-0 animate-[fadeIn_0.15s_ease-out]">
                                             <input
                                                 type="text"
                                                 placeholder="よく使う言葉を登録..."
@@ -365,10 +365,12 @@ const AiInputWizardModal = ({
                                         </div>
                                     )}
 
-                                    {/* チップ一覧 */}
+                                    {/* チップ一覧：編集時は高さ制限を解除して下まで全部見せる */}
                                     {currentTags.length > 0 ? (
                                         <div 
-                                            className={`flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar py-1 select-none ${isEditingTags ? 'touch-none' : ''}`}
+                                            className={`flex flex-wrap content-start gap-2 overflow-y-auto no-scrollbar py-1 select-none ${
+                                                isEditingTags ? 'flex-1 pb-4' : 'max-h-48'
+                                            }`}
                                         >
                                             {currentTags.map((tag, idx) => (
                                                 isEditingTags ? (
@@ -379,11 +381,11 @@ const AiInputWizardModal = ({
                                                         style={{ touchAction: 'none', WebkitUserSelect: 'none' }}
                                                         className={`px-2.5 py-2 rounded-xl border text-sm sm:text-base font-bold transition-transform flex items-center gap-1.5 cursor-grab active:cursor-grabbing ${
                                                             draggingIdx === idx
-                                                                ? 'border-amber-500 bg-amber-300 dark:bg-amber-700 text-amber-950 dark:text-white scale-110 shadow-lg z-20 ring-2 ring-amber-400'
+                                                                ? 'border-amber-500 bg-amber-300 dark:bg-amber-700 text-amber-950 dark:text-white scale-105 shadow-lg z-20 ring-2 ring-amber-400'
                                                                 : 'border-amber-300 dark:border-slate-600 bg-amber-50/90 dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-2xs'
                                                         }`}
                                                     >
-                                                        {/* 左へ移動ボタン */}
+                                                        {/* ◀ 前へ移動ボタン */}
                                                         {idx > 0 && (
                                                             <button
                                                                 type="button"
@@ -393,16 +395,17 @@ const AiInputWizardModal = ({
                                                                     setDraggingIdx(null);
                                                                     draggingIdxRef.current = null;
                                                                 }}
-                                                                className="text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-slate-700 rounded px-1 py-0.5 text-[11px] font-black active:scale-90"
+                                                                className="text-amber-700 dark:text-amber-300 bg-amber-200/60 dark:bg-slate-700 rounded px-1.5 py-0.5 text-xs font-black active:scale-90"
                                                                 title="前へ移動"
                                                             >
                                                                 ◀
                                                             </button>
                                                         )}
 
-                                                        <span className="px-0.5">{tag}</span>
+                                                        {/* チップ名（ここを指で掴んでドラッグ移動も可能） */}
+                                                        <span className="px-1">{tag}</span>
 
-                                                        {/* 右へ移動ボタン */}
+                                                        {/* ▶ 次へ移動ボタン */}
                                                         {idx < currentTags.length - 1 && (
                                                             <button
                                                                 type="button"
@@ -412,14 +415,14 @@ const AiInputWizardModal = ({
                                                                     setDraggingIdx(null);
                                                                     draggingIdxRef.current = null;
                                                                 }}
-                                                                className="text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-slate-700 rounded px-1 py-0.5 text-[11px] font-black active:scale-90"
+                                                                className="text-amber-700 dark:text-amber-300 bg-amber-200/60 dark:bg-slate-700 rounded px-1.5 py-0.5 text-xs font-black active:scale-90"
                                                                 title="次へ移動"
                                                             >
                                                                 ▶
                                                             </button>
                                                         )}
 
-                                                        {/* 削除ボタン */}
+                                                        {/* ✕ 削除ボタン */}
                                                         <button
                                                             type="button"
                                                             onClick={(e) => {
