@@ -16,7 +16,8 @@ function SettingsPanel({
     waveHeight2, setWaveHeight2, theme, setTheme,
     targetFish, setTargetFish, date, setToastMessage,
     onFactoryReset, records, setRecords,
-    userApiKey, setUserApiKey, selectedAiModel, setSelectedAiModel
+    userApiKey, setUserApiKey, selectedAiModel, setSelectedAiModel,
+    gasBackupUrl, setGasBackupUrl
 }) {
     const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic'); // 'basic', 'weather', 'system'
     const tideImageInputRef = React.useRef(null);
@@ -24,6 +25,18 @@ function SettingsPanel({
     const fileInputRef = React.useRef(null);
     const [tempKey, setTempKey] = React.useState(userApiKey || '');
     const [showKey, setShowKey] = React.useState(false);
+    const [tempGasUrl, setTempGasUrl] = React.useState(gasBackupUrl || '');
+
+    React.useEffect(() => {
+        setTempGasUrl(gasBackupUrl || '');
+    }, [gasBackupUrl]);
+
+    const handleSaveGasUrl = () => {
+        const cleaned = (tempGasUrl || '').trim();
+        setGasBackupUrl(cleaned);
+        localStorage.setItem('fishing_gas_backup_url', cleaned);
+        setToastMessage('Googleドライブ受取URLを保存しました');
+    };
     
     const [isAnalyzingTide, setIsAnalyzingTide] = React.useState(false);
     const [isAnalyzingWeather, setIsAnalyzingWeather] = React.useState(false);
@@ -41,7 +54,6 @@ function SettingsPanel({
 
     if (!isSettingsOpen) return null;
 
-    // AIモデルの表示名とAPI識別子のマップ
     // AIモデルの表示名とAPI識別子のマップ（最新 3系へ更新）
     const aiModelOptions = [
         { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
@@ -239,7 +251,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
 不明な項目は空文字 "" にしてください。
 {"weather1":"前半天気","weather2":"後半天気","windCheck":"矢印の先端と左右の傾きの目視確認メモ","windDir1":"前半の矢印の向き","windDir2":"後半の矢印の向き","windSpeed1":"前半風速幅(例: 2〜7m)","windSpeed2":"後半風速幅(例: 3〜9m)","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
-
+            
             const parsed = await callVisionApi(file, prompt);
 
             const arrowToWindDir = (arrow) => {
@@ -404,6 +416,13 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         setUserApiKey(cleaned);
         localStorage.setItem('fishing_api_key', cleaned);
         setToastMessage('Gemini APIキーを保存しました');
+    };
+
+    const handleSaveGasUrl = () => {
+        const cleaned = (tempGasUrl || '').trim();
+        setGasBackupUrl(cleaned);
+        localStorage.setItem('fishing_gas_backup_url', cleaned);
+        setToastMessage('Googleドライブ受取URLを保存しました');
     };
 
     const handleModelChange = (e) => {
@@ -749,6 +768,33 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     {/* ========================================== */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
+                            {/* ☁️ Googleドライブ受取URL設定 */}
+                            <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ保存設定</span>
+                                    <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded">上書き同期</span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                                    発行したGASのウェブアプリURLを貼り付けて保存してください。履歴カードの「クラウド保存」からワンタップで上書きできるようになります。
+                                </p>
+                                <div>
+                                    <input
+                                        type="url"
+                                        className="w-full border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 font-mono text-xs bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                        placeholder="https://script.google.com/macros/s/.../exec"
+                                        value={tempGasUrl}
+                                        onChange={(e) => setTempGasUrl(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveGasUrl}
+                                        className="w-full mt-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2 rounded-lg text-xs shadow-xs transition-all active:scale-95"
+                                    >
+                                        受取URLを保存
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* データ管理・バックアップ */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-100 dark:border-slate-500 space-y-2.5">
                                 <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">データ管理・メンテナンス</span>

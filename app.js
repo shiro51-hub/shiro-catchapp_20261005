@@ -23,6 +23,7 @@ const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
 
 // ==========================================
 // デジタル釣果ボード（SNS画像）作成モーダル
+// （※中身のロジック・レイアウトは一切変更していません）
 // ==========================================
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
@@ -185,7 +186,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                                 </div>
                             )}
 
-                            {/* 型 ＆ 平均：総計を省いてゆったり2分割（文字切れを完全防止） */}
+                            {/* 型 ＆ 平均 */}
                             <div className="grid grid-cols-2 pt-2.5 border-t border-white/10 text-center font-bold text-sm sm:text-base items-center" style={{ minHeight: '34px' }}>
                                 <div className={`truncate pr-2 border-r border-white/10 ${isDark ? 'text-slate-300' : 'text-white'}`} style={{ paddingBottom: '2px' }}>
                                     <span className="text-xs opacity-75 mr-1 font-normal">型:</span>
@@ -313,6 +314,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
         </div>
     );
 }
+
 // ==========================================
 // 船長メモモーダル（フォント・ボタン拡大版）
 // ==========================================
@@ -396,13 +398,11 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[720px] overflow-hidden">
                 
-                {/* モーダルヘッダー（領域そのまま・文字と✕を一回り拡大） */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-xl leading-none">📝</span>
                         <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ</h3>
                     </div>
-                    {/* ✕ボタン（領域はw-8 h-8のまま、文字をtext-base〜lgへ拡大） */}
                     <button 
                         type="button"
                         onClick={handleClose}
@@ -413,9 +413,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* ツールバー（高さそのまま・各要素のフォントとアイコンを一回り拡大） */}
                 <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none">
-                    {/* 現在時刻を挿入（文字サイズ・アイコンを一回り拡大） */}
                     <button
                         type="button"
                         onClick={insertCurrentTime}
@@ -426,7 +424,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
 
                     <div className="flex items-center gap-1.5">
-                        {/* 1手戻すボタン（文字を一回り拡大） */}
                         <button
                             type="button"
                             onClick={handleUndo}
@@ -442,7 +439,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             <span>戻す</span>
                         </button>
 
-                        {/* 全消去ボタン（ゴミ箱アイコンを一回り拡大） */}
                         <button
                             type="button"
                             onClick={handleClearAll}
@@ -459,14 +455,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                         <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
-                        {/* 文字数（text-xs ➔ text-sm へ拡大） */}
                         <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tabular-nums">
                             {tempMemo ? `${tempMemo.length}字` : '0字'}
                         </span>
                     </div>
                 </div>
 
-                {/* 広大な本文入力欄 */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
@@ -485,35 +479,30 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         </div>
     );
 }
+
 // ==========================================
 // アプリ本体
 // ==========================================
 function App() {
-    // 1. 起動時：日付が変わっていたら必ず「釣り座（input）」、同日なら前回のタブを開く
     const [activeTab, setActiveTab] = React.useState(() => {
         const today = typeof getTodayString === 'function' ? getTodayString() : new Date().toISOString().split('T')[0];
         const lastActiveDate = localStorage.getItem('fishing_last_active_date');
         
-        // 日付が変わっている（または初回起動）の場合は必ず「釣り座」タブから開始
         if (lastActiveDate !== today) {
             localStorage.setItem('fishing_last_active_date', today);
             localStorage.setItem('fishing_last_tab', 'input');
             return 'input';
         }
         
-        // 同日内の利用であれば前回のタブを復元
         return localStorage.getItem('fishing_last_tab') || 'input';
     });
 
-    // 2. カウンターの入力方式（タップ / スライド / テンキー）を復元
     const [counterMode, setCounterMode] = React.useState(() => localStorage.getItem('fishing_counter_mode') || 'tap');
 
-    // ★追加1：開いているタブが変わったら即座にスマホへ保存（これで「勝手に履歴に戻る」を防止）
     React.useEffect(() => {
         localStorage.setItem('fishing_last_tab', activeTab);
     }, [activeTab]);
 
-    // ★追加2：カウンターの入力方式が変わったら即座にスマホへ保存（これで「勝手にスライドに戻る」を防止）
     React.useEffect(() => {
         localStorage.setItem('fishing_counter_mode', counterMode);
     }, [counterMode]);
@@ -525,7 +514,54 @@ function App() {
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
 
-    // 下部ナビゲーションバーの表示・非表示状態
+    // ★Googleドライブ上書き保存用のステート
+    const [gasBackupUrl, setGasBackupUrl] = React.useState(() => localStorage.getItem('fishing_gas_backup_url') || '');
+    const [cloudSavingId, setCloudSavingId] = React.useState(null);
+
+    // ★Googleドライブへ最新データを上書き保存する関数
+    const handleSaveRecordToCloud = async (record) => {
+        const targetUrl = (gasBackupUrl || '').trim();
+        if (!targetUrl) {
+            setToastMessage('Googleドライブの受取URLが設定されていません。\n右上の「設定」➔「システム」でURLを登録してください。');
+            return;
+        }
+
+        setCloudSavingId(record.id);
+        setToastMessage(`Googleドライブへ【${record.date}】の記録を保存中...`);
+
+        try {
+            let currentRecords = records;
+            const savedRaw = localStorage.getItem('fishing_records');
+            if (savedRaw) {
+                try {
+                    const parsed = JSON.parse(savedRaw);
+                    if (Array.isArray(parsed)) currentRecords = parsed;
+                } catch (e) {}
+            }
+
+            const exportPayload = {
+                app: "yamashitamaru",
+                version: "2.0",
+                exportedAt: new Date().toISOString(),
+                records: currentRecords || []
+            };
+
+            await fetch(targetUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(exportPayload)
+            });
+
+            setToastMessage('Googleドライブに最新データを上書き保存しました！');
+        } catch (err) {
+            console.error(err);
+            setToastMessage(`保存に失敗しました: ${err.message}`);
+        } finally {
+            setCloudSavingId(null);
+        }
+    };
+
     const [isBottomNavVisible, setIsBottomNavVisible] = React.useState(true);
 
     const [date, setDate] = React.useState(getTodayString());
@@ -585,16 +621,12 @@ function App() {
     const [aiInputData, setAiInputData] = React.useState({
         condition: '', scenery: '', tide: '', activity: '', episode: '', size: '', topAngler: '', patterns: [1]
     });
-    const aiTimerRef = React.useRef(null);
 
     const [showAnalysisModal, setShowAnalysisModal] = React.useState(false);
     const [analyzingRecordId, setAnalyzingRecordId] = React.useState(null);
     const [currentAnalysis, setCurrentAnalysis] = React.useState(null);
 
-    // ==========================================
     // スワイプによるタブ切り替えロジック
-    // （エンドレス・ローテーション / 循環切り替え）
-    // ==========================================
     const touchStartX = React.useRef(0);
     const touchStartY = React.useRef(0);
     const tabList = ['input', 'counter', 'history'];
@@ -610,16 +642,13 @@ function App() {
         const diffX = e.changedTouches[0].clientX - touchStartX.current;
         const diffY = e.changedTouches[0].clientY - touchStartY.current;
 
-        // 横スワイプ量が40px以上、かつ縦ブレが横移動より小さい場合に判定
         if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
             const currentIdx = tabList.indexOf(activeTab);
             let nextIdx = currentIdx;
 
             if (diffX < 0) {
-                // 右から左へ（次へ進む：履歴の次は釣り座へループ）
                 nextIdx = (currentIdx + 1) % tabList.length;
             } else {
-                // 左から右へ（前へ戻る：釣り座の前は履歴へループ）
                 nextIdx = (currentIdx - 1 + tabList.length) % tabList.length;
             }
 
@@ -820,9 +849,6 @@ function App() {
         setToastMessage('釣果数をリセットしました（サイズ・お名前は保持）');
     };
 
-    // ==========================================
-    // 履歴からの個別削除処理（当日画面も即座にリセット）
-    // ==========================================
     const handleDeleteRecord = (recordId) => {
         const target = records.find(r => r.id === recordId);
         
@@ -852,17 +878,14 @@ function App() {
     const openMemoModal = (record = null) => {
         if (record) {
             setActiveMemoRecordId(record.id);
-            // 余計な時刻スタンプを一切足さず、保存されているメモをそのままセット（無ければ空文字）
             setTempMemo(record.detailedMemo || '');
         } else {
             setActiveMemoRecordId(null);
-            // カウンター画面からの場合も、既存のメモをそのままセット（無ければ空文字）
             setTempMemo(detailedMemo || '');
         }
         setShowMemoModal(true);
     };
 
-    // メモの即時自動保存処理
     const handleAutoSaveMemo = (newText) => {
         const textToSave = typeof newText === 'string' ? newText : tempMemo;
         if (activeMemoRecordId) {
@@ -878,18 +901,6 @@ function App() {
         } else {
             setDetailedMemo(textToSave);
         }
-    };
-
-    const copyMemoToClipboard = () => {
-        const ta = document.createElement('textarea');
-        ta.value = tempMemo;
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-            document.execCommand('copy');
-            setToastMessage('メモをコピーしました！');
-        } catch (e) {}
-        document.body.removeChild(ta);
     };
 
     const updateAiInputForRecord = (recordId, field, value) => {
@@ -963,20 +974,14 @@ function App() {
 1. 冒頭： 必ず「〇〇沖へと出船しました。」から開始し、次に「海上では…」と天候や海況（風・波・潮色）を伝える。海況を伝える際は情景が目に浮かぶような表現を1文交え、潮回り、潮色を簡潔に一連の流れで記載してください。特に指示がない限り"水深〇〇mでした"は不要です。また、海水温度（水温）についても特に船長からの指示がない限り記載しないでください。 さらに、風については前述の通り数値を出さず感覚的な強弱表現に置き換えてください。
 2. 状況：潮の流れの強さや変化、魚の活性、印象的なエピソードを組み込む。
 3. 竿頭の釣果とお名前（敬称は「さん」）、二番手は釣果だけを紹介する：名前を出すのは「竿頭」のみ。単位（匹、尾、枚、杯など）は魚によって変更すること。全体の釣果として紹介するのはトップの釣果のみとし、その後に続けて竿頭のお名前（敬称は「さん」）を紹介してください。二番手の釣果に触れる場合も釣果数のみとし、スソ（最低釣果）や全体幅（〇〜〇）は文章に出さないでください。
-【トップ釣果の表現例】
-・「トップは〇〇枚をマークし、〇〇さんが見事竿頭となりました。」
-・「本日のトップは〇〇匹。見事釣り上げたのは〇〇さんでした。」
-・「釣果はトップ〇〇尾（〇〇さん）となり、二番手も〇〇尾と続きました。」
-・（渋い日の場合）「厳しい状況の中、トップ〇〇枚を仕留めた〇〇さんが技ありの竿頭でした。」
 4. サイズ：数字（〇cm）は絶対に出さず、「良型」「中型主体」などの言葉のみで表現する。
 5. 分析：竿頭の釣り方や好釣果の要因、決め手、コツ、工夫した点などを分析して書く。
 6. 締め：釣れた人・釣れなかった人双方に配慮し、「またのご乗船お待ちしております」と前向きに締める。
 ■ 出力フォーマット
-必ず以下の■■■タイトル■■■という区切り文字で区切って、それぞれ明確に切り口やトーンを変えた指定パターンの文章を出力してください。余計な挨拶やマークダウン(\`\`\`など)は含めないでください。${formatPrompt}`;
+必ず以下の■■■タイトル■■■という区切り文字で区切って、それぞれ明確に切り口やトーンを変えた指定パターンの文章を出力してください。余計な挨拶やマークダウン(```など)は含めないでください。${formatPrompt}`;
 
         const unit = getUnit(record.targetFish);
 
-        // 二番手釣果（竿頭の次に多い数）を正確に抽出してAIに渡す
         const allCounts = [...(record.port || []), ...(record.starboard || [])]
             .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count)))
             .map(s => parseInt(s.count, 10));
@@ -1002,16 +1007,14 @@ function App() {
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通りに指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
-            // settings.js の登録モデル順マスター配列
             const modelsDescOrder = [
               'gemini-3.8-flash',
               'gemini-3.7-flash',
               'gemini-3.6-flash',
               'gemini-3.5-flash',
               'gemini-3.1-pro'
-          ];
+            ];
 
-            // 選択中の希望モデルを開始位置としてキューを作成
             const startIndex = modelsDescOrder.indexOf(modelName);
             const modelQueue = startIndex !== -1 
                 ? modelsDescOrder.slice(startIndex) 
@@ -1020,11 +1023,9 @@ function App() {
             let text = null;
             let lastError = null;
 
-            // モデル切り替えループ
             for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
                 const currentModel = modelQueue[mIdx];
                 const isPreferredModel = (mIdx === 0);
-                // 希望モデルは最大3回、切り替え後の予備モデルは1回ずつ試行
                 const maxAttempts = isPreferredModel ? 3 : 1;
 
                 if (mIdx > 0) {
@@ -1046,30 +1047,18 @@ function App() {
                         const errMsg = ((err && err.message) || String(err)).toLowerCase();
                         const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429');
 
-                        // 混雑エラー以外（APIキー無効など）は即座に終了
-                        if (!isBusy) {
-                            throw err;
-                        }
-
-                        // 希望モデルで試行回数が残っている場合はリトライ
-                        if (isPreferredModel && attempt < maxAttempts) {
-                            continue;
-                        }
+                        if (!isBusy) throw err;
+                        if (isPreferredModel && attempt < maxAttempts) continue;
                     }
                 }
 
-                // テキストが取得できたらモデルループを終了
                 if (text) break;
             }
 
-            if (!text && lastError) {
-                throw lastError;
-            }
+            if (!text && lastError) throw lastError;
 
             if (text) {
-                // 作成完了時にトーストを即座に消去
                 setToastMessage('');
-
                 const parts = text.split(/■■■/);
                 const patterns = [];
                 for (let i = 1; i < parts.length; i += 2) {
@@ -1173,7 +1162,7 @@ function App() {
 
     const shareToLine = (record) => {
         const text = generateShareText(record);
-        window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
+        window.open(`[https://line.me/R/msg/text/?$](https://line.me/R/msg/text/?$){encodeURIComponent(text)}`, '_blank');
         setSharedRecordId(null);
     };
 
@@ -1184,9 +1173,6 @@ function App() {
         setSharedRecordId(null);
     };
 
-   // ==========================================
-    // AI分析 実行処理（モデル順次切り替え＆429/503自動回避版）
-    // ==========================================
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
         if (!activeApiKey) {
@@ -1247,7 +1233,6 @@ function App() {
         const prompt = promptLines.join('\n');
 
         try {
-            // settings.js の登録モデルを【最新 ➔ 古い順】に並べたマスター配列[cite: 2]
             const modelsDescOrder = [
                 'gemini-3.8-flash',
                 'gemini-3.7-flash',
@@ -1268,11 +1253,9 @@ function App() {
             let text = null;
             let lastError = null;
 
-            // モデル切り替えループ
             for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
                 const targetModel = modelQueue[mIdx];
                 const isPreferredModel = (mIdx === 0);
-                // 希望モデルは最大3回、切り替え後の予備モデルは1回ずつ試行
                 const maxAttempts = isPreferredModel ? 3 : 1;
 
                 if (mIdx > 0) {
@@ -1294,25 +1277,15 @@ function App() {
                         const errMsg = ((err && err.message) || String(err)).toLowerCase();
                         const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429') || errMsg.includes('resource_exhausted') || errMsg.includes('quota');
 
-                        // 混雑以外の致命的エラー（キー無効など）は即座に中断
-                        if (!isBusy) {
-                            throw err;
-                        }
-
-                        // 希望モデルでまだ試行回数が残っている場合はループを継続
-                        if (isPreferredModel && attempt < maxAttempts) {
-                            continue;
-                        }
+                        if (!isBusy) throw err;
+                        if (isPreferredModel && attempt < maxAttempts) continue;
                     }
                 }
 
-                // 正常に取得できたらモデル探索ループ全体を終了
                 if (text) break;
             }
 
-            if (!text) {
-                throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
-            }
+            if (!text) throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
 
             let cleanJson = text.trim();
             if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replace(/^```json/, '');
@@ -1326,8 +1299,6 @@ function App() {
             }
 
             const analysisData = JSON.parse(cleanJson);
-
-            // 分析完了と同時にトーストの「作成中/分析中」表示を消去
             setToastMessage('');
 
             setCurrentAnalysis({ record, data: analysisData });
@@ -1465,6 +1436,7 @@ function App() {
                 </div>
             )}
 
+            {/* 設定パネル：gasBackupUrl, setGasBackupUrl を追加渡し */}
             <SettingsPanel
                 isSettingsOpen={isSettingsOpen} setIsSettingsOpen={setIsSettingsOpen}
                 portCount={portSeatCount} starboardCount={starboardSeatCount} onCountChange={handleSeatCountChange}
@@ -1481,9 +1453,10 @@ function App() {
                 onFactoryReset={() => { setRecords([]); localStorage.clear(); setToastMessage('初期化完了'); }}
                 records={records} setRecords={setRecords} userApiKey={userApiKey} setUserApiKey={setUserApiKey}
                 selectedAiModel={selectedAiModel} setSelectedAiModel={setSelectedAiModel}
+                gasBackupUrl={gasBackupUrl} setGasBackupUrl={setGasBackupUrl}
             />
 
-            {/* 釣行メモモーダル（Keep型自動保存版） */}
+            {/* 釣行メモモーダル */}
             <MemoModalWithTags
                 showMemoModal={showMemoModal}
                 setShowMemoModal={setShowMemoModal}
@@ -1552,7 +1525,7 @@ function App() {
                 setToastMessage={setToastMessage}
             />
 
-            {/* ヘッダー（左右スワイプでエンドレス・循環切り替え） */}
+            {/* ヘッダー */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
@@ -1638,16 +1611,16 @@ function App() {
                             </button>
 
                             <button
-    type="button"
-    onClick={() => setInputSide('both')}
-    className={`px-4 py-2 rounded-lg text-sm font-black border transition-all active:scale-95 shrink-0 ${
-        inputSide === 'both'
-            ? 'bg-sky-100/70 dark:bg-slate-800 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-700 shadow-2xs'
-            : 'bg-transparent text-gray-400 dark:text-slate-500 border-transparent hover:text-gray-600'
-    }`}
->
-    両舷
-</button>
+                                type="button"
+                                onClick={() => setInputSide('both')}
+                                className={`px-4 py-2 rounded-lg text-sm font-black border transition-all active:scale-95 shrink-0 ${
+                                    inputSide === 'both'
+                                        ? 'bg-sky-100/70 dark:bg-slate-800 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-700 shadow-2xs'
+                                        : 'bg-transparent text-gray-400 dark:text-slate-500 border-transparent hover:text-gray-600'
+                                }`}
+                            >
+                                両舷
+                            </button>
 
                             <button
                                 type="button"
@@ -1688,81 +1661,73 @@ function App() {
                 {activeTab === 'counter' && (
                     <div className="flex flex-col flex-1 space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         {(() => {
-    const stats = getTopAnglerDetails(portSeats, starboardSeats);
-    const unit = getUnit(targetFish);
+                            const stats = getTopAnglerDetails(portSeats, starboardSeats);
+                            const unit = getUnit(targetFish);
 
-    // 左右座席から船中合計匹数を合算
-    const allSeats = [...(portSeats || []), ...(starboardSeats || [])];
-    const totalCount = allSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count, 10) || 0) : 0), 0);
+                            const allSeats = [...(portSeats || []), ...(starboardSeats || [])];
+                            const totalCount = allSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count, 10) || 0) : 0), 0);
 
-    // 1. 左側：現在の釣果（特大表示のまま維持）
-    const scoreText = stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-';
+                            const scoreText = stats.anglers > 0 ? `${stats.min}〜${stats.max}` : '-';
 
-    // 2. 右側：竿頭のお名前（中間サイズ：最大 2xl〜3xl に調整）
-    const topCount = stats.topNames.length;
-    const topCombinedName = stats.topNames.join('・');
-    let nameSizeClass = 'text-lg sm:text-xl';
+                            const topCount = stats.topNames.length;
+                            const topCombinedName = stats.topNames.join('・');
+                            let nameSizeClass = 'text-lg sm:text-xl';
 
-    if (topCount === 0) {
-        nameSizeClass = 'text-xl text-gray-400';
-    } else if (topCount === 1) {
-        if (topCombinedName.length <= 4) {
-            nameSizeClass = 'text-2xl sm:text-3xl'; // 最大表示：程よく見やすい 2xl〜3xl
-        } else if (topCombinedName.length <= 7) {
-            nameSizeClass = 'text-xl sm:text-2xl';
-        } else {
-            nameSizeClass = 'text-base sm:text-lg';
-        }
-    } else if (topCount === 2) {
-        nameSizeClass = topCombinedName.length > 8 ? 'text-sm' : 'text-base sm:text-lg';
-    } else {
-        nameSizeClass = 'text-xs sm:text-sm';
-    }
+                            if (topCount === 0) {
+                                nameSizeClass = 'text-xl text-gray-400';
+                            } else if (topCount === 1) {
+                                if (topCombinedName.length <= 4) {
+                                    nameSizeClass = 'text-2xl sm:text-3xl';
+                                } else if (topCombinedName.length <= 7) {
+                                    nameSizeClass = 'text-xl sm:text-2xl';
+                                } else {
+                                    nameSizeClass = 'text-base sm:text-lg';
+                                }
+                            } else if (topCount === 2) {
+                                nameSizeClass = topCombinedName.length > 8 ? 'text-sm' : 'text-base sm:text-lg';
+                            } else {
+                                nameSizeClass = 'text-xs sm:text-sm';
+                            }
 
-    return (
-        <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[80px] shrink-0">
-            
-            {/* 左枠：現在の釣果（特大表示・単位・船中合計） */}
-            <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2 min-w-0">
-                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
-                    現在の釣果
-                </span>
-                <div className="flex items-baseline justify-center gap-1.5 w-full truncate">
-                    <span className="text-3xl sm:text-4xl font-black text-blue-900 dark:text-slate-100 tracking-tight leading-none">
-                        {scoreText}
-                    </span>
-                    <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0">
-                        {unit}
-                    </span>
-                    {totalCount > 0 && (
-                        <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0 ml-0.5">
-                            ({totalCount})
-                        </span>
-                    )}
-                </div>
-            </div>
+                            return (
+                                <div className="bg-blue-100 dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-slate-700 flex justify-between items-stretch min-h-[80px] shrink-0">
+                                    <div className="w-1/2 flex flex-col items-center justify-center border-r border-blue-200 dark:border-slate-700 px-2 min-w-0">
+                                        <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
+                                            現在の釣果
+                                        </span>
+                                        <div className="flex items-baseline justify-center gap-1.5 w-full truncate">
+                                            <span className="text-3xl sm:text-4xl font-black text-blue-900 dark:text-slate-100 tracking-tight leading-none">
+                                                {scoreText}
+                                            </span>
+                                            <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0">
+                                                {unit}
+                                            </span>
+                                            {totalCount > 0 && (
+                                                <span className="text-base sm:text-lg font-black text-blue-900 dark:text-slate-100 shrink-0 ml-0.5">
+                                                    ({totalCount})
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
 
-            {/* 右枠：竿頭（名前を程よく大きめの 2xl〜3xl に調整） */}
-            <div className="w-1/2 flex flex-col items-center justify-center px-2 min-w-0">
-                <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
-                    <IconTrophy className="w-4 h-4 mr-1 text-amber-500 shrink-0" /> 竿頭
-                </span>
-                <div className="w-full flex items-center justify-center text-center px-1">
-                    {topCount > 0 ? (
-                        <span className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight truncate`}>
-                            {topCombinedName}
-                        </span>
-                    ) : (
-                        <span className="text-2xl font-black text-gray-400">-</span>
-                    )}
-                </div>
-            </div>
+                                    <div className="w-1/2 flex flex-col items-center justify-center px-2 min-w-0">
+                                        <span className="text-xs font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider flex items-center mb-0.5">
+                                            <IconTrophy className="w-4 h-4 mr-1 text-amber-500 shrink-0" /> 竿頭
+                                        </span>
+                                        <div className="w-full flex items-center justify-center text-center px-1">
+                                            {topCount > 0 ? (
+                                                <span className={`${nameSizeClass} font-black text-blue-900 dark:text-slate-100 leading-tight truncate`}>
+                                                    {topCombinedName}
+                                                </span>
+                                            ) : (
+                                                <span className="text-2xl font-black text-gray-400">-</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
-        </div>
-    );
-})()}
-
-                        {/* 潮時リアルタイムアラートバー */}
                         <TideAlertBanner
                             tideState={tideState}
                             highTide1={highTide1}
@@ -1790,9 +1755,7 @@ function App() {
                             )}
                         </div>
 
-                        {/* 魚のサイズ（左） ＋ 船長メモ正方形大型ボタン（右） */}
                         <div className="flex items-stretch gap-2 shrink-0">
-                            {/* 左側：魚のサイズ枠 */}
                             <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-2.5 flex flex-col justify-between">
                                 <div className="text-xs font-black text-gray-500 dark:text-slate-400 mb-1.5 flex items-center">
                                     <IconRuler className="w-4 h-4 mr-1 text-sky-500 dark:text-sky-400 shrink-0" /> 
@@ -1823,7 +1786,6 @@ function App() {
                                 </div>
                             </div>
 
-                            {/* 右側：正方形大型メモボタン */}
                             <button
                                 type="button"
                                 onClick={() => openMemoModal(null)}
@@ -1886,8 +1848,6 @@ function App() {
                             const isExpanded = expandedRecordId === r.id;
                             const unit = getUnit(r.targetFish);
                             return (
-                               
-                                /* 外枠を dark:border-slate-500 に統一 */
                                 <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow border border-sky-200 dark:border-slate-500 overflow-hidden transition-all">
                                     <div 
                                         className="p-4 cursor-pointer active:bg-gray-50 dark:active:bg-slate-700/50 select-none" 
@@ -1910,26 +1870,26 @@ function App() {
                                         </div>
 
                                         {(r.point || r.waterDepth || r.waterTemp || r.tide || r.tideState || r.weather1 || r.windDir1 || r.windSpeed1) && (
-    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">
-        {r.point && <span className="font-black text-slate-800 dark:text-slate-100">{r.point}</span>}
-        {r.waterDepth && <span>{r.waterDepth}m</span>}
-        {r.waterTemp && <span>{r.waterTemp}℃</span>}
-        {r.tide && <span>{r.tide}</span>}
-        {r.tideState && <span>{r.tideState}</span>}
-        {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${r.weather2}` : ''}</span>}
-        {(() => {
-            const wd1 = r.windDir1 || r.windDir || '';
-            const ws1 = r.windSpeed1 || r.windSpeed || '';
-            const wd2 = r.windDir2 || '';
-            const ws2 = r.windSpeed2 || '';
-            const f1 = (wd1 || ws1) ? `${wd1}${ws1 ? `(${ws1})` : ''}` : '';
-            const f2 = (wd2 || ws2) ? `${wd2}${ws2 ? `(${ws2})` : ''}` : '';
-            if (!f1 && !f2) return null;
-            if (f1 && f2 && f1 !== f2) return <span>{f1}→{f2}</span>;
-            return <span>{f1 || f2}</span>;
-        })()}
-    </div>
-)}
+                                            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">
+                                                {r.point && <span className="font-black text-slate-800 dark:text-slate-100">{r.point}</span>}
+                                                {r.waterDepth && <span>{r.waterDepth}m</span>}
+                                                {r.waterTemp && <span>{r.waterTemp}℃</span>}
+                                                {r.tide && <span>{r.tide}</span>}
+                                                {r.tideState && <span>{r.tideState}</span>}
+                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${r.weather2}` : ''}</span>}
+                                                {(() => {
+                                                    const wd1 = r.windDir1 || r.windDir || '';
+                                                    const ws1 = r.windSpeed1 || r.windSpeed || '';
+                                                    const wd2 = r.windDir2 || '';
+                                                    const ws2 = r.windSpeed2 || '';
+                                                    const f1 = (wd1 || ws1) ? `${wd1}${ws1 ? `(${ws1})` : ''}` : '';
+                                                    const f2 = (wd2 || ws2) ? `${wd2}${ws2 ? `(${ws2})` : ''}` : '';
+                                                    if (!f1 && !f2) return null;
+                                                    if (f1 && f2 && f1 !== f2) return <span>{f1}→{f2}</span>;
+                                                    return <span>{f1 || f2}</span>;
+                                                })()}
+                                            </div>
+                                        )}
 
                                         <div className="bg-sky-50 dark:bg-slate-900/60 border border-sky-100 dark:border-slate-800 rounded-xl p-3 flex flex-wrap justify-between items-center gap-x-3 gap-y-1.5">
                                             <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1">
@@ -1941,7 +1901,7 @@ function App() {
                                                 {(r.sizeMin || r.sizeMax) && (
                                                     <div className="flex items-baseline text-slate-800 dark:text-slate-100">
                                                         <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
-                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
+                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜${r.sizeMax || '?'}</span>
                                                         <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
                                                     </div>
                                                 )}
@@ -1954,6 +1914,7 @@ function App() {
                                         </div>
                                     </div>
 
+                                    {/* ★詳細展開エリア */}
                                     {isExpanded && (
                                         <div className="p-3 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out] space-y-3">
                                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -2014,6 +1975,21 @@ function App() {
                                                 <span>総計: <span className="font-black text-gray-800 dark:text-slate-100">{r.total || 0}</span> {unit} ({r.anglers || 0}名)</span>
                                                 <span>平均: <span className="font-black text-gray-800 dark:text-slate-100">{r.avg || 0}</span> {unit}</span>
                                             </div>
+
+                                            {/* ★詳細の最下部に移動：跳ね返り防止付き「📸 釣果ボードを作成」 */}
+                                            <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // 跳ね返り防止（アコーディオンが閉じるのを防ぐ）
+                                                        setShareImageRecord(r); // ボード作成モーダルを開く
+                                                    }}
+                                                    className="w-full py-2.5 px-3 rounded-xl border border-sky-300 dark:border-slate-600 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-800 dark:text-sky-300 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-all"
+                                                >
+                                                    <span className="text-base leading-none">📸</span>
+                                                    <span>釣果ボードを作成</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
@@ -2034,17 +2010,11 @@ function App() {
                                         </div>
                                     )}
 
-                                    {/* ========================================== */}
-                                    {/* 2段アクションツールバー（上段3・下段3 均等レイアウト） */}
-                                    {/* 上段：[釣行メモ] [AIカルテ] [日報作成] */}
-                                    {/* 下段：[共有]     [釣果ボード] [削除]   */}
-                                    {/* ========================================== */}
+                                    {/* 2段アクションツールバー */}
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         
-                                        {/* 【上段】均等3分割：釣行メモ ➔ AIカルテ ➔ 日報作成 */}
+                                        {/* 【上段】均等3分割：船長メモ ➔ AIカルテ ➔ 日報作成 */}
                                         <div className="grid grid-cols-3 gap-2 w-full">
-                                            
-                                            {/* 1. 船長メモ（カウンター画面と統一） */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
@@ -2061,7 +2031,6 @@ function App() {
                                                 )}
                                             </button>
 
-                                            {/* 2. AIカルテ（未分析: AIカルテ / 分析済: 分析済） */}
                                             <button
                                                 type="button"
                                                 disabled={analyzingRecordId === r.id}
@@ -2096,7 +2065,6 @@ function App() {
                                                 )}
                                             </button>
 
-                                            {/* 3. 日報作成（未作成: 日報作成 / 作成済: 日報済） */}
                                             {generatingAiId === r.id ? (
                                                 <div className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
                                                     <span>作成中</span>
@@ -2143,10 +2111,9 @@ function App() {
                                                     <span>日報作成</span>
                                                 </button>
                                             )}
-
                                         </div>
 
-                                        {/* 【下段】均等3分割：共有 ➔ 釣果ボード ➔ 削除（上段と同じサイズ・規格） */}
+                                        {/* 【下段】均等3分割：共有 ➔ ☁️ クラウド保存 ➔ 削除 */}
                                         <div className="grid grid-cols-3 gap-2 w-full pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
                                             
                                             {/* 1. 共有 */}
@@ -2159,17 +2126,35 @@ function App() {
                                                 <span>共有</span>
                                             </button>
 
-                                            {/* 2. 釣果ボード */}
+                                            {/* 2. 新設：☁️ クラウド保存（GASへ最新データを送信） */}
                                             <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); setShareImageRecord(r); }}
-                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                disabled={cloudSavingId === r.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSaveRecordToCloud(r);
+                                                }}
+                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
+                                                    cloudSavingId === r.id
+                                                        ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 cursor-wait'
+                                                        : 'bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border-slate-200 dark:border-slate-700'
+                                                }`}
+                                                title="Googleドライブへ最新データを上書き保存"
                                             >
-                                                <IconCamera className="w-3.5 h-3.5 shrink-0" />
-                                                <span>釣果ボード</span>
+                                                {cloudSavingId === r.id ? (
+                                                    <>
+                                                        <span className="inline-block animate-spin text-sm leading-none text-sky-600 dark:text-sky-400">↻</span>
+                                                        <span>保存中</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>☁️</span>
+                                                        <span>クラウド保存</span>
+                                                    </>
+                                                )}
                                             </button>
 
-                                            {/* 3. 削除（濃いめ灰色デザイン） */}
+                                            {/* 3. 削除 */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -2194,7 +2179,7 @@ function App() {
                 )}
             </div>
 
-          {/* 下部ナビゲーションバー（底面密着 ＆ 全タブ等サイズ版） */}
+            {/* 下部ナビゲーションバー */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
@@ -2202,7 +2187,6 @@ function App() {
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
-                {/* 1. 釣り座タブ */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
                         activeTab === 'input' 
@@ -2225,7 +2209,6 @@ function App() {
                     </span>
                 </button>
 
-                {/* 2. カウンタータブ */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all relative ${
                         activeTab === 'counter' 
@@ -2255,7 +2238,6 @@ function App() {
                     </span>
                 </button>
 
-                {/* 3. 釣果・履歴タブ（フォントサイズを他と同じ text-xs に統一） */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
@@ -2278,7 +2260,6 @@ function App() {
                     </span>
                 </button>
 
-                {/* ナビバー収納ボタン */}
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
@@ -2289,7 +2270,6 @@ function App() {
                 </button>
             </div>
 
-            {/* ナビバーが隠れている時の透明スワイプエリア */}
             {!isBottomNavVisible && (
                 <div
                     onTouchStart={handleSwipeStart}
@@ -2299,7 +2279,6 @@ function App() {
                 />
             )}
 
-            {/* ナビバーが隠れている時の復帰ボタン */}
             {!isBottomNavVisible && (
                 <button
                     type="button"
