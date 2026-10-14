@@ -913,7 +913,7 @@ function App() {
         return prompts[id];
     };
 
-    // 日報作成処理（マスターから自動ローテーション）
+    // 日報作成処理
     const handleAiGenerate = async (record, conditionInfo, sceneryInfo, tideInfo, activityInfo, episodeInfo, sizeInfo, topAnglerInfo, selectedPatterns, customKey) => {
         setGeneratingAiId(record.id);
         const activeApiKey = (customKey || userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -989,9 +989,8 @@ function App() {
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通りに指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
-            // ★マスター連動：選択モデルから始まるローテーションキューを自動生成
-            const modelQueue = typeof getModelRotationOrder === 'function'
-                ? getModelRotationOrder(selectedAiModel)
+            const modelQueue = typeof window.getModelRotationOrder === 'function'
+                ? window.getModelRotationOrder(selectedAiModel)
                 : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
 
             let text = null;
@@ -1147,7 +1146,7 @@ function App() {
         setSharedRecordId(null);
     };
 
-    // AI多角分析処理（マスターから自動ローテーション）
+    // AI多角分析処理
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
         if (!activeApiKey) {
@@ -1208,9 +1207,8 @@ function App() {
         const prompt = promptLines.join('\n');
 
         try {
-            // ★マスター連動：選択モデルから始まるローテーションキューを自動生成
-            const modelQueue = typeof getModelRotationOrder === 'function'
-                ? getModelRotationOrder(selectedAiModel)
+            const modelQueue = typeof window.getModelRotationOrder === 'function'
+                ? window.getModelRotationOrder(selectedAiModel)
                 : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
 
             let text = null;
@@ -1363,7 +1361,6 @@ function App() {
                 </div>
             )}
 
-            {/* 個別記録削除の確認モーダル */}
             {recordToDelete && (
                 <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.15s_ease-out]" onClick={() => setRecordToDelete(null)}>
                     <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-2xl border-2 border-red-300 dark:border-red-800 w-full max-w-xs text-center space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -1399,7 +1396,6 @@ function App() {
                 </div>
             )}
 
-            {/* 設定パネル */}
             <SettingsPanel
                 isSettingsOpen={isSettingsOpen} setIsSettingsOpen={setIsSettingsOpen}
                 portCount={portSeatCount} starboardCount={starboardSeatCount} onCountChange={handleSeatCountChange}
@@ -1419,7 +1415,6 @@ function App() {
                 gasBackupUrl={gasBackupUrl} setGasBackupUrl={setGasBackupUrl}
             />
 
-            {/* 釣行メモモーダル */}
             <MemoModalWithTags
                 showMemoModal={showMemoModal}
                 setShowMemoModal={setShowMemoModal}
@@ -1428,7 +1423,6 @@ function App() {
                 onAutoSave={handleAutoSaveMemo}
             />
 
-            {/* AI日報入力ウィザードモーダル */}
             <AiInputWizardModal
                 showAiInputModal={showAiInputModal}
                 setShowAiInputModal={setShowAiInputModal}
@@ -1444,7 +1438,6 @@ function App() {
                 handleAiGenerate={handleAiGenerate}
             />
 
-            {/* AI日報表示モーダル */}
             <AiResultModal
                 showAiModal={showAiModal}
                 setShowAiModal={setShowAiModal}
@@ -1470,7 +1463,6 @@ function App() {
                 }}
             />
 
-            {/* AI多角分析モーダル */}
             <AiAnalysisModal
                 showAnalysisModal={showAnalysisModal}
                 setShowAnalysisModal={setShowAnalysisModal}
@@ -1481,7 +1473,6 @@ function App() {
                 isAnalyzing={analyzingRecordId === (currentAnalysis?.record?.id)}
             />
 
-            {/* 釣果ボード生成モーダル */}
             <ShareImageModal
                 record={shareImageRecord}
                 onClose={() => setShareImageRecord(null)}
@@ -2127,16 +2118,17 @@ function App() {
                 )}
             </div>
 
-            {/* 下部ナビゲーションバー */}
+            {/* 下部ナビゲーションバー（座席表への変更 ＆ フォントサイズアップ版） */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
-                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-sky-300 dark:border-slate-800 z-50 flex h-14 items-center justify-around px-2 transition-transform duration-300 ease-out select-none shadow-sm ${
+                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-sky-300 dark:border-slate-800 z-50 flex h-16 items-center justify-around px-2 transition-transform duration-300 ease-out select-none shadow-sm ${
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
+                {/* 1. 座席表 */}
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
+                    className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'input' 
                             ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
                             : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
@@ -2148,17 +2140,18 @@ function App() {
                             ? 'text-sky-600 dark:text-sky-400' 
                             : 'text-sky-700/70 dark:text-sky-400/60'
                     }`} />
-                    <span className={`text-xs tracking-tight ${
+                    <span className={`text-sm tracking-tight ${
                         activeTab === 'input' 
                             ? 'font-black text-slate-900 dark:text-white' 
                             : 'font-bold text-slate-700 dark:text-slate-300'
                     }`}>
-                        釣り座
+                        座席表
                     </span>
                 </button>
 
+                {/* 2. カウンター */}
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all relative ${
+                    className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all relative ${
                         activeTab === 'counter' 
                             ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
                             : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
@@ -2177,7 +2170,7 @@ function App() {
                             {counterMode === 'tap' ? 'TAP' : counterMode === 'slide' ? 'SLIDE' : 'KEYPAD'}
                         </span>
                     </div>
-                    <span className={`text-xs tracking-tight ${
+                    <span className={`text-sm tracking-tight ${
                         activeTab === 'counter' 
                             ? 'font-black text-slate-900 dark:text-white' 
                             : 'font-bold text-slate-700 dark:text-slate-300'
@@ -2186,8 +2179,9 @@ function App() {
                     </span>
                 </button>
 
+                {/* 3. 釣果・履歴 */}
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-11 py-1 rounded-xl transition-all ${
+                    className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
                             ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
                             : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
@@ -2199,7 +2193,7 @@ function App() {
                             ? 'text-amber-500 dark:text-amber-400' 
                             : 'text-amber-600/70 dark:text-amber-400/60'
                     }`} />
-                    <span className={`text-xs tracking-tight ${
+                    <span className={`text-sm tracking-tight ${
                         activeTab === 'history' 
                             ? 'font-black text-slate-900 dark:text-white' 
                             : 'font-bold text-slate-700 dark:text-slate-300'
@@ -2208,6 +2202,7 @@ function App() {
                     </span>
                 </button>
 
+                {/* ナビバー収納ボタン */}
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
