@@ -21,9 +21,7 @@ const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 );
 
-// ==========================================
-// デジタル釣果ボード（SNS画像）作成モーダル
-// ==========================================
+// デジタル釣果ボードモーダル
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
     const [isGenerating, setIsGenerating] = React.useState(false);
@@ -91,7 +89,6 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                     style={{ width: '100%', maxWidth: '420px', minWidth: '330px', boxSizing: 'border-box' }}
                 >
                     <div className="p-4 pb-5 flex flex-col gap-3 relative z-10">
-                        {/* ヘッダー */}
                         <div className={`flex justify-between items-center border-b pb-2.5 ${isDark ? 'border-slate-700/80' : 'border-blue-400/40'}`}>
                             <div className="flex flex-col items-center">
                                 <img 
@@ -111,7 +108,6 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                             </div>
                         </div>
 
-                        {/* 成績サマリー枠 */}
                         <div className={`rounded-lg px-3.5 pt-2.5 pb-3.5 border shadow-sm flex flex-col gap-2.5 ${isDark ? 'bg-slate-800/85 border-slate-600/80' : 'bg-black/20 border-white/20'}`}>
                             {topCount <= 2 ? (
                                 <div className="flex justify-between items-end gap-2">
@@ -185,7 +181,6 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                                 </div>
                             )}
 
-                            {/* 型 ＆ 平均 */}
                             <div className="grid grid-cols-2 pt-2.5 border-t border-white/10 text-center font-bold text-sm sm:text-base items-center" style={{ minHeight: '34px' }}>
                                 <div className={`truncate pr-2 border-r border-white/10 ${isDark ? 'text-slate-300' : 'text-white'}`} style={{ paddingBottom: '2px' }}>
                                     <span className="text-xs opacity-75 mr-1 font-normal">型:</span>
@@ -200,9 +195,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                             </div>
                         </div>
 
-                        {/* 座席リスト */}
                         <div className="flex gap-2 w-full">
-                            {/* 左舷 */}
                             <div className={`flex-1 rounded-lg ${isCrowded ? 'p-1.5' : 'p-2.5'} border backdrop-blur-sm ${isDark ? 'bg-slate-800/60 border-slate-600/80' : 'bg-black/15 border-white/20'}`}>
                                 <div className={`font-black tracking-widest border-b pb-1 mb-2 text-center text-xs ${isDark ? 'text-red-400 border-red-900/50' : 'text-pink-300 border-pink-300/30'}`} style={{ lineHeight: 1.5, paddingBottom: '3px' }}>左舷</div>
                                 <div className={isCrowded ? 'space-y-1.5' : 'space-y-2'}>
@@ -232,7 +225,6 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                                     })}
                                 </div>
                             </div>
-                            {/* 右舷 */}
                             <div className={`flex-1 rounded-lg ${isCrowded ? 'p-1.5' : 'p-2.5'} border backdrop-blur-sm ${isDark ? 'bg-slate-800/60 border-slate-600/80' : 'bg-black/15 border-white/20'}`}>
                                 <div className={`font-black tracking-widest border-b pb-1 mb-2 text-center text-xs ${isDark ? 'text-emerald-400 border-emerald-900/50' : 'text-emerald-300 border-emerald-300/30'}`} style={{ lineHeight: 1.5, paddingBottom: '3px' }}>右舷</div>
                                 <div className={isCrowded ? 'space-y-1.5' : 'space-y-2'}>
@@ -267,14 +259,12 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                 </div>
             </div>
 
-            {/* コントロールパネル */}
             <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-t-2xl p-3.5 flex flex-col gap-2 absolute bottom-0 z-10 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center mb-0.5">
                     <span className="font-black text-gray-800 dark:text-slate-100 text-base">釣果ボードを作成</span>
                     <button onClick={onClose} className="w-7 h-7 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-gray-600 dark:text-slate-300 font-bold hover:bg-gray-300 text-xs">✕</button>
                 </div>
                 
-                {/* テーマ切り替え */}
                 <div className="flex gap-2 p-1 bg-gray-100 dark:bg-slate-700/50 rounded-xl">
                     <button 
                         onClick={() => setCardTheme('dark')} 
@@ -290,7 +280,6 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
                     </button>
                 </div>
 
-                {/* 匿名化スイッチ */}
                 <label className="flex items-center justify-between p-2 px-3 bg-gray-100 dark:bg-slate-700/50 rounded-xl cursor-pointer active:scale-[0.98] transition-transform">
                     <span className="text-xs font-bold text-gray-700 dark:text-slate-200">
                         お名前を隠す（匿名化）
@@ -314,9 +303,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// ==========================================
-// 船長メモモーダル（フォント・ボタン拡大版）
-// ==========================================
+// 船長メモモーダル
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
@@ -396,7 +383,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[720px] overflow-hidden">
-                
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-xl leading-none">📝</span>
@@ -473,7 +459,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         🎙️ 音声入力はキーボードのマイクをご利用ください
                     </div>
                 </div>
-
             </div>
         </div>
     );
@@ -510,14 +495,13 @@ function App() {
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     const [theme, setTheme] = React.useState(() => localStorage.getItem('theme') || 'light');
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
-    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
+    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 4 Argon');
     const [toastMessage, setToastMessage] = React.useState('');
 
     // Googleドライブ上書き保存用のステート
     const [gasBackupUrl, setGasBackupUrl] = React.useState(() => localStorage.getItem('fishing_gas_backup_url') || '');
     const [cloudSavingId, setCloudSavingId] = React.useState(null);
 
-    // Googleドライブへ最新データを上書き保存する関数
     const handleSaveRecordToCloud = async (record) => {
         const targetUrl = (gasBackupUrl || '').trim();
         if (!targetUrl) {
@@ -625,7 +609,6 @@ function App() {
     const [analyzingRecordId, setAnalyzingRecordId] = React.useState(null);
     const [currentAnalysis, setCurrentAnalysis] = React.useState(null);
 
-    // スワイプによるタブ切り替えロジック
     const touchStartX = React.useRef(0);
     const touchStartY = React.useRef(0);
     const tabList = ['input', 'counter', 'history'];
@@ -930,6 +913,7 @@ function App() {
         return prompts[id];
     };
 
+    // 日報作成処理（マスターから自動ローテーション）
     const handleAiGenerate = async (record, conditionInfo, sceneryInfo, tideInfo, activityInfo, episodeInfo, sizeInfo, topAnglerInfo, selectedPatterns, customKey) => {
         setGeneratingAiId(record.id);
         const activeApiKey = (customKey || userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -944,7 +928,6 @@ function App() {
             return;
         }
 
-        const modelName = typeof getActualModelName === 'function' ? getActualModelName(selectedAiModel) : 'gemini-3.8-flash';
         const formatPrompt = selectedPatterns.map(id => getPatternPrompt(id)).join("\n\n");
         const systemPrompt = `※あなたはベテラン釣り船「山下丸」の船長です。海の男らしく、媚びないけれどお客様への温かみがある性格として、以下の釣行記録を作成してください。
 ■ 絶対厳守のルール
@@ -1006,18 +989,10 @@ function App() {
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通りに指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
-            const modelsDescOrder = [
-              'gemini-3.8-flash',
-              'gemini-3.7-flash',
-              'gemini-3.6-flash',
-              'gemini-3.5-flash',
-              'gemini-3.1-pro'
-            ];
-
-            const startIndex = modelsDescOrder.indexOf(modelName);
-            const modelQueue = startIndex !== -1 
-                ? modelsDescOrder.slice(startIndex) 
-                : [modelName, ...modelsDescOrder];
+            // ★マスター連動：選択モデルから始まるローテーションキューを自動生成
+            const modelQueue = typeof getModelRotationOrder === 'function'
+                ? getModelRotationOrder(selectedAiModel)
+                : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
 
             let text = null;
             let lastError = null;
@@ -1172,6 +1147,7 @@ function App() {
         setSharedRecordId(null);
     };
 
+    // AI多角分析処理（マスターから自動ローテーション）
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
         if (!activeApiKey) {
@@ -1232,22 +1208,10 @@ function App() {
         const prompt = promptLines.join('\n');
 
         try {
-            const modelsDescOrder = [
-                'gemini-3.8-flash',
-                'gemini-3.7-flash',
-                'gemini-3.6-flash',
-                'gemini-3.5-flash',
-                'gemini-3.1-pro'
-            ];
-
-            const currentSelected = typeof getActualModelName === 'function' 
-                ? getActualModelName(selectedAiModel) 
-                : 'gemini-3.8-flash';
-
-            const startIndex = modelsDescOrder.indexOf(currentSelected);
-            const modelQueue = startIndex !== -1 
-                ? modelsDescOrder.slice(startIndex) 
-                : [currentSelected, ...modelsDescOrder];
+            // ★マスター連動：選択モデルから始まるローテーションキューを自動生成
+            const modelQueue = typeof getModelRotationOrder === 'function'
+                ? getModelRotationOrder(selectedAiModel)
+                : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
 
             let text = null;
             let lastError = null;
@@ -1637,7 +1601,6 @@ function App() {
                             </button>
                         </div>
 
-                        {/* 座席リスト描画 */}
                         {inputSide === 'both' ? (
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
@@ -1656,7 +1619,6 @@ function App() {
                     </div>
                 )}
 
-                {/* カウンタータブ */}
                 {activeTab === 'counter' && (
                     <div className="flex flex-col flex-1 space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         {(() => {
@@ -1808,7 +1770,6 @@ function App() {
                     </div>
                 )}
 
-                {/* 履歴タブ */}
                 {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
@@ -1875,7 +1836,7 @@ function App() {
                                                 {r.waterTemp && <span>{r.waterTemp}℃</span>}
                                                 {r.tide && <span>{r.tide}</span>}
                                                 {r.tideState && <span>{r.tideState}</span>}
-                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${r.weather2}` : ''}</span>}
+                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${weather2}` : ''}</span>}
                                                 {(() => {
                                                     const wd1 = r.windDir1 || r.windDir || '';
                                                     const ws1 = r.windSpeed1 || r.windSpeed || '';
@@ -1900,7 +1861,6 @@ function App() {
                                                 {(r.sizeMin || r.sizeMax) && (
                                                     <div className="flex items-baseline text-slate-800 dark:text-slate-100">
                                                         <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
-                                                        {/* ★「$」を除去して修正 */}
                                                         <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
                                                         <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
                                                     </div>
@@ -1914,7 +1874,6 @@ function App() {
                                         </div>
                                     </div>
 
-                                    {/* 詳細展開エリア */}
                                     {isExpanded && (
                                         <div className="p-3 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out] space-y-3">
                                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1976,7 +1935,6 @@ function App() {
                                                 <span>平均: <span className="font-black text-gray-800 dark:text-slate-100">{r.avg || 0}</span> {unit}</span>
                                             </div>
 
-                                            {/* 釣果ボードを作成 */}
                                             <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
                                                 <button
                                                     type="button"
@@ -2010,7 +1968,6 @@ function App() {
                                         </div>
                                     )}
 
-                                    {/* 2段アクションツールバー */}
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             <button
