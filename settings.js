@@ -3,7 +3,7 @@
 // ==========================================
 
 // AIモデルのマスター定義（ここを書き換えるだけで選択肢とローテーションが自動連動します）
-const AI_MODEL_LIST = [
+var AI_MODEL_LIST = [
     { label: "Gemini 4 Argon（次世代最上位・超高精度）", value: "Gemini 4 Argon", id: "gemini-4-argon" },
     { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
     { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
@@ -12,22 +12,24 @@ const AI_MODEL_LIST = [
     { label: "Gemini 3.1 Pro（深層考察・高精度）", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
 ];
 
-// モデル表示名からAPIモデルIDを取得する共通関数
-function getActualModelName(modelValue) {
-    const found = AI_MODEL_LIST.find(m => m.value === modelValue || m.id === modelValue);
+// 重複宣言を回避したモデル名変換関数
+window.getActualModelName = function(modelValue) {
+    var found = AI_MODEL_LIST.find(function(m) {
+        return m.value === modelValue || m.id === modelValue;
+    });
     return found ? found.id : (AI_MODEL_LIST[0] ? AI_MODEL_LIST[0].id : 'gemini-4-argon');
-}
+};
 
-// 登録されている全モデルIDの並び順（ローテーション配列）を返す関数
-function getModelRotationOrder(currentSelectedValue) {
-    const allIds = AI_MODEL_LIST.map(m => m.id);
-    const currentId = getActualModelName(currentSelectedValue);
-    const startIndex = allIds.indexOf(currentId);
+// 重複宣言を回避したローテーション配列生成関数
+window.getModelRotationOrder = function(currentSelectedValue) {
+    var allIds = AI_MODEL_LIST.map(function(m) { return m.id; });
+    var currentId = window.getActualModelName(currentSelectedValue);
+    var startIndex = allIds.indexOf(currentId);
     if (startIndex !== -1) {
         return allIds.slice(startIndex);
     }
-    return [currentId, ...allIds.filter(id => id !== currentId)];
-}
+    return [currentId].concat(allIds.filter(function(id) { return id !== currentId; }));
+};
 
 function SettingsPanel({
     isSettingsOpen, setIsSettingsOpen,
@@ -150,8 +152,6 @@ function SettingsPanel({
         }
 
         const base64Data = await fileToBase64(file);
-
-        // 画像解析も登録マスターからローテーション
         const visionModels = AI_MODEL_LIST.map(m => m.id);
 
         let lastErr = null;
@@ -280,7 +280,7 @@ function SettingsPanel({
 ● パターンB：通常の「細い線状の矢印（→）」の場合
   ・線の端にある【三角形の矢じり（尖っている先端）】が指している方向を判定してください。
   ・【左右・傾きの判定注意】：真下に向かう矢印がわずかでも左側へ傾いている場合は必ず「左下」と判定してください（右下への誤認・左右反転に厳重注意）。
-  ・【前後の流れ参照】：時間帯によって矢印の傾きが分かりづらい場合は、前後の時間（9時や2時など）の明確な矢印の傾き（左下か右下か）を参考にして左右を確定してください。
+  ・【前後の流れ参照】：時間帯によって矢印の傾きが分かりづらい場合は、前後の時間（9時や12時など）の明確な矢印の傾き（左下か右下か）を参考にして左右を確定してください。
 
 ★風向き思考ステップ（自己検証）：
 windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールドに以下の手順で目視確認した内容を短く言語化してください。
