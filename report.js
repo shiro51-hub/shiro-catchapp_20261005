@@ -49,15 +49,15 @@ const MemoModal = ({
 };
 
 // =======================================================
-// AI日報用インタビューウィザードモーダル（船長専用クイックチップ・文字拡大版）
+// AI日報用インタビューウィザードモーダル（カスタム単語チップ対応版）
 // =======================================================
 
-// 各ステップでパッと選べる単語タグ（クイックチップ）
-const WIZARD_TAGS = {
+// 初期状態の単語タグ（デフォルト値）
+const DEFAULT_WIZARD_TAGS = {
     scenery: [
-        "ベタ凪", "穏やかなナギ",  "心地よい風",  "風波強く荒天",
+        "ベタ凪", "穏やかなナギ", "心地よい風", "風波強く荒天",
         "ソヨソヨ", "風波パチャつく", "うねり残る", "肌寒いスタート", 
-        "ポカポカ陽気", "爽快な青空", "どんより曇天", "小雨混じり"
+        "ポカポカ陽気", "爽快な青空", "どんより曇天", "小雨交じり"
     ],
     tide: [
         "トロリ流れる", "トロトロ", "適度に流れる", "ピリッと効いた", 
@@ -66,11 +66,11 @@ const WIZARD_TAGS = {
     ],
     activity: [
         "朝イチ連発", "中盤から加速", "拾い釣り", "一日ポツポツ継続", 
-        "食い渋り", "アタリ遠い",  "エサ取り活発", "お土産十分"
+        "食い渋り", "アタリ遠い", "エサ取り活発", "お土産十分"
     ],
     episode: [
-        "一荷（ダブル）","ダブル・トリプル",  "良型交じり", "ゲスト多彩", 
-        "沖上がり間際に好調", "初挑戦健闘",  "特大サイズ浮上"
+        "一荷（ダブル）", "ダブル・トリプル", "良型交じり", "ゲスト多彩", 
+        "沖上がり間際に好調", "初挑戦健闘", "特大サイズ浮上"
     ],
     size: [
         "良型主体", "中型揃い", "大小交じり", "中小型交じり", 
@@ -96,10 +96,38 @@ const AiInputWizardModal = ({
     setUserApiKey,
     handleAiGenerate
 }) => {
+    // 船長カスタムチップの保存・読み込みステート
+    const [customTagsMap, setCustomTagsMap] = React.useState(() => {
+        try {
+            const saved = localStorage.getItem('fishing_custom_wizard_tags');
+            if (saved) {
+                return { ...DEFAULT_WIZARD_TAGS, ...JSON.parse(saved) };
+            }
+        } catch (e) {}
+        return DEFAULT_WIZARD_TAGS;
+    });
+
+    const [isEditingTags, setIsEditingTags] = React.useState(false);
+    const [newTagInput, setNewTagInput] = React.useState('');
+
+    // ステップが切り替わったら編集モードを閉じる
+    React.useEffect(() => {
+        setIsEditingTags(false);
+        setNewTagInput('');
+    }, [aiCurrentStep, showAiInputModal]);
+
     if (!showAiInputModal) return null;
 
     const currentStep = wizardSteps[aiCurrentStep];
-    const currentTags = WIZARD_TAGS[currentStep.id] || [];
+    const currentTags = customTagsMap[currentStep.id] || [];
+
+    // カスタムチップの保存処理
+    const saveCustomTags = (updatedMap) => {
+        setCustomTagsMap(updatedMap);
+        try {
+            localStorage.setItem('fishing_custom_wizard_tags', JSON.stringify(updatedMap));
+        } catch (e) {}
+    };
 
     // タグをタップして入力欄へ追加する関数
     const handleAddTag = (tagText) => {
@@ -122,6 +150,52 @@ const AiInputWizardModal = ({
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate(15);
         }
+    };
+
+    // 新しい単語チップを登録する関数
+    const handleCreateTag = () => {
+        const trimmed = newTagInput.trim();
+        if (!trimmed) return;
+        const fieldKey = currentStep.id;
+        const existing = customTagsMap[fieldKey] || [];
+        if (existing.includes(trimmed)) {
+            setNewTagInput('');
+            return;
+        }
+        const updated = {
+            ...customTagsMap,
+            [fieldKey]: [...existing, trimmed]
+        };
+        saveCustomTags(updated);
+        setNewTagInput('');
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    };
+
+    // 不要な単語チップを削除する関数
+    const handleDeleteTag = (tagToDelete) => {
+        const fieldKey = currentStep.id;
+        const existing = customTagsMap[fieldKey] || [];
+        const updated = {
+            ...customTagsMap,
+            [fieldKey]: existing.filter(t => t !== tagToDelete)
+        };
+        saveCustomTags(updated);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(15);
+        }
+    };
+
+    // 現在のステップのチップを初期状態に戻す関数
+    const handleResetStepTags = () => {
+        const fieldKey = currentStep.id;
+        if (!window.confirm('この項目の単語チップを初期状態に戻しますか？')) return;
+        const updated = {
+            ...customTagsMap,
+            [fieldKey]: DEFAULT_WIZARD_TAGS[fieldKey] || []
+        };
+        saveCustomTags(updated);
     };
 
     return (
@@ -166,7 +240,6 @@ const AiInputWizardModal = ({
                                             setAiInputData(prev => ({ ...prev, patterns: next }));
                                             if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, 'patterns', next);
                                         }} className={`p-3.5 rounded-xl border-2 text-left font-black transition-all ${isSelected ? 'bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100' : 'bg-gray-50 border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'} flex items-center justify-between`}>
-                                            {/* 文字サイズを text-sm sm:text-base へ拡大 */}
                                             <span className="text-sm sm:text-base leading-snug pr-2">{opt.label}</span>
                                             <span className="text-xl shrink-0">{isSelected ? '☑' : '☐'}</span>
                                         </button>
@@ -187,10 +260,10 @@ const AiInputWizardModal = ({
                                 ))}
                             </div>
                         ) : (
-                            /* 3. 自由記述 ＋ クイックチップ（Step 2〜7: 入力欄・チップ文字拡大版） */
+                            /* 3. 自由記述 ＋ カスタム単語チップ（追加・削除対応版） */
                             <div className="flex-1 flex flex-col min-h-0 gap-3">
-                                {/* テキスト入力欄：文字サイズを text-base sm:text-lg へ拡大 */}
-                                <div className="flex-1 min-h-[140px]">
+                                {/* テキスト入力欄 */}
+                                <div className="flex-1 min-h-[120px]">
                                     <textarea
                                         placeholder={currentStep.placeholder}
                                         className="w-full h-full border-2 border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-gray-50 dark:bg-slate-800 text-base sm:text-lg font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none shadow-inner leading-relaxed"
@@ -200,36 +273,104 @@ const AiInputWizardModal = ({
                                             setAiInputData(prev => ({ ...prev, [currentStep.id]: val }));
                                             if(targetRecordForAi) updateAiInputForRecord(targetRecordForAi.id, currentStep.id, val);
                                         }}
-                                        autoFocus
+                                        autoFocus={!isEditingTags}
                                     ></textarea>
                                 </div>
 
-                                {/* クイックチップ群：チップ文字を text-sm sm:text-base へ拡大 */}
-                                {currentTags.length > 0 && (
-                                    <div className="shrink-0 pt-1">
-                                        <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                                {/* 単語チップ管理エリア */}
+                                <div className="shrink-0 pt-1">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
                                             <span>🏷️</span>
-                                            <span>タップで入力（単語チップ）：</span>
+                                            <span>{isEditingTags ? 'チップの追加・削除' : 'タップで入力（単語チップ）'}</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar py-0.5">
-                                            {currentTags.map((tag, idx) => (
+                                        <div className="flex items-center gap-1.5">
+                                            {isEditingTags && (
                                                 <button
-                                                    key={idx}
                                                     type="button"
-                                                    onClick={() => handleAddTag(tag)}
-                                                    className="px-3 py-2 rounded-xl border border-amber-200 dark:border-slate-700 bg-amber-50/70 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
+                                                    onClick={handleResetStepTags}
+                                                    className="text-xs font-bold text-gray-500 dark:text-slate-400 underline px-1.5 py-1"
                                                 >
-                                                    <span className="text-amber-600 dark:text-amber-400 font-black text-xs">＋</span>
-                                                    <span>{tag}</span>
+                                                    初期値に戻す
                                                 </button>
-                                            ))}
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditingTags(prev => !prev)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all active:scale-95 ${
+                                                    isEditingTags
+                                                        ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                                                        : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-slate-600'
+                                                }`}
+                                            >
+                                                {isEditingTags ? '✓ 完了' : '✏️ 追加・削除'}
+                                            </button>
                                         </div>
                                     </div>
-                                )}
+
+                                    {/* 編集モード時：新しい単語の追加フォーム */}
+                                    {isEditingTags && (
+                                        <div className="flex gap-1.5 mb-2.5 animate-[fadeIn_0.15s_ease-out]">
+                                            <input
+                                                type="text"
+                                                placeholder="よく使う言葉を登録..."
+                                                value={newTagInput}
+                                                onChange={(e) => setNewTagInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleCreateTag();
+                                                    }
+                                                }}
+                                                className="flex-1 border border-amber-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleCreateTag}
+                                                className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black px-4 py-2 rounded-xl text-xs sm:text-sm shrink-0 shadow-xs active:scale-95 transition-all"
+                                            >
+                                                ＋ 追加
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* チップ一覧 */}
+                                    {currentTags.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar py-0.5">
+                                            {currentTags.map((tag, idx) => (
+                                                isEditingTags ? (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => handleDeleteTag(tag)}
+                                                        className="px-3 py-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-sm sm:text-base font-bold text-rose-900 dark:text-rose-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
+                                                        title="タップでこのチップを削除"
+                                                    >
+                                                        <span>{tag}</span>
+                                                        <span className="text-rose-600 dark:text-rose-400 font-black text-xs bg-rose-200/70 dark:bg-rose-900/80 rounded-full w-4 h-4 flex items-center justify-center">✕</span>
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => handleAddTag(tag)}
+                                                        className="px-3 py-2 rounded-xl border border-amber-200 dark:border-slate-700 bg-amber-50/70 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200 active:scale-95 transition-all shadow-2xs flex items-center gap-1.5"
+                                                    >
+                                                        <span className="text-amber-600 dark:text-amber-400 font-black text-xs">＋</span>
+                                                        <span>{tag}</span>
+                                                    </button>
+                                                )
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs font-bold text-gray-400 dark:text-slate-500 py-3 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+                                            単語チップはありません（「✏️ 追加・削除」から登録できます）
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
-
                     {/* 最後のステップのAPIキー入力 */}
                     {aiCurrentStep === wizardSteps.length - 1 && (
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-700 shrink-0">
