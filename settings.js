@@ -2,6 +2,33 @@
 // settings.js : 設定・海況・システム管理パネル
 // ==========================================
 
+// AIモデルのマスター定義（ここを書き換えるだけで選択肢とローテーションが自動連動します）
+const AI_MODEL_LIST = [
+    { label: "Gemini 4 Argon（次世代最上位・超高精度）", value: "Gemini 4 Argon", id: "gemini-4-argon" },
+    { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+    { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
+    { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+    { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+    { label: "Gemini 3.1 Pro（深層考察・高精度）", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
+];
+
+// モデル表示名からAPIモデルIDを取得する共通関数
+function getActualModelName(modelValue) {
+    const found = AI_MODEL_LIST.find(m => m.value === modelValue || m.id === modelValue);
+    return found ? found.id : (AI_MODEL_LIST[0] ? AI_MODEL_LIST[0].id : 'gemini-4-argon');
+}
+
+// 登録されている全モデルIDの並び順（ローテーション配列）を返す関数
+function getModelRotationOrder(currentSelectedValue) {
+    const allIds = AI_MODEL_LIST.map(m => m.id);
+    const currentId = getActualModelName(currentSelectedValue);
+    const startIndex = allIds.indexOf(currentId);
+    if (startIndex !== -1) {
+        return allIds.slice(startIndex);
+    }
+    return [currentId, ...allIds.filter(id => id !== currentId)];
+}
+
 function SettingsPanel({
     isSettingsOpen, setIsSettingsOpen,
     portCount, starboardCount, onCountChange,
@@ -19,7 +46,7 @@ function SettingsPanel({
     userApiKey, setUserApiKey, selectedAiModel, setSelectedAiModel,
     gasBackupUrl, setGasBackupUrl
 }) {
-    const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic'); // 'basic', 'weather', 'system'
+    const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
     const tideImageInputRef = React.useRef(null);
     const weatherImageInputRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
@@ -95,7 +122,6 @@ function SettingsPanel({
         setTempKey(userApiKey || '');
     }, [userApiKey]);
 
-    // 設定パネルが開いた時、常に「基本設定」タブにリセット
     React.useEffect(() => {
         if (isSettingsOpen) {
             setActiveSettingsTab('basic');
@@ -104,28 +130,10 @@ function SettingsPanel({
 
     if (!isSettingsOpen) return null;
 
-    // AIモデルの表示名とAPI識別子のマップ（Gemini 4 Argon 追加版）
-    const aiModelOptions = [
-        { label: "Gemini 4 Argon（次世代最上位・超高精度）", value: "Gemini 4 Argon", id: "gemini-4-argon" },
-        { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
-        { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-        { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
-        { label: "Gemini 3.1 Pro（深層考察・高精度）", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
-    ];
-
-    // 波高（波の状態）の選択肢
     const waveHeightOptions = [
-        "穏やか",
-        "穏やかな方",
-        "多少波がある",
-        "波がやや高い",
-        "波が高い",
-        "しける",
-        "大しけ"
+        "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
-    // Base64変換
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -135,7 +143,6 @@ function SettingsPanel({
         });
     };
 
-    // 共通 Gemini Vision 呼び出し
     const callVisionApi = async (file, prompt) => {
         const activeKey = (userApiKey || '').trim();
         if (!activeKey) {
@@ -144,12 +151,8 @@ function SettingsPanel({
 
         const base64Data = await fileToBase64(file);
 
-        const visionModels = [
-            'gemini-3.8-flash',
-            'gemini-3.7-flash',
-            'gemini-3.6-flash',
-            'gemini-3.5-flash'
-        ];
+        // 画像解析も登録マスターからローテーション
+        const visionModels = AI_MODEL_LIST.map(m => m.id);
 
         let lastErr = null;
 
@@ -216,7 +219,6 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
-    // 潮時表 画像解析
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -247,7 +249,6 @@ function SettingsPanel({
         }
     };
 
-    // 気象予報 画像解析
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -279,7 +280,7 @@ function SettingsPanel({
 ● パターンB：通常の「細い線状の矢印（→）」の場合
   ・線の端にある【三角形の矢じり（尖っている先端）】が指している方向を判定してください。
   ・【左右・傾きの判定注意】：真下に向かう矢印がわずかでも左側へ傾いている場合は必ず「左下」と判定してください（右下への誤認・左右反転に厳重注意）。
-  ・【前後の流れ参照】：時間帯によって矢印の傾きが分かりづらい場合は、前後の時間（9時や12時など）の明確な矢印の傾き（左下か右下か）を参考にして左右を確定してください。
+  ・【前後の流れ参照】：時間帯によって矢印の傾きが分かりづらい場合は、前後の時間（9時や2時など）の明確な矢印の傾き（左下か右下か）を参考にして左右を確定してください。
 
 ★風向き思考ステップ（自己検証）：
 windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールドに以下の手順で目視確認した内容を短く言語化してください。
@@ -347,7 +348,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         }
     };
 
-    // バックアップ保存（ローカルファイルへのエクスポート）
     const handleExportData = () => {
         try {
             let currentRecords = records;
@@ -384,7 +384,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         }
     };
 
-    // 共通復元ロジック
     const applyRestoreData = (textData) => {
         if (!textData || !textData.trim()) throw new Error('データが空です');
         const parsed = JSON.parse(textData);
@@ -410,7 +409,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         return true;
     };
 
-    // ファイル復元
     const handleFileImport = (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -433,7 +431,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
         reader.readAsText(file, 'UTF-8');
     };
 
-    // 完全初期化
     const handleFullReset = () => {
         const confirm1 = window.confirm('【警告】すべての釣果記録と設定を初期化しますか？\nこの操作は絶対に取り消せません。');
         if (!confirm1) return;
@@ -511,7 +508,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     })}
                 </div>
 
-                {/* プルダウン候補リスト（datalist） */}
+                {/* プルダウン候補リスト */}
                 <datalist id="point-options">
                     <option value="久里浜沖" />
                     <option value="鴨居沖" />
@@ -785,13 +782,11 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* ========================================== */}
-                    {/* タブ 3: システム（順序：AI設定 ➔ ドライブ同期 ➔ データ管理） */}
-                    {/* ========================================== */}
+                    {/* タブ 3: システム */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
 
-                            {/* 1. Gemini AI設定（最上段） */}
+                            {/* 1. Gemini AI設定 */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 
@@ -804,7 +799,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         value={selectedAiModel}
                                         onChange={handleModelChange}
                                     >
-                                        {aiModelOptions.map((opt) => (
+                                        {AI_MODEL_LIST.map((opt) => (
                                             <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
                                                 {opt.label}
                                             </option>
@@ -840,13 +835,12 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 2. ☁️ Googleドライブ同期・復元（中段 / クラウド連携バッジ削除版） */}
+                            {/* 2. ☁️ Googleドライブ同期・復元 */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
                                 </div>
 
-                                {/* メイン操作：クラウド保存 ＆ ドライブから復元 */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
@@ -912,7 +906,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </button>
                                 </div>
 
-                                {/* 初期設定用URL枠 */}
                                 <div className="pt-2 border-t border-sky-200/60 dark:border-slate-800">
                                     <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 block mb-1">
                                         🔗 GASウェブアプリURL（初回登録用）
@@ -936,7 +929,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 3. データ管理・メンテナンス（最下段） */}
+                            {/* 3. データ管理・メンテナンス */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-100 dark:border-slate-500 space-y-2.5">
                                 <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">データ管理・メンテナンス</span>
                                 <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
