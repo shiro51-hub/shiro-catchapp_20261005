@@ -303,12 +303,16 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル
+// 船長メモモーダル（Googleドライブ写真アップロード＆プレビュー連動版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
     const textareaRef = React.useRef(null);
+    const fileInputRef = React.useRef(null);
     const [history, setHistory] = React.useState([tempMemo || '']);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const [uploadError, setUploadError] = React.useState('');
+    const [previewImageUrl, setPreviewImageUrl] = React.useState(null);
 
     const updateTextAndSave = (nextText, recordHistory = true) => {
         setTempMemo(nextText);
@@ -321,6 +325,106 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         if (typeof onAutoSave === 'function') {
             onAutoSave(nextText);
         }
+    };
+
+    // メモ本文からGoogleドライブの画像URLを抽出
+    const extractImageUrls = (text) => {
+        if (!text) return [];
+        const regex = /https:\/\/lh3\.googleusercontent\.com\/d\/[a-zA-Z0-9_-]+/g;
+        return text.match(regex) || [];
+    };
+
+    const imageUrls = extractImageUrls(tempMemo);
+
+    // 画像ファイルを圧縮（最大幅1200px）してBase64化
+    const resizeImage = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    };
+
+    // 写真アップロード処理
+    const handleFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const endpoint = localStorage.getItem('fishing_gas_backup_url') || localStorage.getItem('fishing_gas_url');
+        if (!endpoint || !endpoint.trim()) {
+            setUploadError('受取URLが未設定です。設定画面の「システム」でGASのURLを登録してください。');
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadError('');
+
+        try {
+            const base64Data = await resizeImage(file);
+            const payload = {
+                action: 'uploadImage',
+                fileName: `memo_${Date.now()}.jpg`,
+                contentType: 'image/jpeg',
+                base64: base64Data
+            };
+
+            const response = await fetch(endpoint.trim(), {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            const resJson = await response.json();
+            if (resJson.status === 'success' && resJson.url) {
+                const currentText = tempMemo || '';
+                const appended = currentText.trim() 
+                    ? `${currentText.trim()}\n📷 写真: ${resJson.url}`
+                    : `📷 写真: ${resJson.url}`;
+                updateTextAndSave(appended);
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(25);
+                }
+            } else {
+                setUploadError(resJson.message || 'アップロードに失敗しました');
+            }
+        } catch (err) {
+            setUploadError('写真のアップロード中にエラーが発生しました');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    // 写真の解除
+    const handleRemoveImage = (targetUrl) => {
+        if (!window.confirm('この写真をメモから解除しますか？\n（Googleドライブ内の写真本体は削除されません）')) return;
+        const lines = (tempMemo || '').split('\n');
+        const filteredLines = lines.filter(line => !line.includes(targetUrl));
+        updateTextAndSave(filteredLines.join('\n').trim());
     };
 
     const insertCurrentTime = () => {
@@ -382,11 +486,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[85dvh] max-h-[720px] overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[760px] overflow-hidden">
+                {/* ヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-xl leading-none">📝</span>
-                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ</h3>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ・釣行写真</h3>
                     </div>
                     <button 
                         type="button"
@@ -398,29 +503,63 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none">
-                    <button
-                        type="button"
-                        onClick={insertCurrentTime}
-                        className="py-1.5 px-3 rounded-xl text-sm sm:text-base font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1.5 transition-all"
-                    >
-                        <span className="text-base sm:text-lg leading-none">⏰</span>
-                        <span>現在時刻を挿入</span>
-                    </button>
+                {/* ツールバー（時刻挿入 ＆ 写真追加ボタン） */}
+                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none gap-2">
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={insertCurrentTime}
+                            className="py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1 transition-all"
+                        >
+                            <span className="text-sm sm:text-base leading-none">⏰</span>
+                            <span>時刻</span>
+                        </button>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                        />
+
+                        <button
+                            type="button"
+                            disabled={isUploading}
+                            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                            className={`py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-black shadow-xs flex items-center gap-1 transition-all active:scale-95 ${
+                                isUploading
+                                    ? 'bg-gray-300 text-gray-500 cursor-wait'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'
+                            }`}
+                        >
+                            {isUploading ? (
+                                <>
+                                    <span className="inline-block animate-spin text-sm leading-none">🔄</span>
+                                    <span>送信中...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>📷</span>
+                                    <span>写真を追加</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
                             onClick={handleUndo}
                             disabled={history.length <= 1}
-                            className={`py-1 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center gap-1 ${
+                            className={`py-1 px-2 rounded-lg text-xs sm:text-sm font-black border transition-all flex items-center gap-0.5 ${
                                 history.length > 1
                                     ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 shadow-2xs active:scale-90'
                                     : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
                             }`}
                             title="1手前に戻す"
                         >
-                            <span className="text-base leading-none">↶</span>
+                            <span className="text-sm leading-none">↶</span>
                             <span>戻す</span>
                         </button>
 
@@ -428,7 +567,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             type="button"
                             onClick={handleClearAll}
                             disabled={!tempMemo || !tempMemo.trim()}
-                            className={`py-1 px-2 rounded-lg text-base border transition-all flex items-center justify-center ${
+                            className={`py-1 px-1.5 rounded-lg text-sm border transition-all flex items-center justify-center ${
                                 tempMemo && tempMemo.trim()
                                     ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 shadow-2xs active:scale-90 hover:bg-rose-50'
                                     : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
@@ -440,17 +579,54 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                         <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
-                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 tabular-nums">
                             {tempMemo ? `${tempMemo.length}字` : '0字'}
                         </span>
                     </div>
                 </div>
 
+                {/* エラー表示 */}
+                {uploadError && (
+                    <div className="mx-3 mt-2 p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 shrink-0">
+                        ⚠️ {uploadError}
+                    </div>
+                )}
+
+                {/* 添付写真のサムネイルバー */}
+                {imageUrls.length > 0 && (
+                    <div className="mx-3 mt-2 p-2 bg-slate-100/80 dark:bg-slate-900/70 rounded-xl border border-gray-200 dark:border-slate-700 shrink-0">
+                        <span className="text-[10px] font-black text-gray-500 dark:text-slate-400 mb-1 block">
+                            📷 添付写真（タップで拡大 / ✕で解除）:
+                        </span>
+                        <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+                            {imageUrls.map((url, idx) => (
+                                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-300 dark:border-slate-600 shrink-0 bg-gray-200 group">
+                                    <img 
+                                        src={url} 
+                                        alt={`memo_photo_${idx}`} 
+                                        onClick={() => setPreviewImageUrl(url)}
+                                        className="w-full h-full object-cover cursor-pointer active:opacity-80"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveImage(url)}
+                                        className="absolute top-1 right-1 w-4 h-4 bg-black/75 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm"
+                                        title="写真を解除"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* メモ本文入力 */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
                         className="w-full flex-1 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
-                        placeholder="メモを入力してください。「現在時刻を挿入」を押すと【HH:MM】が入ります。入力内容は自動保存されます..."
+                        placeholder="メモを入力してください。「現在時刻を挿入」で【HH:MM】が入ります。入力内容は自動保存されます..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
                         autoFocus
@@ -459,6 +635,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         🎙️ 音声入力はキーボードのマイクをご利用ください
                     </div>
                 </div>
+
+                {/* 写真タップ時の全画面拡大プレビュー */}
+                {previewImageUrl && (
+                    <div 
+                        className="fixed inset-0 z-[140] bg-black/90 flex flex-col justify-center items-center p-4 animate-[fadeIn_0.15s_ease-out]"
+                        onClick={() => setPreviewImageUrl(null)}
+                    >
+                        <button 
+                            type="button"
+                            onClick={() => setPreviewImageUrl(null)}
+                            className="absolute top-5 right-5 w-10 h-10 bg-white/20 text-white rounded-full flex items-center justify-center text-lg font-black"
+                        >
+                            ✕
+                        </button>
+                        <img 
+                            src={previewImageUrl} 
+                            alt="preview" 
+                            className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
