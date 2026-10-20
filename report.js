@@ -1,275 +1,6 @@
 // ==========================================
-// report.js : 詳細メモ・AI日報ウィザード・多角分析モーダル群
+// report.js : AI日報ウィザード・多角分析モーダル群
 // ==========================================
-
-// 詳細メモモーダル（Googleドライブ写真アップロード・プレビュー対応版）
-const MemoModal = ({
-    showMemoModal,
-    setShowMemoModal,
-    tempMemo,
-    setTempMemo,
-    copyMemoToClipboard,
-    saveMemo,
-    gasApiUrl // GASのウェブアプリURL（省略時はlocalStorageから自動取得）
-}) => {
-    const [isUploading, setIsUploading] = React.useState(false);
-    const [uploadError, setUploadError] = React.useState('');
-    const [previewImageUrl, setPreviewImageUrl] = React.useState(null);
-    const fileInputRef = React.useRef(null);
-
-    if (!showMemoModal) return null;
-
-    // メモ内から画像URL（Googleドライブリンク）を抽出してサムネイル化
-    const extractImageUrls = (text) => {
-        if (!text) return [];
-        const regex = /https:\/\/lh3\.googleusercontent\.com\/d\/[a-zA-Z0-9_-]+/g;
-        return text.match(regex) || [];
-    };
-
-    const imageUrls = extractImageUrls(tempMemo);
-
-    // 画像ファイルを圧縮（横幅最大1200pxにリサイズ）してBase64化する関数
-    const resizeImage = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const maxDim = 1200;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height && width > maxDim) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else if (height > maxDim) {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8));
-                };
-                img.onerror = reject;
-            };
-            reader.onerror = reject;
-        });
-    };
-
-    // 写真選択・撮影時のアップロード処理
-    const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        // 使用するGASのURL（親から渡されたURL、または保存されているURL）
-        const endpoint = gasApiUrl || localStorage.getItem('fishing_gas_backup_url') || localStorage.getItem('fishing_gas_url');
-        if (!endpoint) {
-            setUploadError('GASのURLが設定されていません。バックアップ設定等をご確認ください。');
-            return;
-        }
-
-        setIsUploading(true);
-        setUploadError('');
-
-        try {
-            const base64Data = await resizeImage(file);
-            const payload = {
-                action: 'uploadImage',
-                fileName: `memo_${Date.now()}.jpg`,
-                contentType: 'image/jpeg',
-                base64: base64Data
-            };
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-
-            const resJson = await response.json();
-            if (resJson.status === 'success' && resJson.url) {
-                // メモ欄の末尾に写真リンクを追記
-                const appendedText = tempMemo.trim() 
-                    ? `${tempMemo.trim()}\n📷 写真: ${resJson.url}`
-                    : `📷 写真: ${resJson.url}`;
-                setTempMemo(appendedText);
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(20);
-                }
-            } else {
-                setUploadError(resJson.message || 'アップロードに失敗しました');
-            }
-        } catch (err) {
-            setUploadError('写真のアップロード中にエラーが発生しました');
-        } finally {
-            setIsUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-    };
-
-    // 写真リンクをメモから削除する関数
-    const handleRemoveImage = (targetUrl) => {
-        if (!window.confirm('この写真をメモから解除しますか？（Googleドライブ内の元ファイルは保持されます）')) return;
-        const lines = tempMemo.split('\n');
-        const filteredLines = lines.filter(line => !line.includes(targetUrl));
-        setTempMemo(filteredLines.join('\n').trim());
-    };
-
-    return (
-        <div className="fixed inset-0 z-[110] flex flex-col justify-end items-center">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMemoModal(false)}></div>
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[90vh] animate-slideUpModal overflow-hidden">
-                
-                {/* ヘッダー */}
-                <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
-                    <h2 className="text-base font-black text-indigo-800 dark:text-indigo-400 flex items-center">
-                        📝 詳細メモ・釣行写真
-                    </h2>
-                    <div className="flex gap-2">
-                        <button 
-                            type="button" 
-                            onClick={copyMemoToClipboard} 
-                            className="bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-lg text-xs font-bold border shadow-sm active:bg-indigo-50 select-none"
-                        >
-                            コピー
-                        </button>
-                        <button 
-                            type="button" 
-                            onClick={() => setShowMemoModal(false)} 
-                            className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 active:scale-95"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-
-                {/* メインエリア */}
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900/50 space-y-3 flex flex-col no-scrollbar">
-                    
-                    {/* 写真追加ボタン＆アップロード中案内 */}
-                    <div className="flex items-center justify-between gap-2 shrink-0">
-                        <span className="text-xs text-gray-500 dark:text-slate-400 font-bold">
-                            状況や仕掛けのメモ、写真の記録
-                        </span>
-                        
-                        <input
-                            type="file"
-                            accept="image/*"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                        />
-
-                        <button
-                            type="button"
-                            disabled={isUploading}
-                            onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black shadow-sm flex items-center gap-1.5 transition-all active:scale-95 select-none ${
-                                isUploading
-                                    ? 'bg-gray-300 text-gray-500 cursor-wait'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                            }`}
-                        >
-                            {isUploading ? (
-                                <>
-                                    <span className="inline-block animate-spin">🔄</span>
-                                    <span>送信中...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>📷</span>
-                                    <span>写真を追加</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* エラー表示 */}
-                    {uploadError && (
-                        <div className="p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 shrink-0">
-                            ⚠️ {uploadError}
-                        </div>
-                    )}
-
-                    {/* 添付写真のサムネイル一覧 */}
-                    {imageUrls.length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-gray-200 dark:border-slate-700 shrink-0">
-                            <span className="text-[11px] font-black text-gray-500 dark:text-slate-400 mb-1.5 block">
-                                📷 添付写真（タップで拡大 / ✕で解除）:
-                            </span>
-                            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                                {imageUrls.map((url, idx) => (
-                                    <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0 bg-gray-100 group">
-                                        <img 
-                                            src={url} 
-                                            alt={`memo_photo_${idx}`} 
-                                            onClick={() => setPreviewImageUrl(url)}
-                                            className="w-full h-full object-cover cursor-pointer active:opacity-80"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveImage(url)}
-                                            className="absolute top-1 right-1 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-sm"
-                                            title="写真を解除"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* テキスト入力欄 */}
-                    <textarea
-                        className="w-full flex-1 min-h-[160px] border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm sm:text-base font-medium text-gray-800 dark:text-slate-100 resize-none shadow-inner leading-relaxed"
-                        placeholder="ここに自由にメモを入力してください..."
-                        value={tempMemo}
-                        onChange={(e) => setTempMemo(e.target.value)}
-                    ></textarea>
-                </div>
-
-                {/* 写真タップ時の全体拡大プレビューモーダル */}
-                {previewImageUrl && (
-                    <div 
-                        className="fixed inset-0 z-[130] bg-black/90 flex flex-col justify-center items-center p-4 animate-[fadeIn_0.15s_ease-out]"
-                        onClick={() => setPreviewImageUrl(null)}
-                    >
-                        <button 
-                            type="button"
-                            onClick={() => setPreviewImageUrl(null)}
-                            className="absolute top-5 right-5 w-10 h-10 bg-white/20 text-white rounded-full flex items-center justify-center text-lg font-black"
-                        >
-                            ✕
-                        </button>
-                        <img 
-                            src={previewImageUrl} 
-                            alt="preview" 
-                            className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </div>
-                )}
-
-                {/* フッター */}
-                <div className="p-3 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0 flex gap-2">
-                    <button 
-                        type="button"
-                        onClick={saveMemo} 
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl shadow-md active:bg-indigo-800 transition-colors flex justify-center items-center text-sm"
-                    >
-                        メモを保存して閉じる
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 // =======================================================
 // AI日報用インタビューウィザードモーダル（カスタム単語チップ対応版）
@@ -406,10 +137,9 @@ const AiInputWizardModal = ({
         }
     };
 
-    // 指・マウス共通のポインタードラッグ開始（親コンテナで一括追跡）
+    // 指・マウス共通のポインタードラッグ開始
     const handlePointerDownChip = (e, idx) => {
         if (!isEditingTags) return;
-        // 削除ボタンや前後ボタンの上を押した時はドラッグを開始しない
         if (e.target.closest('button')) return;
         e.preventDefault();
         draggingIdxRef.current = idx;
@@ -419,7 +149,7 @@ const AiInputWizardModal = ({
         }
     };
 
-    // 指・マウスを動かしている最中のリアルタイム入れ替え判定
+    // ドラッグ中のリアルタイム入れ替え
     React.useEffect(() => {
         if (!showAiInputModal || !isEditingTags || draggingIdx === null) return;
 
@@ -460,7 +190,6 @@ const AiInputWizardModal = ({
         };
     }, [showAiInputModal, isEditingTags, draggingIdx, customTagsMap, aiCurrentStep]);
 
-    // すべてのReactフック（useState / useEffect）の後に配置することで画面消失エラーを防止
     if (!showAiInputModal) return null;
 
     return (
@@ -487,7 +216,7 @@ const AiInputWizardModal = ({
                             <p className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{currentStep.desc}</p>
                         </div>
 
-                        {/* 1. パターン選択（Step 8: 複数選択・文字拡大版） */}
+                        {/* 1. パターン選択 */}
                         {currentStep.isMultiSelect ? (
                             <div className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar pr-0.5">
                                 {currentStep.options.map((opt) => {
@@ -512,7 +241,7 @@ const AiInputWizardModal = ({
                                 })}
                             </div>
                         ) : currentStep.isSelect ? (
-                            /* 2. 釣況選択（単一選択） */
+                            /* 2. 釣況選択 */
                             <div className="flex flex-col gap-2 my-auto">
                                 {currentStep.options.map((opt, i) => (
                                     <button key={i} onClick={() => {
@@ -525,9 +254,8 @@ const AiInputWizardModal = ({
                                 ))}
                             </div>
                        ) : (
-                            /* 3. 自由記述 ＋ カスタム単語チップ（全チップ表示・ドラッグ＆矢印移動対応版） */
+                            /* 3. 自由記述 ＋ カスタム単語チップ */
                             <div className="flex-1 flex flex-col min-h-0 gap-2.5">
-                                {/* テキスト入力欄：編集モード時は自動でコンパクトに畳んでチップ一覧を広く見せる */}
                                 <div className={`transition-all duration-200 ${isEditingTags ? 'h-14 shrink-0' : 'flex-1 min-h-[110px]'}`}>
                                     <textarea
                                         placeholder={currentStep.placeholder}
@@ -542,7 +270,6 @@ const AiInputWizardModal = ({
                                     ></textarea>
                                 </div>
 
-                                {/* 単語チップ管理エリア：編集モード時は画面の残りスペースいっぱいに広げる */}
                                 <div className={`flex flex-col min-h-0 pt-1 ${isEditingTags ? 'flex-1' : 'shrink-0'}`}>
                                     <div className="flex justify-between items-center mb-2.5 shrink-0">
                                         <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">
@@ -572,7 +299,6 @@ const AiInputWizardModal = ({
                                         </button>
                                     </div>
 
-                                    {/* 編集モード時：新しい単語の追加フォーム */}
                                     {isEditingTags && (
                                         <div className="flex gap-1.5 mb-2.5 shrink-0 animate-[fadeIn_0.15s_ease-out]">
                                             <input
@@ -598,7 +324,6 @@ const AiInputWizardModal = ({
                                         </div>
                                     )}
 
-                                    {/* チップ一覧：編集時は高さ制限を解除して下まで全部見せる */}
                                     {currentTags.length > 0 ? (
                                         <div 
                                             className={`flex flex-wrap content-start gap-2 overflow-y-auto no-scrollbar py-1 select-none ${
@@ -618,7 +343,6 @@ const AiInputWizardModal = ({
                                                                 : 'border-amber-300 dark:border-slate-600 bg-amber-50/90 dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-2xs'
                                                         }`}
                                                     >
-                                                        {/* ◀ 前へ移動ボタン */}
                                                         {idx > 0 && (
                                                             <button
                                                                 type="button"
@@ -635,10 +359,8 @@ const AiInputWizardModal = ({
                                                             </button>
                                                         )}
 
-                                                        {/* チップ名（ここを指で掴んでドラッグ移動も可能） */}
                                                         <span className="px-1">{tag}</span>
 
-                                                        {/* ▶ 次へ移動ボタン */}
                                                         {idx < currentTags.length - 1 && (
                                                             <button
                                                                 type="button"
@@ -655,7 +377,6 @@ const AiInputWizardModal = ({
                                                             </button>
                                                         )}
 
-                                                        {/* ✕ 削除ボタン */}
                                                         <button
                                                             type="button"
                                                             onClick={(e) => {
@@ -690,7 +411,6 @@ const AiInputWizardModal = ({
                             </div>
                         )}
                     </div>
-                    {/* 最後のステップのAPIキー入力 */}
                     {aiCurrentStep === wizardSteps.length - 1 && (
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-700 shrink-0">
                             <label className="text-xs font-black text-gray-500 dark:text-slate-400 flex justify-between items-center mb-1">
@@ -747,7 +467,7 @@ const AiResultModal = ({
     aiGeneratedPatterns,
     aiGeneratedText,
     handleCopyPattern,
-    onRecreate // 再作成ハンドラーを受け取る
+    onRecreate
 }) => {
     if (!showAiModal) return null;
 
@@ -756,14 +476,12 @@ const AiResultModal = ({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAiModal(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
                 
-                {/* ヘッダー：AIカルテ同様に右上の✕の隣にエメラルドグリーンの再作成ボタンを配置 */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-amber-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
                     <h2 className="text-lg font-black text-amber-800 dark:text-amber-400 flex items-center">
                         <IconStar className="w-5 h-5 mr-1 text-amber-500" /> AI釣行日報
                     </h2>
                     
                     <div className="flex items-center gap-2">
-                        {/* 🔄 再作成ボタン（AIカルテと同一規格のエメラルドグリーン） */}
                         {typeof onRecreate === 'function' && (
                             <button
                                 type="button"
@@ -776,7 +494,6 @@ const AiResultModal = ({
                             </button>
                         )}
 
-                        {/* ✕ 閉じるボタン */}
                         <button 
                             type="button"
                             onClick={() => setShowAiModal(false)} 
@@ -788,7 +505,6 @@ const AiResultModal = ({
                     </div>
                 </div>
 
-                {/* 本文エリア */}
                 <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900/50 space-y-4 font-medium">
                     {aiGeneratedPatterns.length > 0 ? (
                         aiGeneratedPatterns.map((pattern, idx) => (
@@ -805,7 +521,6 @@ const AiResultModal = ({
                     )}
                 </div>
 
-                {/* モーダルフッター */}
                 <div className="p-3 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe shrink-0">
                     <button onClick={() => setShowAiModal(false)} className="w-full bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-black py-3 rounded-xl shadow-sm flex justify-center items-center text-base">
                         閉じる
@@ -815,8 +530,9 @@ const AiResultModal = ({
         </div>
     );
 };
+
 // ==========================================
-// AI多角分析カルテモーダル（ヘッダー拡大＆回転スピナー版）
+// AI多角分析カルテモーダル
 // ==========================================
 const AiAnalysisModal = ({
     showAnalysisModal,
@@ -825,7 +541,7 @@ const AiAnalysisModal = ({
     handleRunAiAnalysis,
     copyAnalysisText,
     handleCopyPattern,
-    isAnalyzing // 分析中判定を受け取る
+    isAnalyzing
 }) => {
     if (!showAnalysisModal || !currentAnalysis) return null;
 
@@ -834,13 +550,11 @@ const AiAnalysisModal = ({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAnalysisModal(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
                 
-                {/* ヘッダー：タイトル・再分析ボタン・閉じるボタンをひと回り拡大 */}
                 <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-emerald-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
                     <h2 className="text-lg sm:text-xl font-black text-emerald-800 dark:text-emerald-400 flex items-center">
                         <IconChart className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 shrink-0" /> AI釣況・多角分析カルテ
                     </h2>
                     <div className="flex items-center gap-2.5">
-                        {/* 🔄 再分析ボタン（ひと回り拡大 ＆ 分析中は回転スピナー） */}
                         <button 
                             type="button"
                             disabled={isAnalyzing}
@@ -862,7 +576,6 @@ const AiAnalysisModal = ({
                             <span>{isAnalyzing ? '再分析中...' : '再分析'}</span>
                         </button>
 
-                        {/* ✕ 閉じるボタン（ひと回り拡大：w-9 h-9、text-base） */}
                         <button 
                             type="button"
                             onClick={() => setShowAnalysisModal(false)} 
@@ -874,10 +587,7 @@ const AiAnalysisModal = ({
                     </div>
                 </div>
 
-                {/* メインエリア */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
-                    
-                    {/* 1. 難易度判定 */}
                     <div className="bg-emerald-100/60 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
                         <span className="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-300 block mb-1">
                             📊 釣況難易度判定
@@ -887,7 +597,6 @@ const AiAnalysisModal = ({
                         </p>
                     </div>
 
-                    {/* 2. トータル状況日報 */}
                     {currentAnalysis.data.totalSummaryReport && (
                         <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 dark:from-slate-800 dark:via-slate-800/90 dark:to-amber-950/20 p-4 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 shadow-md space-y-2.5">
                             <div className="flex justify-between items-center border-b border-amber-200/80 dark:border-slate-700 pb-2">
@@ -908,7 +617,6 @@ const AiAnalysisModal = ({
                         </div>
                     )}
 
-                    {/* 3. 釣り座・座席バイアス分析 */}
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
                         <h4 className="text-xs sm:text-sm font-black text-sky-600 dark:text-sky-400 flex items-center">
                             🧭 釣り座・座席バイアス分析
@@ -918,7 +626,6 @@ const AiAnalysisModal = ({
                         </p>
                     </div>
 
-                    {/* 4. 海況・潮時相関分析 */}
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
                         <h4 className="text-xs sm:text-sm font-black text-blue-600 dark:text-blue-400 flex items-center">
                             🌊 海況・潮時相関分析
@@ -928,7 +635,6 @@ const AiAnalysisModal = ({
                         </p>
                     </div>
 
-                    {/* 5. 竿頭の勝因・テクニカル考察 */}
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm space-y-1.5">
                         <h4 className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 flex items-center">
                             👑 竿頭の勝因・テクニカル考察
@@ -938,7 +644,6 @@ const AiAnalysisModal = ({
                         </p>
                     </div>
 
-                    {/* 6. 次回攻略へのアドバイス＆船長カルテ */}
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-1.5">
                         <h4 className="text-xs sm:text-sm font-black text-emerald-700 dark:text-emerald-400 flex items-center">
                             💡 次回攻略へのアドバイス＆船長カルテ
@@ -947,14 +652,13 @@ const AiAnalysisModal = ({
                             {currentAnalysis.data.captainAdvice}
                         </p>
                     </div>
-
                 </div>
             </div>
         </div>
     );
 };
 
-window.MemoModal = MemoModal;
+// MemoModal の公開は行わず、ウィザードとカルテのみを公開
 window.AiInputWizardModal = AiInputWizardModal;
 window.AiResultModal = AiResultModal;
 window.AiAnalysisModal = AiAnalysisModal;
