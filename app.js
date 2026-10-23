@@ -303,7 +303,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（Googleドライブ写真アップロード＆プレビュー連動版）
+// 船長メモモーダル（複数枚一括アップロード＆進捗表示対応版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
@@ -311,6 +311,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const fileInputRef = React.useRef(null);
     const [history, setHistory] = React.useState([tempMemo || '']);
     const [isUploading, setIsUploading] = React.useState(false);
+    const [uploadProgress, setUploadProgress] = React.useState('');
     const [uploadError, setUploadError] = React.useState('');
     const [previewImageUrl, setPreviewImageUrl] = React.useState(null);
 
@@ -370,11 +371,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         });
     };
 
-    // 写真アップロード処理
+    // 複数写真の順次アップロード処理（2〜5枚対応）
     const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+        const fileList = e.target.files;
+        if (!fileList || fileList.length === 0) return;
 
+        const files = Array.from(fileList);
         const endpoint = localStorage.getItem('fishing_gas_backup_url') || localStorage.getItem('fishing_gas_url');
         if (!endpoint || !endpoint.trim()) {
             setUploadError('受取URLが未設定です。設定画面の「システム」でGASのURLを登録してください。');
@@ -384,38 +386,52 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         setIsUploading(true);
         setUploadError('');
 
-        try {
-            const base64Data = await resizeImage(file);
-            const payload = {
-                action: 'uploadImage',
-                fileName: `memo_${Date.now()}.jpg`,
-                contentType: 'image/jpeg',
-                base64: base64Data
-            };
+        let currentText = tempMemo || '';
+        let successCount = 0;
+        let failCount = 0;
 
-            const response = await fetch(endpoint.trim(), {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
+        for (let i = 0; i < files.length; i++) {
+            setUploadProgress(`${i + 1}/${files.length}枚`);
+            const file = files[i];
 
-            const resJson = await response.json();
-            if (resJson.status === 'success' && resJson.url) {
-                const currentText = tempMemo || '';
-                const appended = currentText.trim() 
-                    ? `${currentText.trim()}\n📷 写真: ${resJson.url}`
-                    : `📷 写真: ${resJson.url}`;
-                updateTextAndSave(appended);
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(25);
+            try {
+                const base64Data = await resizeImage(file);
+                const payload = {
+                    action: 'uploadImage',
+                    fileName: `memo_${Date.now()}_${i + 1}.jpg`,
+                    contentType: 'image/jpeg',
+                    base64: base64Data
+                };
+
+                const response = await fetch(endpoint.trim(), {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const resJson = await response.json();
+                if (resJson.status === 'success' && resJson.url) {
+                    currentText = currentText.trim()
+                        ? `${currentText.trim()}\n📷 写真: ${resJson.url}`
+                        : `📷 写真: ${resJson.url}`;
+                    updateTextAndSave(currentText);
+                    successCount++;
+                } else {
+                    failCount++;
                 }
-            } else {
-                setUploadError(resJson.message || 'アップロードに失敗しました');
+            } catch (err) {
+                console.error(err);
+                failCount++;
             }
-        } catch (err) {
-            setUploadError('写真のアップロード中にエラーが発生しました');
-        } finally {
-            setIsUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+
+        setIsUploading(false);
+        setUploadProgress('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        if (failCount > 0) {
+            setUploadError(`${successCount}枚保存完了（${failCount}枚は通信エラー等で失敗しました）`);
+        } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(30);
         }
     };
 
@@ -503,7 +519,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* ツールバー（時刻挿入 ＆ 写真追加ボタン） */}
+                {/* ツールバー */}
                 <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none gap-2">
                     <div className="flex items-center gap-1.5">
                         <button
@@ -518,6 +534,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         <input
                             type="file"
                             accept="image/*"
+                            multiple
                             ref={fileInputRef}
                             onChange={handleFileChange}
                             className="hidden"
@@ -536,7 +553,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             {isUploading ? (
                                 <>
                                     <span className="inline-block animate-spin text-sm leading-none">🔄</span>
-                                    <span>送信中...</span>
+                                    <span>送信中 ({uploadProgress})...</span>
                                 </>
                             ) : (
                                 <>
