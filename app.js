@@ -697,8 +697,9 @@ function App() {
     });
 
     const [counterMode, setCounterMode] = React.useState(() => localStorage.getItem('fishing_counter_mode') || 'tap');
-
-    React.useEffect(() => {
+   const [isEditingSeats, setIsEditingSeats] = React.useState(false);
+    
+React.useEffect(() => {
         localStorage.setItem('fishing_last_tab', activeTab);
     }, [activeTab]);
 
@@ -1763,51 +1764,76 @@ function App() {
                             )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-1.5 mb-2 select-none">
-                            <button
-                                type="button"
-                                onClick={() => setInputSide(inputSide === 'port' ? 'both' : 'port')}
-                                className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center justify-center gap-1 active:scale-95 ${
-                                    inputSide === 'port'
-                                        ? 'bg-red-500 text-white border-red-600 shadow-sm ring-2 ring-red-300 dark:ring-red-950 dark:border-red-700'
-                                        : inputSide === 'both'
-                                        ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-950/60 hover:bg-red-100'
-                                        : 'bg-gray-100 dark:bg-slate-800/80 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-800 opacity-60'
-                                }`}
-                            >
-                                <span>左舷</span>
-                                {inputSide === 'port' && <span className="text-[11px] font-bold bg-white/20 px-1 rounded">のみ</span>}
-                            </button>
+                        {/* 左右舷切り替えバー ＆ 座席編集モード切り替えバー */}
+                        <div className="space-y-2 mb-2 select-none">
+                            <div className="flex items-center justify-between gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setInputSide(inputSide === 'port' ? 'both' : 'port')}
+                                    className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center justify-center gap-1 active:scale-95 ${
+                                        inputSide === 'port'
+                                            ? 'bg-red-500 text-white border-red-600 shadow-sm ring-2 ring-red-300 dark:ring-red-950 dark:border-red-700'
+                                            : inputSide === 'both'
+                                            ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-950/60 hover:bg-red-100'
+                                            : 'bg-gray-100 dark:bg-slate-800/80 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-800 opacity-60'
+                                    }`}
+                                >
+                                    <span>左舷</span>
+                                    {inputSide === 'port' && <span className="text-[11px] font-bold bg-white/20 px-1 rounded">のみ</span>}
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setInputSide('both')}
-                                className={`px-4 py-2 rounded-lg text-sm font-black border transition-all active:scale-95 shrink-0 ${
-                                    inputSide === 'both'
-                                        ? 'bg-sky-100/70 dark:bg-slate-800 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-700 shadow-2xs'
-                                        : 'bg-transparent text-gray-400 dark:text-slate-500 border-transparent hover:text-gray-600'
-                                }`}
-                            >
-                                両舷
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setInputSide('both')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-black border transition-all active:scale-95 shrink-0 ${
+                                        inputSide === 'both'
+                                            ? 'bg-sky-100/70 dark:bg-slate-800 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-700 shadow-2xs'
+                                            : 'bg-transparent text-gray-400 dark:text-slate-500 border-transparent hover:text-gray-600'
+                                    }`}
+                                >
+                                    両舷
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setInputSide(inputSide === 'starboard' ? 'both' : 'starboard')}
-                                className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center justify-center gap-1 active:scale-95 ${
-                                    inputSide === 'starboard'
-                                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-950 dark:border-emerald-700'
-                                        : inputSide === 'both'
-                                        ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-950/60 hover:bg-emerald-100'
-                                        : 'bg-gray-100 dark:bg-slate-800/80 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-800 opacity-60'
-                                }`}
-                            >
-                                <span>右舷</span>
-                                {inputSide === 'starboard' && <span className="text-[11px] font-bold bg-white/20 px-1 rounded">のみ</span>}
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setInputSide(inputSide === 'starboard' ? 'both' : 'starboard')}
+                                    className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-black border transition-all flex items-center justify-center gap-1 active:scale-95 ${
+                                        inputSide === 'starboard'
+                                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-950 dark:border-emerald-700'
+                                            : inputSide === 'both'
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-950/60 hover:bg-emerald-100'
+                                            : 'bg-gray-100 dark:bg-slate-800/80 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-800 opacity-60'
+                                    }`}
+                                >
+                                    <span>右舷</span>
+                                    {inputSide === 'starboard' && <span className="text-[11px] font-bold bg-white/20 px-1 rounded">のみ</span>}
+                                </button>
+                            </div>
+
+                            {/* 船長考案：誤操作を防ぐ「座席編集モード」切替バー */}
+                            {(portSeats.length > 0 || starboardSeats.length > 0) && (
+                                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl border transition-all bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-2xs">
+                                    <span className="text-xs font-black text-gray-600 dark:text-slate-300 flex items-center gap-1">
+                                        <span>{isEditingSeats ? '⚠️ 座席の追加・削除モード中' : '⚓ 座席の配置・調整'}</span>
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditingSeats(prev => !prev)}
+                                        className={`px-3 py-1 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center gap-1 shadow-xs border ${
+                                            isEditingSeats
+                                                ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                                                : 'bg-amber-50 dark:bg-slate-700 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-slate-600 hover:bg-amber-100'
+                                        }`}
+                                    >
+                                        <span>{isEditingSeats ? '✓' : '✏️'}</span>
+                                        <span>{isEditingSeats ? '完了' : '席を編集'}</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
-                        {/* 座席の描画エリア（未設定時はワンタップ設定カードを表示） */}
+                        {/* 座席の描画エリア */}
                         {portSeats.length === 0 && starboardSeats.length === 0 ? (
                             <div className="my-6 p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-sky-300 dark:border-slate-600 shadow-sm text-center flex flex-col items-center justify-center space-y-4 animate-[fadeIn_0.2s_ease-out]">
                                 <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-3xl shadow-inner">
@@ -1833,18 +1859,154 @@ function App() {
                                     ※右上の ⚙️ アイコンからも設定できます
                                 </span>
                             </div>
-                        ) : inputSide === 'both' ? (
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    {portSeats.map((s, i) => <SeatInput key={`p-${i}`} side="port" seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode="both" onToggleVisibility={handleToggleVisibility} />)}
-                                </div>
-                                <div>
-                                    {starboardSeats.map((s, i) => <SeatInput key={`s-${i}`} side="starboard" seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode="both" onToggleVisibility={handleToggleVisibility} />)}
-                                </div>
-                            </div>
                         ) : (
-                            <div>
-                                {(inputSide === 'port' ? portSeats : starboardSeats).map((s, i) => <SeatInput key={`${inputSide}-${i}`} side={inputSide} seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode="single" onToggleVisibility={handleToggleVisibility} />)}
+                            /* 座席リストの表示（編集モード時は各座席の上部に「＋挿入」「✕削除」ボタンが出現） */
+                            <div className={inputSide === 'both' ? "grid grid-cols-2 gap-2" : "space-y-2"}>
+                                {/* 左舷側の描画 */}
+                                {(inputSide === 'both' || inputSide === 'port') && (
+                                    <div className="space-y-2">
+                                        {portSeats.map((s, i) => (
+                                            <div key={`p-wrapper-${i}`} className="space-y-1">
+                                                {isEditingSeats && (
+                                                    <div className="flex justify-between items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-950/60 rounded-lg border border-red-200 dark:border-red-900 animate-[fadeIn_0.15s_ease-out]">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (portSeats.length >= 15) {
+                                                                    setToastMessage('左舷の最大席数（15席）に達しています');
+                                                                    return;
+                                                                }
+                                                                const newSeats = [...portSeats];
+                                                                // i番目の位置に空の席を割り込み挿入（後ろの人はそのままズレる）
+                                                                newSeats.splice(i, 0, { id: i + 1, name: '', count: '', memo: '', isVisible: true });
+                                                                // 席番号（id）を1番から振り直し
+                                                                const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
+                                                                setPortSeats(renumbered);
+                                                                setPortSeatCount(String(renumbered.length));
+                                                                localStorage.setItem('port_seat_count', String(renumbered.length));
+                                                                setToastMessage(`左舷 ${i + 1}番に新しい席を割り込み挿入しました\n（後ろの席は1つずつズレました）`);
+                                                            }}
+                                                            className="text-[11px] font-black text-red-700 dark:text-red-300 hover:text-red-900 flex items-center gap-0.5 active:scale-95"
+                                                        >
+                                                            <span>＋</span>
+                                                            <span>ここ（{i + 1}番）に挿入</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const targetName = s.name ? `「${s.name}さん」の席` : `${i + 1}番席`;
+                                                                if (!window.confirm(`左舷 ${targetName} を削除しますか？\n（後ろの席が1つずつ前に詰まります）`)) return;
+                                                                const newSeats = [...portSeats];
+                                                                newSeats.splice(i, 1);
+                                                                const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
+                                                                setPortSeats(renumbered);
+                                                                setPortSeatCount(String(renumbered.length));
+                                                                localStorage.setItem('port_seat_count', String(renumbered.length));
+                                                                setToastMessage(`左舷 ${i + 1}番を削除しました\n（後ろの席が前に詰まりました）`);
+                                                            }}
+                                                            className="text-[11px] font-black text-rose-600 dark:text-rose-400 hover:text-rose-800 flex items-center gap-0.5 active:scale-95"
+                                                        >
+                                                            <span>✕</span>
+                                                            <span>この席を削除</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <SeatInput side="port" seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode={inputSide} onToggleVisibility={handleToggleVisibility} />
+                                            </div>
+                                        ))}
+
+                                        {/* 左舷の末尾（大ドモの後ろ）に追加するボタン（編集モード時のみ） */}
+                                        {isEditingSeats && portSeats.length < 15 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const nextNum = portSeats.length + 1;
+                                                    const newSeats = [...portSeats, { id: nextNum, name: '', count: '', memo: '', isVisible: true }];
+                                                    setPortSeats(newSeats);
+                                                    setPortSeatCount(String(newSeats.length));
+                                                    localStorage.setItem('port_seat_count', String(newSeats.length));
+                                                    setToastMessage(`左舷の末尾に ${nextNum}番席を追加しました`);
+                                                }}
+                                                className="w-full py-1.5 border border-dashed border-red-300 dark:border-red-800 rounded-xl text-xs font-black text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/30 hover:bg-red-100 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                            >
+                                                <span>＋ 左舷末尾に1席追加</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* 右舷側の描画 */}
+                                {(inputSide === 'both' || inputSide === 'starboard') && (
+                                    <div className="space-y-2">
+                                        {starboardSeats.map((s, i) => (
+                                            <div key={`s-wrapper-${i}`} className="space-y-1">
+                                                {isEditingSeats && (
+                                                    <div className="flex justify-between items-center px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 rounded-lg border border-emerald-200 dark:border-emerald-900 animate-[fadeIn_0.15s_ease-out]">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (starboardSeats.length >= 15) {
+                                                                    setToastMessage('右舷の最大席数（15席）に達しています');
+                                                                    return;
+                                                                }
+                                                                const newSeats = [...starboardSeats];
+                                                                // i番目の位置に空の席を割り込み挿入（後ろの人はそのままズレる）
+                                                                newSeats.splice(i, 0, { id: i + 1, name: '', count: '', memo: '', isVisible: true });
+                                                                // 席番号（id）を1番から振り直し
+                                                                const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
+                                                                setStarboardSeats(renumbered);
+                                                                setStarboardSeatCount(String(renumbered.length));
+                                                                localStorage.setItem('starboard_seat_count', String(renumbered.length));
+                                                                setToastMessage(`右舷 ${i + 1}番に新しい席を割り込み挿入しました\n（後ろの席は1つずつズレました）`);
+                                                            }}
+                                                            className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 flex items-center gap-0.5 active:scale-95"
+                                                        >
+                                                            <span>＋</span>
+                                                            <span>ここ（{i + 1}番）に挿入</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const targetName = s.name ? `「${s.name}さん」の席` : `${i + 1}番席`;
+                                                                if (!window.confirm(`右舷 ${targetName} を削除しますか？\n（後ろの席が1つずつ前に詰まります）`)) return;
+                                                                const newSeats = [...starboardSeats];
+                                                                newSeats.splice(i, 1);
+                                                                const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
+                                                                setStarboardSeats(renumbered);
+                                                                setStarboardSeatCount(String(renumbered.length));
+                                                                localStorage.setItem('starboard_seat_count', String(renumbered.length));
+                                                                setToastMessage(`右舷 ${i + 1}番を削除しました\n（後ろの席が前に詰まりました）`);
+                                                            }}
+                                                            className="text-[11px] font-black text-rose-600 dark:text-rose-400 hover:text-rose-800 flex items-center gap-0.5 active:scale-95"
+                                                        >
+                                                            <span>✕</span>
+                                                            <span>この席を削除</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <SeatInput side="starboard" seat={s} index={i} onSeatChange={handleSeatChange} onCountDelta={handleCountDelta} viewMode={inputSide} onToggleVisibility={handleToggleVisibility} />
+                                            </div>
+                                        ))}
+
+                                        {/* 右舷の末尾（大ドモの後ろ）に追加するボタン（編集モード時のみ） */}
+                                        {isEditingSeats && starboardSeats.length < 15 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const nextNum = starboardSeats.length + 1;
+                                                    const newSeats = [...starboardSeats, { id: nextNum, name: '', count: '', memo: '', isVisible: true }];
+                                                    setStarboardSeats(newSeats);
+                                                    setStarboardSeatCount(String(newSeats.length));
+                                                    localStorage.setItem('starboard_seat_count', String(newSeats.length));
+                                                    setToastMessage(`右舷の末尾に ${nextNum}番席を追加しました`);
+                                                }}
+                                                className="w-full py-1.5 border border-dashed border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                            >
+                                                <span>＋ 右舷末尾に1席追加</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                         <div className="h-16 shrink-0 pointer-events-none"></div>
