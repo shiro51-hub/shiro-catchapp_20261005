@@ -1860,7 +1860,7 @@ React.useEffect(() => {
                                 </span>
                             </div>
                         ) : (
-                            /* 座席リストの表示（編集モード時は各座席の上部に「＋挿入」「✕削除」ボタンが出現） */
+                            /* 座席リストの表示（左右共通のグレー・白ベース・削除のみ赤文字） */
                             <div className={inputSide === 'both' ? "grid grid-cols-2 gap-2" : "space-y-2"}>
                                 {/* 左舷側の描画 */}
                                 {(inputSide === 'both' || inputSide === 'port') && (
@@ -1868,7 +1868,7 @@ React.useEffect(() => {
                                         {portSeats.map((s, i) => (
                                             <div key={`p-wrapper-${i}`} className="space-y-1">
                                                 {isEditingSeats && (
-                                                    <div className="flex justify-between items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-950/60 rounded-lg border border-red-200 dark:border-red-900 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1877,37 +1877,35 @@ React.useEffect(() => {
                                                                     return;
                                                                 }
                                                                 const newSeats = [...portSeats];
-                                                                // i番目の位置に空の席を割り込み挿入（後ろの人はそのままズレる）
                                                                 newSeats.splice(i, 0, { id: i + 1, name: '', count: '', memo: '', isVisible: true });
-                                                                // 席番号（id）を1番から振り直し
                                                                 const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
                                                                 setPortSeats(renumbered);
                                                                 setPortSeatCount(String(renumbered.length));
                                                                 localStorage.setItem('port_seat_count', String(renumbered.length));
-                                                                setToastMessage(`左舷 ${i + 1}番に新しい席を割り込み挿入しました\n（後ろの席は1つずつズレました）`);
+                                                                setToastMessage(`左舷 ${i + 1}番に追加しました（後ろの席はズレました）`);
                                                             }}
-                                                            className="text-[11px] font-black text-red-700 dark:text-red-300 hover:text-red-900 flex items-center gap-0.5 active:scale-95"
+                                                            className="text-xs font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>＋</span>
-                                                            <span>ここ（{i + 1}番）に挿入</span>
+                                                            <span>{i + 1}番に追加</span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
                                                                 const targetName = s.name ? `「${s.name}さん」の席` : `${i + 1}番席`;
-                                                                if (!window.confirm(`左舷 ${targetName} を削除しますか？\n（後ろの席が1つずつ前に詰まります）`)) return;
+                                                                if (!window.confirm(`左舷 ${targetName} を削除しますか？\n（後ろの席が前に詰まります）`)) return;
                                                                 const newSeats = [...portSeats];
                                                                 newSeats.splice(i, 1);
                                                                 const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
                                                                 setPortSeats(renumbered);
                                                                 setPortSeatCount(String(renumbered.length));
                                                                 localStorage.setItem('port_seat_count', String(renumbered.length));
-                                                                setToastMessage(`左舷 ${i + 1}番を削除しました\n（後ろの席が前に詰まりました）`);
+                                                                setToastMessage(`左舷 ${i + 1}番を削除しました（後ろの席が詰まりました）`);
                                                             }}
-                                                            className="text-[11px] font-black text-rose-600 dark:text-rose-400 hover:text-rose-800 flex items-center gap-0.5 active:scale-95"
+                                                            className="text-xs font-black text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>✕</span>
-                                                            <span>この席を削除</span>
+                                                            <span>{i + 1}番を削除</span>
                                                         </button>
                                                     </div>
                                                 )}
@@ -1915,7 +1913,7 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 左舷の末尾（大ドモの後ろ）に追加するボタン（編集モード時のみ） */}
+                                        {/* 左舷末尾追加ボタン */}
                                         {isEditingSeats && portSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -1925,11 +1923,11 @@ React.useEffect(() => {
                                                     setPortSeats(newSeats);
                                                     setPortSeatCount(String(newSeats.length));
                                                     localStorage.setItem('port_seat_count', String(newSeats.length));
-                                                    setToastMessage(`左舷の末尾に ${nextNum}番席を追加しました`);
+                                                    setToastMessage(`左舷末尾に ${nextNum}番席を追加しました`);
                                                 }}
-                                                className="w-full py-1.5 border border-dashed border-red-300 dark:border-red-800 rounded-xl text-xs font-black text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/30 hover:bg-red-100 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
-                                                <span>＋ 左舷末尾に1席追加</span>
+                                                <span>＋ 末尾に追加</span>
                                             </button>
                                         )}
                                     </div>
@@ -1941,7 +1939,7 @@ React.useEffect(() => {
                                         {starboardSeats.map((s, i) => (
                                             <div key={`s-wrapper-${i}`} className="space-y-1">
                                                 {isEditingSeats && (
-                                                    <div className="flex justify-between items-center px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 rounded-lg border border-emerald-200 dark:border-emerald-900 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1950,37 +1948,35 @@ React.useEffect(() => {
                                                                     return;
                                                                 }
                                                                 const newSeats = [...starboardSeats];
-                                                                // i番目の位置に空の席を割り込み挿入（後ろの人はそのままズレる）
                                                                 newSeats.splice(i, 0, { id: i + 1, name: '', count: '', memo: '', isVisible: true });
-                                                                // 席番号（id）を1番から振り直し
                                                                 const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
                                                                 setStarboardSeats(renumbered);
                                                                 setStarboardSeatCount(String(renumbered.length));
                                                                 localStorage.setItem('starboard_seat_count', String(renumbered.length));
-                                                                setToastMessage(`右舷 ${i + 1}番に新しい席を割り込み挿入しました\n（後ろの席は1つずつズレました）`);
+                                                                setToastMessage(`右舷 ${i + 1}番に追加しました（後ろの席はズレました）`);
                                                             }}
-                                                            className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 flex items-center gap-0.5 active:scale-95"
+                                                            className="text-xs font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>＋</span>
-                                                            <span>ここ（{i + 1}番）に挿入</span>
+                                                            <span>{i + 1}番に追加</span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
                                                                 const targetName = s.name ? `「${s.name}さん」の席` : `${i + 1}番席`;
-                                                                if (!window.confirm(`右舷 ${targetName} を削除しますか？\n（後ろの席が1つずつ前に詰まります）`)) return;
+                                                                if (!window.confirm(`右舷 ${targetName} を削除しますか？\n（後ろの席が前に詰まります）`)) return;
                                                                 const newSeats = [...starboardSeats];
                                                                 newSeats.splice(i, 1);
                                                                 const renumbered = newSeats.map((seat, idx) => ({ ...seat, id: idx + 1 }));
                                                                 setStarboardSeats(renumbered);
                                                                 setStarboardSeatCount(String(renumbered.length));
                                                                 localStorage.setItem('starboard_seat_count', String(renumbered.length));
-                                                                setToastMessage(`右舷 ${i + 1}番を削除しました\n（後ろの席が前に詰まりました）`);
+                                                                setToastMessage(`右舷 ${i + 1}番を削除しました（後ろの席が詰まりました）`);
                                                             }}
-                                                            className="text-[11px] font-black text-rose-600 dark:text-rose-400 hover:text-rose-800 flex items-center gap-0.5 active:scale-95"
+                                                            className="text-xs font-black text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>✕</span>
-                                                            <span>この席を削除</span>
+                                                            <span>{i + 1}番を削除</span>
                                                         </button>
                                                     </div>
                                                 )}
@@ -1988,7 +1984,7 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 右舷の末尾（大ドモの後ろ）に追加するボタン（編集モード時のみ） */}
+                                        {/* 右舷末尾追加ボタン */}
                                         {isEditingSeats && starboardSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -1998,11 +1994,11 @@ React.useEffect(() => {
                                                     setStarboardSeats(newSeats);
                                                     setStarboardSeatCount(String(newSeats.length));
                                                     localStorage.setItem('starboard_seat_count', String(newSeats.length));
-                                                    setToastMessage(`右舷の末尾に ${nextNum}番席を追加しました`);
+                                                    setToastMessage(`右舷末尾に ${nextNum}番席を追加しました`);
                                                 }}
-                                                className="w-full py-1.5 border border-dashed border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
-                                                <span>＋ 右舷末尾に1席追加</span>
+                                                <span>＋ 末尾に追加</span>
                                             </button>
                                         )}
                                     </div>
