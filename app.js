@@ -2013,6 +2013,9 @@ React.useEffect(() => {
                                 )}
                             </div>
                         )}
+                        <div className="h-16 shrink-0 pointer-events-none"></div>
+                    </div>
+                )}
 
                 {activeTab === 'counter' && (
                     <div className="flex flex-col flex-1 space-y-3 animate-[fadeIn_0.2s_ease-out]">
