@@ -1913,7 +1913,7 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 左舷末尾追加ボタン */}
+                                        {/* 左舷大ドモ追加ボタン */}
                                         {isEditingSeats && portSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -1923,11 +1923,11 @@ React.useEffect(() => {
                                                     setPortSeats(newSeats);
                                                     setPortSeatCount(String(newSeats.length));
                                                     localStorage.setItem('port_seat_count', String(newSeats.length));
-                                                    setToastMessage(`左舷末尾に ${nextNum}番席を追加しました`);
+                                                    setToastMessage(`左舷大ドモに ${nextNum}番席を追加しました`);
                                                 }}
                                                 className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
-                                                <span>＋ 末尾に追加</span>
+                                                <span>＋ 大ドモに追加</span>
                                             </button>
                                         )}
                                     </div>
@@ -1984,7 +1984,7 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 右舷末尾追加ボタン */}
+                                        {/* 右舷大ドモ追加ボタン */}
                                         {isEditingSeats && starboardSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -1994,11 +1994,11 @@ React.useEffect(() => {
                                                     setStarboardSeats(newSeats);
                                                     setStarboardSeatCount(String(newSeats.length));
                                                     localStorage.setItem('starboard_seat_count', String(newSeats.length));
-                                                    setToastMessage(`右舷末尾に ${nextNum}番席を追加しました`);
+                                                    setToastMessage(`右舷大ドモに ${nextNum}番席を追加しました`);
                                                 }}
                                                 className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
-                                                <span>＋ 末尾に追加</span>
+                                                <span>＋ 大ドモに追加</span>
                                             </button>
                                         )}
                                     </div>
