@@ -1764,7 +1764,7 @@ React.useEffect(() => {
                             )}
                         </div>
 
-                        {/* 左右舷切り替えバー ＆ 座席編集モード切り替えバー */}
+                        {/* 左右舷切り替えバー ＆ 座席編集ボタン */}
                         <div className="space-y-2 mb-2 select-none">
                             <div className="flex items-center justify-between gap-1.5">
                                 <button
@@ -1810,26 +1810,34 @@ React.useEffect(() => {
                                 </button>
                             </div>
 
-                            {/* 船長考案：誤操作を防ぐ「座席編集モード」切替バー */}
+                            {/* 座席編集スイッチ：通常時は右端に大きめボタン、編集中は警告バーに切り替え */}
                             {(portSeats.length > 0 || starboardSeats.length > 0) && (
-                                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl border transition-all bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-2xs">
-                                    <span className="text-xs font-black text-gray-600 dark:text-slate-300 flex items-center gap-1">
-                                        <span>{isEditingSeats ? '⚠️ 座席の追加・削除モード中' : '⚓ 座席の配置・調整'}</span>
-                                    </span>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditingSeats(prev => !prev)}
-                                        className={`px-3 py-1 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center gap-1 shadow-xs border ${
-                                            isEditingSeats
-                                                ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
-                                                : 'bg-amber-50 dark:bg-slate-700 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-slate-600 hover:bg-amber-100'
-                                        }`}
-                                    >
-                                        <span>{isEditingSeats ? '✓' : '✏️'}</span>
-                                        <span>{isEditingSeats ? '完了' : '席を編集'}</span>
-                                    </button>
-                                </div>
+                                isEditingSeats ? (
+                                    <div className="flex items-center justify-between px-3 py-2 rounded-xl border bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-slate-700 shadow-xs animate-[fadeIn_0.15s_ease-out]">
+                                        <span className="text-sm font-black text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                                            <span>⚠️ 座席の編集中</span>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingSeats(false)}
+                                            className="px-4 py-1.5 rounded-lg text-sm font-black bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 border border-slate-700 dark:border-slate-300 shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                                        >
+                                            <span>✓</span>
+                                            <span>完了</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingSeats(true)}
+                                            className="px-3.5 py-1.5 rounded-xl text-sm font-black bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-100 border border-gray-300 dark:border-slate-600 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5"
+                                        >
+                                            <span className="text-sky-600 dark:text-sky-400 text-base leading-none">⚓</span>
+                                            <span>座席を編集</span>
+                                        </button>
+                                    </div>
+                                )
                             )}
                         </div>
 
@@ -1868,7 +1876,7 @@ React.useEffect(() => {
                                         {portSeats.map((s, i) => (
                                             <div key={`p-wrapper-${i}`} className="space-y-1">
                                                 {isEditingSeats && (
-                                                    <div className="flex justify-between items-center px-2 py-1 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1.5 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1884,7 +1892,7 @@ React.useEffect(() => {
                                                                 localStorage.setItem('port_seat_count', String(renumbered.length));
                                                                 setToastMessage(`左舷 ${i + 1}番に追加しました（後ろの席はズレました）`);
                                                             }}
-                                                            className="text-xs font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
+                                                            className="text-xs sm:text-sm font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>＋</span>
                                                             <span>{i + 1}番に追加</span>
@@ -1902,7 +1910,7 @@ React.useEffect(() => {
                                                                 localStorage.setItem('port_seat_count', String(renumbered.length));
                                                                 setToastMessage(`左舷 ${i + 1}番を削除しました（後ろの席が詰まりました）`);
                                                             }}
-                                                            className="text-xs font-black text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 active:scale-95"
+                                                            className="text-xs sm:text-sm font-black text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>✕</span>
                                                             <span>{i + 1}番を削除</span>
@@ -1925,7 +1933,7 @@ React.useEffect(() => {
                                                     localStorage.setItem('port_seat_count', String(newSeats.length));
                                                     setToastMessage(`左舷大ドモに ${nextNum}番席を追加しました`);
                                                 }}
-                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
                                                 <span>＋ 大ドモに追加</span>
                                             </button>
@@ -1939,7 +1947,7 @@ React.useEffect(() => {
                                         {starboardSeats.map((s, i) => (
                                             <div key={`s-wrapper-${i}`} className="space-y-1">
                                                 {isEditingSeats && (
-                                                    <div className="flex justify-between items-center px-2 py-1 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1.5 bg-gray-100 dark:bg-slate-800/90 rounded-lg border border-gray-300 dark:border-slate-700 animate-[fadeIn_0.15s_ease-out]">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1955,7 +1963,7 @@ React.useEffect(() => {
                                                                 localStorage.setItem('starboard_seat_count', String(renumbered.length));
                                                                 setToastMessage(`右舷 ${i + 1}番に追加しました（後ろの席はズレました）`);
                                                             }}
-                                                            className="text-xs font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
+                                                            className="text-xs sm:text-sm font-black text-gray-700 hover:text-black dark:text-slate-200 dark:hover:text-white flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>＋</span>
                                                             <span>{i + 1}番に追加</span>
@@ -1973,7 +1981,7 @@ React.useEffect(() => {
                                                                 localStorage.setItem('starboard_seat_count', String(renumbered.length));
                                                                 setToastMessage(`右舷 ${i + 1}番を削除しました（後ろの席が詰まりました）`);
                                                             }}
-                                                            className="text-xs font-black text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 active:scale-95"
+                                                            className="text-xs sm:text-sm font-black text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 flex items-center gap-1 active:scale-95"
                                                         >
                                                             <span>✕</span>
                                                             <span>{i + 1}番を削除</span>
@@ -1996,7 +2004,7 @@ React.useEffect(() => {
                                                     localStorage.setItem('starboard_seat_count', String(newSeats.length));
                                                     setToastMessage(`右舷大ドモに ${nextNum}番席を追加しました`);
                                                 }}
-                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                                className="w-full py-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-black text-gray-700 dark:text-slate-300 bg-gray-50/80 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1 active:scale-95 transition-all"
                                             >
                                                 <span>＋ 大ドモに追加</span>
                                             </button>
@@ -2005,9 +2013,6 @@ React.useEffect(() => {
                                 )}
                             </div>
                         )}
-                        <div className="h-16 shrink-0 pointer-events-none"></div>
-                    </div>
-                )}
 
                 {activeTab === 'counter' && (
                     <div className="flex flex-col flex-1 space-y-3 animate-[fadeIn_0.2s_ease-out]">
