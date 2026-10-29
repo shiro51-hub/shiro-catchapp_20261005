@@ -1820,9 +1820,9 @@ React.useEffect(() => {
                                         <button
                                             type="button"
                                             onClick={() => setIsEditingSeats(false)}
-                                            className="px-4 py-1.5 rounded-lg text-sm font-black bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 border border-slate-700 dark:border-slate-300 shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                                            className="px-4 py-1.5 rounded-lg text-sm font-black bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white border border-amber-700 shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
                                         >
-                                            <span>✓</span>
+                                            <span className="text-base leading-none">✓</span>
                                             <span>完了</span>
                                         </button>
                                     </div>
