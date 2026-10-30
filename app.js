@@ -303,7 +303,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（複数枚一括アップロード＆進捗表示対応版）
+// 船長メモモーダル（別船1・別船2入力欄 ＆ 複数写真対応版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
@@ -314,6 +314,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const [uploadProgress, setUploadProgress] = React.useState('');
     const [uploadError, setUploadError] = React.useState('');
     const [previewImageUrl, setPreviewImageUrl] = React.useState(null);
+    const [isOtherBoatsOpen, setIsOtherBoatsOpen] = React.useState(false);
+
+    // メモから別船情報をパース
+    const parseOtherBoats = (text) => {
+        const res = { b1Min: '', b1Max: '', b1Top: '', b2Min: '', b2Max: '', b2Top: '' };
+        if (!text) return res;
+        const m1 = text.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (m1) {
+            res.b1Min = m1[1] || '';
+            res.b1Max = m1[2] || '';
+            res.b1Top = (m1[3] || '').trim();
+        }
+        const m2 = text.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (m2) {
+            res.b2Min = m2[1] || '';
+            res.b2Max = m2[2] || '';
+            res.b2Top = (m2[3] || '').trim();
+        }
+        return res;
+    };
+
+    const [boatState, setBoatState] = React.useState(() => parseOtherBoats(tempMemo));
 
     const updateTextAndSave = (nextText, recordHistory = true) => {
         setTempMemo(nextText);
@@ -328,7 +350,32 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // メモ本文からGoogleドライブの画像URLを抽出
+    // 別船の入力変更をメモ本文へ同期
+    const handleBoatFieldChange = (field, val) => {
+        const nextState = { ...boatState, [field]: val };
+        setBoatState(nextState);
+
+        let baseText = (tempMemo || '')
+            .replace(/【別船1】[^\n]*\n?/g, '')
+            .replace(/【別船2】[^\n]*\n?/g, '')
+            .trim();
+
+        let boatLines = [];
+        if (nextState.b1Min !== '' || nextState.b1Max !== '' || nextState.b1Top !== '') {
+            boatLines.push(`【別船1】 釣果: ${nextState.b1Min}〜${nextState.b1Max} 竿頭: ${nextState.b1Top}`);
+        }
+        if (nextState.b2Min !== '' || nextState.b2Max !== '' || nextState.b2Top !== '') {
+            boatLines.push(`【別船2】 釣果: ${nextState.b2Min}〜${nextState.b2Max} 竿頭: ${nextState.b2Top}`);
+        }
+
+        let newMemo = baseText;
+        if (boatLines.length > 0) {
+            newMemo = baseText ? `${baseText}\n\n${boatLines.join('\n')}` : boatLines.join('\n');
+        }
+
+        updateTextAndSave(newMemo, false);
+    };
+
     const extractImageUrls = (text) => {
         if (!text) return [];
         const regex = /https:\/\/lh3\.googleusercontent\.com\/d\/[a-zA-Z0-9_-]+/g;
@@ -337,7 +384,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
     const imageUrls = extractImageUrls(tempMemo);
 
-    // 画像ファイルを圧縮（最大幅1200px）してBase64化
     const resizeImage = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -371,7 +417,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         });
     };
 
-    // 複数写真の順次アップロード処理（2〜5枚対応）
     const handleFileChange = async (e) => {
         const fileList = e.target.files;
         if (!fileList || fileList.length === 0) return;
@@ -435,7 +480,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 写真の解除
     const handleRemoveImage = (targetUrl) => {
         if (!window.confirm('この写真をメモから解除しますか？\n（Googleドライブ内の写真本体は削除されません）')) return;
         const lines = (tempMemo || '').split('\n');
@@ -480,6 +524,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
             const prevText = nextHistory[nextHistory.length - 1];
             setHistory(nextHistory);
             updateTextAndSave(prevText, false);
+            setBoatState(parseOtherBoats(prevText));
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(10);
             }
@@ -490,6 +535,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         if (!tempMemo || !tempMemo.trim()) return;
         if (window.confirm('メモの内容をすべて消去しますか？\n（直後なら「戻す」で復元できます）')) {
             updateTextAndSave('');
+            setBoatState({ b1Min: '', b1Max: '', b1Top: '', b2Min: '', b2Max: '', b2Top: '' });
         }
     };
 
@@ -500,6 +546,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         setShowMemoModal(false);
     };
 
+    const hasOtherBoatData = boatState.b1Max !== '' || boatState.b2Max !== '';
+
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[760px] overflow-hidden">
@@ -507,7 +555,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-xl leading-none">📝</span>
-                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ・釣行写真</h3>
+                        <h3 className="font-black text-gray-800 dark:text-slate-100 text-base sm:text-lg tracking-wide">船長メモ・別船釣況</h3>
                     </div>
                     <button 
                         type="button"
@@ -637,6 +685,96 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         </div>
                     </div>
                 )}
+
+                {/* 🚢 別船の釣果（他船枠：開閉式アコーディオン） */}
+                <div className="mx-3 mt-2 rounded-xl border border-sky-300 dark:border-slate-700 bg-sky-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
+                    <button
+                        type="button"
+                        onClick={() => setIsOtherBoatsOpen(prev => !prev)}
+                        className="w-full px-3 py-2 flex justify-between items-center text-xs font-black text-sky-800 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                    >
+                        <span className="flex items-center gap-1.5">
+                            <span>🚢</span>
+                            <span>別船の釣果（2隻・3隻出しの時のみ入力）</span>
+                            {hasOtherBoatData && <span className="text-emerald-600 dark:text-emerald-400 font-black">● 入力あり</span>}
+                        </span>
+                        <span className="text-sky-600 dark:text-sky-400 font-bold">{isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                    </button>
+
+                    {isOtherBoatsOpen && (
+                        <div className="p-3 border-t border-sky-200 dark:border-slate-700 space-y-2.5 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
+                            {/* 別船 1 */}
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船1】</span>
+                                <div className="flex items-center gap-1 flex-1">
+                                    <input 
+                                        type="number" 
+                                        placeholder="スソ"
+                                        value={boatState.b1Min}
+                                        onChange={(e) => handleBoatFieldChange('b1Min', e.target.value)}
+                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                    <span className="text-slate-400 font-bold">〜</span>
+                                    <input 
+                                        type="number" 
+                                        placeholder="トップ"
+                                        value={boatState.b1Max}
+                                        onChange={(e) => handleBoatFieldChange('b1Max', e.target.value)}
+                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                    <span className="text-slate-400 font-bold shrink-0">本/枚</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-1">
+                                    <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
+                                    <input 
+                                        type="text" 
+                                        placeholder="お名前"
+                                        value={boatState.b1Top}
+                                        onChange={(e) => handleBoatFieldChange('b1Top', e.target.value)}
+                                        className="w-full px-2 py-1 font-bold border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 別船 2 */}
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船2】</span>
+                                <div className="flex items-center gap-1 flex-1">
+                                    <input 
+                                        type="number" 
+                                        placeholder="スソ"
+                                        value={boatState.b2Min}
+                                        onChange={(e) => handleBoatFieldChange('b2Min', e.target.value)}
+                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                    <span className="text-slate-400 font-bold">〜</span>
+                                    <input 
+                                        type="number" 
+                                        placeholder="トップ"
+                                        value={boatState.b2Max}
+                                        onChange={(e) => handleBoatFieldChange('b2Max', e.target.value)}
+                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                    <span className="text-slate-400 font-bold shrink-0">本/枚</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-1">
+                                    <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
+                                    <input 
+                                        type="text" 
+                                        placeholder="お名前"
+                                        value={boatState.b2Top}
+                                        onChange={(e) => handleBoatFieldChange('b2Top', e.target.value)}
+                                        className="w-full px-2 py-1 font-bold border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                                ※入力した別船の釣果はAI日報とAI分析に自動集約され、全体のトップ・竿頭として総括されます（各船の内訳は文章に出ません）。
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* メモ本文入力 */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
@@ -1129,7 +1267,7 @@ React.useEffect(() => {
         return prompts[id];
     };
 
-    // 日報作成処理
+    // 日報作成処理（全船統合・個別船の言及完全禁止ルール適用版）
     const handleAiGenerate = async (record, conditionInfo, sceneryInfo, tideInfo, activityInfo, episodeInfo, sizeInfo, topAnglerInfo, selectedPatterns, customKey) => {
         setGeneratingAiId(record.id);
         const activeApiKey = (customKey || userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1149,15 +1287,13 @@ React.useEffect(() => {
 ■ 絶対厳守のルール
 ・文体：「です・ます調」で統一する。簡潔な「〜です」「〜でした」という表現にする（「〜ですね」「〜ですよ」などの甘い語尾、丁寧すぎる表現禁止、「だぜ」「だな」などの友達や後輩にしゃべるような表現は禁止）。
 ・敬称のルール：竿頭などお客様のお名前を紹介する際は、かしこまりすぎた「様」ではなく、必ず「さん」付けに統一すること（例: 〇〇さん）。
-・釣果表記のルール（最重要）：釣果を紹介する際は、「〇〜〇尾」「〇〜〇匹」といった範囲（スソからトップまで）の表記や「平均〇尾」は一切使用禁止とします。必ず「トップ（上限釣果）」の数字のみを記載してください。
+・個別船の言及・書き分けの完全禁止（最重要）：
+  複数隻（別船・他船）の出船があった場合でも、「当船では」「別船では」「1号船は」「2号船は」といった船ごとの比較・切り分け表現は一切禁止とします。「深場を攻めた船は」「浅場を流した船は」といった船ごとの内訳描写も不要です。必ず山下丸という「1つの船宿全体」としての釣況・海の様子としてひとまとめに総括してください。
+・釣果表記のルール（最重要）：釣果を紹介する際は、「〇〜〇尾」「〇〜〇匹」といった範囲（スソからトップまで）の表記や「平均〇尾」は一切使用禁止とします。必ず全隻を通じた「全体のトップ（上限釣果）」の数字のみを記載してください。
+・竿頭の紹介ルール：紹介するのは全隻を通じた「全体の竿頭（最高釣果を上げた方）」1名（同数の場合はその方々）のお名前（敬称は「さん」）と釣果数のみとします。どの船に乗っていたか（自船か別船か）には一切触れないでください。
 ・数値・単位の表記（半角算用数字と摂氏）：釣果の枚数・匹数や海水温などの数値は、漢数字（「五枚」「十六度」など）は使用せず、すべて半角の算用数字（「5枚」「16℃」など）で表記すること。また、海水温度は「度」ではなく必ず「〇〇℃」（摂氏記号）を用いて表記すること。
 ・水温の非表示（特別指示がない限り禁止）：文章中に「海水温〇〇℃」「水温〇〇℃」といった水温の数値や記述は原則として一切記載しないでください。ただし、【船長からの追加情報】や詳細メモの中で船長自身が特別に水温についてコメントしている場合に限り、その内容に触れても構いません。
 ・風の表現（具体的な風速数値は禁止）：「風速〇m」「〇〜〇mの風」といった具体的な数値は文章中に出さないこと。入力された風速データに基づき、風の強弱を感覚的な言葉（ナギ、そよそよ、やや強め、強めなど）に置き換えて表現すること。
-  【風速と言葉の変換目安】
-  - 0〜3m程度：穏やか、ナギ、微風、風弱く、ベタ凪
-  - 4〜7m程度：適度な風、ほどよい風、心地よい風、そよそよ
-  - 8〜11m程度：やや強め、次第に増して、少々風波があり
-  - 12m以上：強め、やや風強く、ゴチャつく海況
 ・表現：「混じる」は「交じる」に、「潮周り」は「潮回り」に統一。
 ・速度：潮や流れは「速い」を使用（「早い」は不可）。
 ・日付：「今日は」「本日は」を使用（「この日は」「当日は」は使用不可）。
@@ -1170,8 +1306,8 @@ React.useEffect(() => {
 ・トーンの合わせ方：指定された「船全体の調子（絶好調/好調/普通/食い渋り/厳しい）」に100%合わせて文章のテンションを調整してください。
 ■ 記載内容のルール
 1. 冒頭： 必ず「〇〇沖へと出船しました。」から開始し、次に「海上では…」と天候や海況（風・波・潮色）を伝える。海況を伝える際は情景が目に浮かぶような表現を1文交え、潮回り、潮色を簡潔に一連の流れで記載してください。特に指示がない限り"水深〇〇mでした"は不要です。また、海水温度（水温）についても特に船長からの指示がない限り記載しないでください。 さらに、風については前述の通り数値を出さず感覚的な強弱表現に置き換えてください。
-2. 状況：潮の流れの強さや変化、魚の活性、印象的なエピソードを組み込む。
-3. 竿頭の釣果とお名前（敬称は「さん」）、二番手は釣果だけを紹介する：名前を出すのは「竿頭」のみ。単位（匹、尾、枚、杯など）は魚によって変更すること。全体の釣果として紹介するのはトップの釣果のみとし、その後に続けて竿頭のお名前（敬称は「さん」）を紹介してください。二番手の釣果に触れる場合も釣果数のみとし、スソ（最低釣果）や全体幅（〇〜〇）は文章に出さないでください。
+2. 状況：全隻の状況を総合し、潮の流れの強さや変化、魚の活性、全体としての食い気・展開を1つのまとまったストーリーとして総括する（個別船の書き分けは禁止）。
+3. 全体の竿頭の釣果とお名前（敬称は「さん」）：紹介するのは全隻を通じたトップ釣果とお名前（敬称は「さん」）のみ。どの船かには触れず、スソ（最低釣果）や全体幅（〇〜〇）は一切文章に出さないでください。
 4. サイズ：数字（〇cm）は絶対に出さず、「良型」「中型主体」などの言葉のみで表現する。
 5. 分析：竿頭の釣り方や好釣果の要因、決め手、コツ、工夫した点などを分析して書く。
 6. 締め：釣れた人・釣れなかった人双方に配慮し、「またのご乗船お待ちしております」と前向きに締める。
@@ -1180,15 +1316,49 @@ React.useEffect(() => {
 
         const unit = getUnit(record.targetFish);
 
-        const allCounts = [...(record.port || []), ...(record.starboard || [])]
+        // 自船の集計
+        let allCounts = [...(record.port || []), ...(record.starboard || [])]
             .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count)))
             .map(s => parseInt(s.count, 10));
-        const maxCount = record.max || 0;
-        const secondCounts = allCounts.filter(c => c < maxCount);
+        let overallMax = record.max || 0;
+        let overallTopName = record.topAnglerName || '';
+
+        // 詳細メモ内の別船1・別船2を解析して全体トップと竿頭を統合判定
+        const memoText = record.detailedMemo || '';
+        const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (b1Match) {
+            const b1Max = parseInt(b1Match[2], 10);
+            const b1Name = (b1Match[3] || '').trim();
+            if (!isNaN(b1Max)) {
+                allCounts.push(b1Max);
+                if (b1Max > overallMax) {
+                    overallMax = b1Max;
+                    overallTopName = b1Name;
+                } else if (b1Max === overallMax && b1Name && overallTopName && !overallTopName.includes(b1Name)) {
+                    overallTopName = `${overallTopName}・${b1Name}`;
+                }
+            }
+        }
+        const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (b2Match) {
+            const b2Max = parseInt(b2Match[2], 10);
+            const b2Name = (b2Match[3] || '').trim();
+            if (!isNaN(b2Max)) {
+                allCounts.push(b2Max);
+                if (b2Max > overallMax) {
+                    overallMax = b2Max;
+                    overallTopName = b2Name;
+                } else if (b2Max === overallMax && b2Name && overallTopName && !overallTopName.includes(b2Name)) {
+                    overallTopName = `${overallTopName}・${b2Name}`;
+                }
+            }
+        }
+
+        const secondCounts = allCounts.filter(c => c < overallMax);
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
         const secondMaxStr = secondMax !== null ? `${secondMax} ${unit}` : 'なし';
 
-        let inputData = `日付: ${record.date} (${getDayOfWeek(record.date)})\n釣り物: ${record.targetFish}\n釣果: ${record.min}〜${record.max} ${unit}\n竿頭: ${record.topAnglerName || 'なし'} (${maxCount} ${unit})\n二番手釣果: ${secondMaxStr}\nポイント: ${record.point || ''}\n水深: ${record.waterDepth || ''}m / 水温: ${record.waterTemp || ''}℃ / 潮色: ${record.tide || ''} / 潮回り: ${record.tideState || ''}\n天候・風波: 前半[${record.weather1 || ''}, ${record.windDir1 || ''} ${record.windSpeed1 || ''}, ${record.waveHeight1 || ''}] / 後半[${record.weather2 || ''}, ${record.windDir2 || ''} ${record.windSpeed2 || ''}, ${record.waveHeight2 || ''}]`;
+        let inputData = `日付: ${record.date} (${getDayOfWeek(record.date)})\n釣り物: ${record.targetFish}\n全隻統合トップ釣果: ${overallMax} ${unit}\n全隻の竿頭: ${overallTopName || 'なし'} (${overallMax} ${unit})\n二番手釣果: ${secondMaxStr}\nポイント: ${record.point || ''}\n水深: ${record.waterDepth || ''}m / 水温: ${record.waterTemp || ''}℃ / 潮色: ${record.tide || ''} / 潮回り: ${record.tideState || ''}\n天候・風波: 前半[${record.weather1 || ''}, ${record.windDir1 || ''} ${record.windSpeed1 || ''}, ${record.waveHeight1 || ''}] / 後半[${record.weather2 || ''}, ${record.windDir2 || ''} ${record.windSpeed2 || ''}, ${record.waveHeight2 || ''}]`;
 
         let extraInfo = "";
         if (record.detailedMemo && record.detailedMemo.trim() !== '') {
@@ -1202,7 +1372,7 @@ React.useEffect(() => {
         if (sizeInfo) extraInfo += `\n・サイズ感: ${sizeInfo}`;
         if (topAnglerInfo) extraInfo += `\n・竿頭の釣り方・好成績の要因・コメント: ${topAnglerInfo}`;
 
-        const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通りに指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
+        const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通り（個別船の言及禁止・トータル総括と全体の竿頭のみ紹介）に指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
             const modelQueue = typeof window.getModelRotationOrder === 'function'
@@ -1362,7 +1532,7 @@ React.useEffect(() => {
         setSharedRecordId(null);
     };
 
-    // AI多角分析処理
+    // AI多角分析処理（全船統合総括対応版）
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
         if (!activeApiKey) {
@@ -1383,11 +1553,34 @@ React.useEffect(() => {
         const portAvg = portAnglers > 0 ? (portTotal / portAnglers).toFixed(1) : '0.0';
         const starboardAvg = starboardAnglers > 0 ? (starboardTotal / starboardAnglers).toFixed(1) : '0.0';
 
+        // 別船の集計
+        let overallMax = record.max || 0;
+        let overallTopName = record.topAnglerName || '';
+        const memoText = record.detailedMemo || '';
+        const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (b1Match) {
+            const b1Max = parseInt(b1Match[2], 10);
+            const b1Name = (b1Match[3] || '').trim();
+            if (!isNaN(b1Max) && b1Max > overallMax) {
+                overallMax = b1Max;
+                overallTopName = b1Name;
+            }
+        }
+        const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
+        if (b2Match) {
+            const b2Max = parseInt(b2Match[2], 10);
+            const b2Name = (b2Match[3] || '').trim();
+            if (!isNaN(b2Max) && b2Max > overallMax) {
+                overallMax = b2Max;
+                overallTopName = b2Name;
+            }
+        }
+
         const promptLines = [
             "あなたはベテラン遊漁船「山下丸」の船長兼データアナリストです。以下の釣果・海況・座席メモデータを精査し、客観的カルテおよび公式HP/日報用のトータル文章を作成してください。",
             "【本日の釣行データ】",
-            "- 上限釣果（トップ）: " + record.max + " " + unit,
-            "- 竿頭: " + (record.topAnglerName || 'なし') + " (" + record.max + " " + unit + ")",
+            "- 全隻統合トップ釣果: " + overallMax + " " + unit,
+            "- 全隻の竿頭: " + (overallTopName || 'なし') + " (" + overallMax + " " + unit + ")",
             "- ポイント: " + (record.point || '久里浜沖周辺'),
             "- 潮色: " + (record.tide || '-') + " / 潮回り: " + (record.tideState || '-'),
             "- 天候・風波: 前半[" + (record.weather1 || '-') + ", 風:" + (record.windDir1 || '-') + (record.windSpeed1 || '-') + ", 波:" + (record.waveHeight1 || '-') + "] / 後半[" + (record.weather2 || '-') + ", 風:" + (record.windDir2 || '-') + (record.windSpeed2 || '-') + ", 波:" + (record.waveHeight2 || '-') + "]",
@@ -1395,27 +1588,23 @@ React.useEffect(() => {
             "- 左舷状況: 乗船 " + portAnglers + "名 / 合計 " + portTotal + unit + " / 1人平均 " + portAvg + unit + "  座席詳細: " + pSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "- 右舷状況: 乗船 " + starboardAnglers + "名 / 合計 " + starboardTotal + unit + " / 1人平均 " + starboardAvg + unit + "  座席詳細: " + sSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "【指示事項】",
-            "【最重要：入力メモの自動校正＆用語・漢字統一ルール（全出力共通）】",
-            "・提供されたメモや座席メモは現場での入力のため、誤字・脱字・音声入力誤変換が含まれる場合があります。メモの文字をそのままオウム返しせず、必ず前後の文脈を汲み取り、正しく自然な釣行用語・日本語に校正して文章を生成してください。",
-            "  - 潮や流れの速度：「早い」➔ 必ず「速い」に修正（例: 潮が早い ➔ 潮が速い）。",
+            "【最重要：個別船の書き分け禁止＆用語・漢字統一ルール】",
+            "・メモに別船の記載がある場合でも、「当船では」「別船では」といった船ごとの比較・言及は一切禁止。山下丸全体としての海の様子を総括してください。",
+            "・提供されたメモや座席メモは現場での入力のため、誤字・脱字・音声入力誤変換が含まれる場合があります。正しく自然な釣行用語・日本語に自動校正してください。",
+            "  - 潮や流れの速度：「早い」➔ 必ず「速い」に修正。",
             "  - 魚の混交表現：「混じる」「まじる」➔ 必ず「交じる」に統一。",
             "  - 潮の周期：「潮周り」➔ 必ず「潮回り」に統一。",
             "  - 時合の表記：「時合い」「地合い」➔「時合い」に統一。",
-            "  - その他音声入力等の誤変換（例: 根が借り➔根掛かり、あたり➔アタリ/当たり、ばらし➔バラシ等）も適切な釣行用語に自動修正してください。",
             "1. totalSummaryReport（トータル状況日報）: 本日のポイント、釣況、メモを総括し、公式HPや日報にそのまま掲載できる400字程度の完成された文章を作成してください。",
-            "    【文章の構成と比率（最重要）】",
-            "    ・天候・風・波・潮などの海況描写は、冒頭の1〜2文（全体の2割程度）でサラッと簡潔にまとめること（海況の説明だけで長引かせない）。",
-            "    ・文章の大半（全体の6〜7割）は【釣りの内容】に充て、魚の活性、アタリの出方、時間帯ごとの変化、メモにある船上の様子などを具体的に厚く描写してください。",
-            "    ・終盤で竿頭の釣果（トップ数のみ）と工夫・ヒットパターンを紹介し、前向きに締めくくる。",
             "    【厳守ルール】",
-            "    ・日付・時制の表現：「当日」「この日」「当日は」という表現は一切禁止とします。必ず「本日」「今日」を用いて、下船直後のリアルタイムな報告として記述してください。",
+            "    ・船ごとの個別言及（当船・別船など）は禁止。全隻を通じた海の状況を1つのレポートとして総括する。",
+            "    ・釣果については「全隻を通じた上限釣果（トップの数）」のみを記載し、「〇〜〇」といった範囲表示や「平均釣果」「0」は絶対に記載しないでください。",
+            "    ・竿頭の紹介：全隻を通じた竿頭のお名前（敬称は「さん」）と釣果数のみを紹介し、どの船に乗っていたかには触れないでください。",
+            "    ・日付・時制の表現：「当日」「この日」は禁止、必ず「本日」「今日」を用いる。",
             "    ・海水温度（水温）および水深は文章中に記載しないでください。",
-            "    ・書き出し：「〇〇沖へと出船しました」「〇〇沖からスタートしました」等の表現で簡潔に始める。",
-            "    ・釣果については「上限の釣果（トップの数）」のみを記載し、「〇〜〇」といった範囲表示や「平均釣果」は絶対に記載しないでください。",
-            "    ・竿頭の紹介と敬称：トップ釣果を紹介した後に竿頭のお名前を紹介しても構いませんが、「様」は使わず必ず「さん」付けで統一してください。",
-            "    ・サイズについて「〇cm」といった具体的な寸法数値は一切出さないでください（触れる場合は「良型」「中型主体」などの表現のみ）。",
-            "    ・文体は「です・ます調」で統一し、途中の不要な改行は避け、読みやすく温かみのある船長目線でまとめてください。",
-            "2. seatBiasAnalysis（座席バイアス分析）: 左右舷の比較において、単純な合計数だけでなく必ず「乗船人数」と「1人あたりの平均釣果」を基準にして、人数の偏りによる見かけの差と実際の釣況差を明確に区別して考察してください。",
+            "    ・サイズについて「〇cm」といった具体的な寸法数値は一切出さない（「良型」「中型主体」等の表現のみ）。",
+            "    ・文体は「です・ます調」で統一し、途中の不要な改行は避け、ひと続きの段落でまとめてください。",
+            "2. seatBiasAnalysis（座席バイアス分析）: 左右舷の比較において、乗船人数と1人あたり平均釣果を基準に考察してください。",
             "必ず以下のJSON形式のみで出力してください（Markdownコードブロックや余計な文字は一切不要）。",
             '{"difficulty":"難易度評価","totalSummaryReport":"トータル状況日報","seatBiasAnalysis":"座席分析","environmentCorrelation":"海況相関","topAnglerFactors":"竿頭勝因","captainAdvice":"船長カルテ"}'
         ];
