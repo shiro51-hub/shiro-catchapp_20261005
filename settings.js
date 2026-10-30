@@ -2,22 +2,21 @@
 // settings.js : 設定・海況・システム管理パネル
 // ==========================================
 
-// AIモデルのマスター定義（ここを書き換えるだけで選択肢とローテーションが自動連動します）
+// AIモデルのマスター定義（3.8 Flash先頭、Argon最後尾の快速5モデル構成）
 var AI_MODEL_LIST = [
-    { label: "Gemini 4 Argon（次世代最上位・超高精度）", value: "Gemini 4 Argon", id: "gemini-4-argon" },
-    { label: "Gemini 3.8 Flash（推奨・超高速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+    { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
     { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
     { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
     { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
-    { label: "Gemini 3.1 Pro（深層考察・高精度）", value: "Gemini 3.1 Pro", id: "gemini-3.1-pro" }
+    { label: "Gemini 4 Argon（従量課金向け）", value: "Gemini 4 Argon", id: "gemini-4-argon" }
 ];
 
-// 重複宣言を回避したモデル名変換関数
+// 重複宣言を回避したモデル名変換関数（デフォルトは 3.8 Flash）
 window.getActualModelName = function(modelValue) {
     var found = AI_MODEL_LIST.find(function(m) {
         return m.value === modelValue || m.id === modelValue;
     });
-    return found ? found.id : (AI_MODEL_LIST[0] ? AI_MODEL_LIST[0].id : 'gemini-4-argon');
+    return found ? found.id : 'gemini-3.8-flash';
 };
 
 // 重複宣言を回避したローテーション配列生成関数
@@ -28,7 +27,7 @@ window.getModelRotationOrder = function(currentSelectedValue) {
     if (startIndex !== -1) {
         return allIds.slice(startIndex);
     }
-    return [currentId].concat(allIds.filter(function(id) { return id !== currentId; }));
+    return allIds;
 };
 
 function SettingsPanel({
