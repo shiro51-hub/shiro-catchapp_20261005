@@ -12,20 +12,15 @@ const MODEL_NAME_MAP = {
 
 const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-3.8-flash';
 
-// 5モデルの自動ローテーション優先順（必ず 3.8 Flash からスタート➔ 最後にArgon）
-const getModelRotationOrder = (preferredModel) => {
-    const defaultQueue = [
+// 5モデルの自動ローテーション優先順（必ず 3.8 Flash が1番手、Argon は最後尾）
+const getModelRotationOrder = () => {
+    return [
         'gemini-3.8-flash',
         'gemini-3.7-flash',
         'gemini-3.6-flash',
         'gemini-3.5-flash',
         'gemini-4-argon'
     ];
-    const actual = MODEL_NAME_MAP[preferredModel] || preferredModel;
-    if (actual && defaultQueue.includes(actual)) {
-        return [actual, ...defaultQueue.filter(m => m !== actual)];
-    }
-    return defaultQueue;
 };
 
 window.getModelRotationOrder = getModelRotationOrder;
