@@ -1267,7 +1267,7 @@ React.useEffect(() => {
         return prompts[id];
     };
 
-    // 日報作成処理（全船統合・個別船の言及完全禁止ルール適用版）
+    // 日報作成処理（全船統合・オデコ検知による全員安打表現の完全防止版）
     const handleAiGenerate = async (record, conditionInfo, sceneryInfo, tideInfo, activityInfo, episodeInfo, sizeInfo, topAnglerInfo, selectedPatterns, customKey) => {
         setGeneratingAiId(record.id);
         const activeApiKey = (customKey || userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1291,6 +1291,8 @@ React.useEffect(() => {
   複数隻（別船・他船）の出船があった場合でも、「当船では」「別船では」「1号船は」「2号船は」といった船ごとの比較・切り分け表現は一切禁止とします。「深場を攻めた船は」「浅場を流した船は」といった船ごとの内訳描写も不要です。必ず山下丸という「1つの船宿全体」としての釣況・海の様子としてひとまとめに総括してください。
 ・釣果表記のルール（最重要）：釣果を紹介する際は、「〇〜〇尾」「〇〜〇匹」といった範囲（スソからトップまで）の表記や「平均〇尾」は一切使用禁止とします。必ず全隻を通じた「全体のトップ（上限釣果）」の数字のみを記載してください。
 ・竿頭の紹介ルール：紹介するのは全隻を通じた「全体の竿頭（最高釣果を上げた方）」1名（同数の場合はその方々）のお名前（敬称は「さん」）と釣果数のみとします。どの船に乗っていたか（自船か別船か）には一切触れないでください。
+・全員安打・オデコなし表現の厳格な禁止（最重要）：
+  自船・別船のいずれかで最低釣果（スソ）が「0」の場合、またはオデコ（0尾）のお客様がいる場合は、「全員顔を見ることができた」「全員安打」「皆様お土産確保」といった、全員が釣れたと誤認させる表現は一切使用禁止とします（船長メモや追加情報にそう書かれていても無効とし、絶対に文章に出さないこと）。「ポイントによってアタリの出方に差が出たものの」「拾い釣りながら…」といった全体の状況に合わせた表現にしてください。
 ・数値・単位の表記（半角算用数字と摂氏）：釣果の枚数・匹数や海水温などの数値は、漢数字（「五枚」「十六度」など）は使用せず、すべて半角の算用数字（「5枚」「16℃」など）で表記すること。また、海水温度は「度」ではなく必ず「〇〇℃」（摂氏記号）を用いて表記すること。
 ・水温の非表示（特別指示がない限り禁止）：文章中に「海水温〇〇℃」「水温〇〇℃」といった水温の数値や記述は原則として一切記載しないでください。ただし、【船長からの追加情報】や詳細メモの中で船長自身が特別に水温についてコメントしている場合に限り、その内容に触れても構いません。
 ・風の表現（具体的な風速数値は禁止）：「風速〇m」「〇〜〇mの風」といった具体的な数値は文章中に出さないこと。入力された風速データに基づき、風の強弱を感覚的な言葉（ナギ、そよそよ、やや強め、強めなど）に置き換えて表現すること。
@@ -1323,12 +1325,18 @@ React.useEffect(() => {
         let overallMax = record.max || 0;
         let overallTopName = record.topAnglerName || '';
 
-        // 詳細メモ内の別船1・別船2を解析して全体トップと竿頭を統合判定
+        // 自船のスソ（最低釣果）
+        let overallMin = allCounts.length > 0 ? Math.min(...allCounts) : (record.min !== '' && record.min !== undefined ? parseInt(record.min, 10) : 0);
+
+        // 詳細メモ内の別船1・別船2を解析して全体トップ・竿頭・スソを統合判定
         const memoText = record.detailedMemo || '';
         const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
         if (b1Match) {
-            const b1Max = parseInt(b1Match[2], 10);
+            const b1Min = b1Match[1] !== '' ? parseInt(b1Match[1], 10) : NaN;
+            const b1Max = b1Match[2] !== '' ? parseInt(b1Match[2], 10) : NaN;
             const b1Name = (b1Match[3] || '').trim();
+
+            if (!isNaN(b1Min)) overallMin = Math.min(overallMin, b1Min);
             if (!isNaN(b1Max)) {
                 allCounts.push(b1Max);
                 if (b1Max > overallMax) {
@@ -1339,10 +1347,14 @@ React.useEffect(() => {
                 }
             }
         }
+
         const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
         if (b2Match) {
-            const b2Max = parseInt(b2Match[2], 10);
+            const b2Min = b2Match[1] !== '' ? parseInt(b2Match[1], 10) : NaN;
+            const b2Max = b2Match[2] !== '' ? parseInt(b2Match[2], 10) : NaN;
             const b2Name = (b2Match[3] || '').trim();
+
+            if (!isNaN(b2Min)) overallMin = Math.min(overallMin, b2Min);
             if (!isNaN(b2Max)) {
                 allCounts.push(b2Max);
                 if (b2Max > overallMax) {
@@ -1352,6 +1364,12 @@ React.useEffect(() => {
                     overallTopName = `${overallTopName}・${b2Name}`;
                 }
             }
+        }
+
+        // 全隻の中に0匹（オデコ）がいる場合の厳格な打ち消し指示
+        let zeroWarningText = "";
+        if (overallMin === 0) {
+            zeroWarningText = "\n※【厳重警告】全隻の最低釣果に「0」が含まれています。船長メモや追加情報の中に「全員顔を見れた」「全員安打」「全員お土産」等の記述があっても、全体の日報としては事実と矛盾するため絶対に採用・出力しないでください。「ポイントによってアタリの出方に差が出た」「拾い釣りとなった」等のマイルドな総括表現に必ず差し替えてください（ただしスソの数値や0匹という言葉は出さないこと）。";
         }
 
         const secondCounts = allCounts.filter(c => c < overallMax);
@@ -1371,13 +1389,14 @@ React.useEffect(() => {
         if (episodeInfo) extraInfo += `\n・印象的なエピソード: ${episodeInfo}`;
         if (sizeInfo) extraInfo += `\n・サイズ感: ${sizeInfo}`;
         if (topAnglerInfo) extraInfo += `\n・竿頭の釣り方・好成績の要因・コメント: ${topAnglerInfo}`;
+        if (zeroWarningText) extraInfo += zeroWarningText;
 
-        const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通り（個別船の言及禁止・トータル総括と全体の竿頭のみ紹介）に指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
+        const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通り（個別船の言及禁止・トータル総括と全体の竿頭のみ紹介・オデコがいる場合は全員安打表現禁止）に指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
         try {
             const modelQueue = typeof window.getModelRotationOrder === 'function'
                 ? window.getModelRotationOrder(selectedAiModel)
-                : [ 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
+                : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
 
             let text = null;
             let lastError = null;
