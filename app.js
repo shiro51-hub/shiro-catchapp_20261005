@@ -849,7 +849,7 @@ React.useEffect(() => {
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
     const [theme, setTheme] = React.useState(() => localStorage.getItem('theme') || 'light');
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
-    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 4 Argon');
+    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
 
     // Googleドライブ上書き保存用のステート
@@ -1377,7 +1377,7 @@ React.useEffect(() => {
         try {
             const modelQueue = typeof window.getModelRotationOrder === 'function'
                 ? window.getModelRotationOrder(selectedAiModel)
-                : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
+                : [ 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
 
             let text = null;
             let lastError = null;
@@ -1614,7 +1614,7 @@ React.useEffect(() => {
         try {
             const modelQueue = typeof window.getModelRotationOrder === 'function'
                 ? window.getModelRotationOrder(selectedAiModel)
-                : ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-pro'];
+                : [ 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
 
             let text = null;
             let lastError = null;

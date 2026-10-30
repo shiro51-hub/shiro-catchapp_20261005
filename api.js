@@ -7,11 +7,28 @@ const MODEL_NAME_MAP = {
     'Gemini 3.7 Flash': 'gemini-3.7-flash',
     'Gemini 3.6 Flash': 'gemini-3.6-flash',
     'Gemini 3.5 Flash': 'gemini-3.5-flash',
-    'Gemini 3.1 Pro': 'gemini-3.1-pro'
+    'Gemini 4 Argon': 'gemini-4-argon'
 };
 
 const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-3.8-flash';
 
+// 5モデルの自動ローテーション優先順（3.8 Flash先頭 ➔ 最後にArgon）
+const getModelRotationOrder = (preferredModel) => {
+    const defaultQueue = [
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-4-argon'
+    ];
+    const actual = MODEL_NAME_MAP[preferredModel] || preferredModel;
+    if (actual && defaultQueue.includes(actual)) {
+        return [actual, ...defaultQueue.filter(m => m !== actual)];
+    }
+    return defaultQueue;
+};
+
+window.getModelRotationOrder = getModelRotationOrder;
 const fetchWithBackoff = async (url, options, retries = 5) => {
     const delays = [1000, 2000, 4000, 8000, 16000];
     for (let i = 0; i < retries; i++) {
