@@ -12,7 +12,7 @@ const MODEL_NAME_MAP = {
 
 const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-3.8-flash';
 
-// 5モデルの自動ローテーション優先順（3.8 Flash先頭 ➔ 最後にArgon）
+// 5モデルの自動ローテーション優先順（必ず 3.8 Flash からスタート➔ 最後にArgon）
 const getModelRotationOrder = (preferredModel) => {
     const defaultQueue = [
         'gemini-3.8-flash',
