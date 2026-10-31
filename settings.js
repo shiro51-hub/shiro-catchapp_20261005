@@ -151,7 +151,10 @@ function SettingsPanel({
         }
 
         const base64Data = await fileToBase64(file);
-        const visionModels = AI_MODEL_LIST.map(m => m.id);
+        // 画像解析も 3.8 Flash を先頭にした快速ローテーションに固定
+        const visionModels = typeof window.getModelRotationOrder === 'function'
+            ? window.getModelRotationOrder('Gemini 3.8 Flash')
+            : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
 
         let lastErr = null;
 
