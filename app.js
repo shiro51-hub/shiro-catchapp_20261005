@@ -1621,6 +1621,30 @@ React.useEffect(() => {
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
         const secondMaxStr = secondMax !== null ? `${secondMax} ${unit}` : 'なし';
 
+        // 風速数値を感覚表現へプログラム側で強制変換（数値漏れを完全遮断）
+        const convertWindToText = (dir, spd) => {
+            if (!dir && !spd) return '-';
+            const d = dir || '';
+            if (!spd) return d ? `${d}の風` : '-';
+
+            // 数字部分を取り出して判定（例: "2〜6m" ➔ 6）
+            const nums = String(spd).match(/\d+/g);
+            if (!nums || nums.length === 0) return `${d}の風（${spd}）`;
+            const maxVal = Math.max(...nums.map(Number));
+
+            let desc = '穏やか';
+            if (maxVal <= 2) desc = 'ナギ';
+            else if (maxVal <= 5) desc = 'そよそよと心地よい風';
+            else if (maxVal <= 8) desc = 'やや強め';
+            else if (maxVal <= 11) desc = '強め';
+            else desc = '強風';
+
+            return d ? `${d}の風が${desc}` : `風が${desc}`;
+        };
+
+        const windDesc1 = convertWindToText(record.windDir1, record.windSpeed1);
+        const windDesc2 = convertWindToText(record.windDir2, record.windSpeed2);
+
         const promptLines = [
             "あなたはベテラン遊漁船「山下丸」の船長兼データアナリストです。以下の釣果・海況・座席メモデータを精査し、客観的カルテおよび公式HP/日報用のトータル文章を作成してください。",
             "【本日の釣行データ】",
@@ -1630,7 +1654,7 @@ React.useEffect(() => {
             "- 全体の最低釣果（スソ）: " + overallMin + " " + unit + (overallMin === 0 ? "（※0尾のお客様あり）" : ""),
             "- ポイント: " + (record.point || '久里浜沖周辺'),
             "- 潮色: " + (record.tide || '-') + " / 潮回り: " + (record.tideState || '-'),
-            "- 天候・風波: 前半[" + (record.weather1 || '-') + ", 風:" + (record.windDir1 || '-') + (record.windSpeed1 || '-') + ", 波:" + (record.waveHeight1 || '-') + "] / 後半[" + (record.weather2 || '-') + ", 風:" + (record.windDir2 || '-') + (record.windSpeed2 || '-') + ", 波:" + (record.waveHeight2 || '-') + "]",
+            "- 天候・風波: 前半[" + (record.weather1 || '-') + ", 風:" + windDesc1 + ", 波:" + (record.waveHeight1 || '-') + "] / 後半[" + (record.weather2 || '-') + ", 風:" + windDesc2 + ", 波:" + (record.waveHeight2 || '-') + "]",
             "- 船長メモ/詳細メモ: " + (record.detailedMemo || 'なし'),
             "- 左舷状況: 乗船 " + portAnglers + "名 / 合計 " + portTotal + unit + " / 1人平均 " + portAvg + unit + "  座席詳細: " + pSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "- 右舷状況: 乗船 " + starboardAnglers + "名 / 合計 " + starboardTotal + unit + " / 1人平均 " + starboardAvg + unit + "  座席詳細: " + sSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
