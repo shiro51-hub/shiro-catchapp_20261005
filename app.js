@@ -1551,7 +1551,7 @@ React.useEffect(() => {
         setSharedRecordId(null);
     };
 
-    // AI多角分析処理（全船統合総括対応版）
+    // AI多角分析処理（以前の時系列・臨場感描写スタイル復活版）
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
         if (!activeApiKey) {
@@ -1559,7 +1559,7 @@ React.useEffect(() => {
             return;
         }
         setAnalyzingRecordId(record.id);
-        setToastMessage(`AI (${selectedAiModel}) が釣況・釣り座を多角分析中...`);
+        setToastMessage(`AI (Gemini 3.8 Flash) が釣況・釣り座を多角分析中...`);
 
         const unit = getUnit(record.targetFish);
         const pSeats = (record.port || []).filter(s => s && s.isVisible !== false);
@@ -1572,14 +1572,21 @@ React.useEffect(() => {
         const portAvg = portAnglers > 0 ? (portTotal / portAnglers).toFixed(1) : '0.0';
         const starboardAvg = starboardAnglers > 0 ? (starboardTotal / starboardAnglers).toFixed(1) : '0.0';
 
-        // 別船の集計
+        // 自船・別船の集計（全体トップ・竿頭・スソの判定）
+        const allCounts = [...pSeats, ...sSeats]
+            .filter(s => s.count !== '' && !isNaN(parseInt(s.count)))
+            .map(s => parseInt(s.count, 10));
         let overallMax = record.max || 0;
         let overallTopName = record.topAnglerName || '';
+        let overallMin = allCounts.length > 0 ? Math.min(...allCounts) : (record.min !== '' && record.min !== undefined ? parseInt(record.min, 10) : 0);
+
         const memoText = record.detailedMemo || '';
         const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
         if (b1Match) {
-            const b1Max = parseInt(b1Match[2], 10);
+            const b1Min = b1Match[1] !== '' ? parseInt(b1Match[1], 10) : NaN;
+            const b1Max = b1Match[2] !== '' ? parseInt(b1Match[2], 10) : NaN;
             const b1Name = (b1Match[3] || '').trim();
+            if (!isNaN(b1Min)) overallMin = Math.min(overallMin, b1Min);
             if (!isNaN(b1Max) && b1Max > overallMax) {
                 overallMax = b1Max;
                 overallTopName = b1Name;
@@ -1587,8 +1594,10 @@ React.useEffect(() => {
         }
         const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
         if (b2Match) {
-            const b2Max = parseInt(b2Match[2], 10);
+            const b2Min = b2Match[1] !== '' ? parseInt(b2Match[1], 10) : NaN;
+            const b2Max = b2Match[2] !== '' ? parseInt(b2Match[2], 10) : NaN;
             const b2Name = (b2Match[3] || '').trim();
+            if (!isNaN(b2Min)) overallMin = Math.min(overallMin, b2Min);
             if (!isNaN(b2Max) && b2Max > overallMax) {
                 overallMax = b2Max;
                 overallTopName = b2Name;
@@ -1598,8 +1607,9 @@ React.useEffect(() => {
         const promptLines = [
             "あなたはベテラン遊漁船「山下丸」の船長兼データアナリストです。以下の釣果・海況・座席メモデータを精査し、客観的カルテおよび公式HP/日報用のトータル文章を作成してください。",
             "【本日の釣行データ】",
-            "- 全隻統合トップ釣果: " + overallMax + " " + unit,
-            "- 全隻の竿頭: " + (overallTopName || 'なし') + " (" + overallMax + " " + unit + ")",
+            "- 全体トップ釣果: " + overallMax + " " + unit,
+            "- 全体の竿頭: " + (overallTopName || 'なし') + " (" + overallMax + " " + unit + ")",
+            "- 全体の最低釣果（スソ）: " + overallMin + " " + unit + (overallMin === 0 ? "（※0尾のお客様あり）" : ""),
             "- ポイント: " + (record.point || '久里浜沖周辺'),
             "- 潮色: " + (record.tide || '-') + " / 潮回り: " + (record.tideState || '-'),
             "- 天候・風波: 前半[" + (record.weather1 || '-') + ", 風:" + (record.windDir1 || '-') + (record.windSpeed1 || '-') + ", 波:" + (record.waveHeight1 || '-') + "] / 後半[" + (record.weather2 || '-') + ", 風:" + (record.windDir2 || '-') + (record.windSpeed2 || '-') + ", 波:" + (record.waveHeight2 || '-') + "]",
@@ -1607,23 +1617,28 @@ React.useEffect(() => {
             "- 左舷状況: 乗船 " + portAnglers + "名 / 合計 " + portTotal + unit + " / 1人平均 " + portAvg + unit + "  座席詳細: " + pSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "- 右舷状況: 乗船 " + starboardAnglers + "名 / 合計 " + starboardTotal + unit + " / 1人平均 " + starboardAvg + unit + "  座席詳細: " + sSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "【指示事項】",
-            "【最重要：個別船の書き分け禁止＆用語・漢字統一ルール】",
-            "・メモに別船の記載がある場合でも、「当船では」「別船では」といった船ごとの比較・言及は一切禁止。山下丸全体としての海の様子を総括してください。",
-            "・提供されたメモや座席メモは現場での入力のため、誤字・脱字・音声入力誤変換が含まれる場合があります。正しく自然な釣行用語・日本語に自動校正してください。",
-            "  - 潮や流れの速度：「早い」➔ 必ず「速い」に修正。",
+            "【最重要：入力メモの自動校正＆用語・漢字統一ルール】",
+            "・提供されたメモや座席メモは現場での入力のため、誤字・脱字・音声入力誤変換が含まれる場合があります。正しく自然な釣行用語・日本語に校正してください。",
+            "  - 潮や流れの速度：「早い」➔ 必ず「速い」に修正（例: 潮が早い ➔ 潮が速い）。",
             "  - 魚の混交表現：「混じる」「まじる」➔ 必ず「交じる」に統一。",
             "  - 潮の周期：「潮周り」➔ 必ず「潮回り」に統一。",
             "  - 時合の表記：「時合い」「地合い」➔「時合い」に統一。",
             "1. totalSummaryReport（トータル状況日報）: 本日のポイント、釣況、メモを総括し、公式HPや日報にそのまま掲載できる400字程度の完成された文章を作成してください。",
-            "    【厳守ルール】",
-            "    ・船ごとの個別言及（当船・別船など）は禁止。全隻を通じた海の状況を1つのレポートとして総括する。",
-            "    ・釣果については「全隻を通じた上限釣果（トップの数）」のみを記載し、「〇〜〇」といった範囲表示や「平均釣果」「0」は絶対に記載しないでください。",
-            "    ・竿頭の紹介：全隻を通じた竿頭のお名前（敬称は「さん」）と釣果数のみを紹介し、どの船に乗っていたかには触れないでください。",
+            "    【文章の構成と臨場感描写（以前のスタイルを厳守）】",
+            "    ・冒頭は「〇〇沖へと出船しました」「〇〇沖からスタートしました」と簡潔に始め、天候・風・波などの海況は冒頭の1〜2文でサラッと伝える。",
+            "    ・文章の主軸（大半）は【時系列の展開や船上の出来事】に充ててください。朝の立ち上がりはどうだったか、魚の活性やアタリの出方、時間帯ごとの変化、メモにある船上の様子などを具体的に厚く生き生きと描写してください。",
+            "    ・終盤でトップ釣果（数のみ）と竿頭の工夫・ヒットパターンを紹介し、前向きに締めくくる。",
+            "    【釣果とオデコに関する厳守ルール】",
+            (overallMin === 0
+                ? "    ・【重要注意：0尾の人がいます】全隻の中で最低釣果が0尾（オデコ）のお客様がいらっしゃいます。船長メモ等に「全員顔を見れた」「全員安打」「全員お土産」等の記述があっても絶対に採用・出力しないでください。「ポイントや筋によってアタリの出方に差が出た」「拾い釣りとなった」等のマイルドな表現に置き換えてください。"
+                : "    ・全員が釣れている（0尾がいない）場合は、船長メモにある通り「全員顔を見ることができた」等の表現を自然に用いて構いません。"),
+            "    ・釣果表記は「トップの数」のみを記載し、「〇〜〇」といった範囲表示や「平均釣果」、スソの「0」という数字自体は文章に出さないでください。",
+            "    ・竿頭の紹介と敬称：竿頭のお名前を紹介する際は「様」ではなく必ず「さん」付けで統一してください。",
             "    ・日付・時制の表現：「当日」「この日」は禁止、必ず「本日」「今日」を用いる。",
             "    ・海水温度（水温）および水深は文章中に記載しないでください。",
             "    ・サイズについて「〇cm」といった具体的な寸法数値は一切出さない（「良型」「中型主体」等の表現のみ）。",
-            "    ・文体は「です・ます調」で統一し、途中の不要な改行は避け、ひと続きの段落でまとめてください。",
-            "2. seatBiasAnalysis（座席バイアス分析）: 左右舷の比較において、乗船人数と1人あたり平均釣果を基準に考察してください。",
+            "    ・文体は「です・ます調」で統一し、途中の不要な改行は避け、読みやすく温かみのある船長目線でまとめてください。",
+            "2. seatBiasAnalysis（座席バイアス分析）: 左右舷の比較において、単純な合計数だけでなく「乗船人数」と「1人あたりの平均釣果」を基準にして考察してください。",
             "必ず以下のJSON形式のみで出力してください（Markdownコードブロックや余計な文字は一切不要）。",
             '{"difficulty":"難易度評価","totalSummaryReport":"トータル状況日報","seatBiasAnalysis":"座席分析","environmentCorrelation":"海況相関","topAnglerFactors":"竿頭勝因","captainAdvice":"船長カルテ"}'
         ];
@@ -1633,7 +1648,7 @@ React.useEffect(() => {
         try {
             const modelQueue = typeof window.getModelRotationOrder === 'function'
                 ? window.getModelRotationOrder(selectedAiModel)
-                : [ 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
+                : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
 
             let text = null;
             let lastError = null;
