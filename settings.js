@@ -673,10 +673,26 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     type="button"
                                     onClick={() => tideImageInputRef.current && tideImageInputRef.current.click()}
                                     disabled={isAnalyzingTide}
-                                    className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black py-2.5 rounded-xl shadow-sm text-sm flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                    className={`w-full text-white font-black py-3 rounded-xl shadow-md text-sm sm:text-base flex items-center justify-center gap-2 transition-all select-none ${
+                                        isAnalyzingTide
+                                            ? 'bg-sky-600 animate-pulse cursor-wait ring-2 ring-sky-300'
+                                            : 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 active:scale-95'
+                                    }`}
                                 >
-                                    {isAnalyzingTide ? <span className="animate-spin">↻</span> : <span>📷</span>}
-                                    <span>潮時表の画像を自動読み取り</span>
+                                    {isAnalyzingTide ? (
+                                        <>
+                                            <svg className="animate-spin w-5 h-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span className="tracking-wide">潮時表をAI解析中...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-lg">📷</span>
+                                            <span>潮時表の画像を自動読み取り</span>
+                                        </>
+                                    )}
                                 </button>
                                 <input ref={tideImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleTideImageAnalysis} />
 
@@ -720,10 +736,26 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     type="button"
                                     onClick={() => weatherImageInputRef.current && weatherImageInputRef.current.click()}
                                     disabled={isAnalyzingWeather}
-                                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black py-2.5 rounded-xl shadow-sm text-sm flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                    className={`w-full text-white font-black py-3 rounded-xl shadow-md text-sm sm:text-base flex items-center justify-center gap-2 transition-all select-none ${
+                                        isAnalyzingWeather
+                                            ? 'bg-amber-600 animate-pulse cursor-wait ring-2 ring-amber-300'
+                                            : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 active:scale-95'
+                                    }`}
                                 >
-                                    {isAnalyzingWeather ? <span className="animate-spin">↻</span> : <span>📷</span>}
-                                    <span>天気予報の画像を自動読み取り</span>
+                                    {isAnalyzingWeather ? (
+                                        <>
+                                            <svg className="animate-spin w-5 h-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span className="tracking-wide">気象予報をAI解析中...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-lg">📷</span>
+                                            <span>天気予報の画像を自動読み取り</span>
+                                        </>
+                                    )}
                                 </button>
                                 <input ref={weatherImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleWeatherImageAnalysis} />
 
