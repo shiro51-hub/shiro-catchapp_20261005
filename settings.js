@@ -135,10 +135,38 @@ function SettingsPanel({
         "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
+    // 画像を高速解析用に軽量化（長辺900px・JPEG圧縮）してBase64化する高速化関数
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 900; // 解析に十分かつ最速のサイズ
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 軽量なJPEG(品質0.82)に圧縮してBase64文字列のみを抽出
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    resolve(dataUrl.split(',')[1]);
+                };
+                img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+                img.src = e.target.result;
+            };
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
@@ -168,7 +196,7 @@ function SettingsPanel({
                         { text: prompt },
                         {
                             inline_data: {
-                                mime_type: file.type || 'image/png',
+                                mime_type: 'image/jpeg',
                                 data: base64Data
                             }
                         }
