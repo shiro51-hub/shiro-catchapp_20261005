@@ -890,6 +890,17 @@ React.useEffect(() => {
                 body: JSON.stringify(exportPayload)
             });
 
+            // 保存完了時の日時を生成（MM/DD HH:mm）
+            const now = new Date();
+            const timeStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // 対象レコードに同期日時を刻んで保存
+            setRecords(prev => {
+                const next = prev.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item);
+                localStorage.setItem('fishing_records', JSON.stringify(next));
+                return next;
+            });
+
             setToastMessage('Googleドライブに最新データを上書き保存しました！');
         } catch (err) {
             console.error(err);
@@ -2821,23 +2832,35 @@ const [records, setRecords] = React.useState([]);
                                                     e.stopPropagation();
                                                     handleSaveRecordToCloud(r);
                                                 }}
-                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
+                                                className={`py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs active:scale-95 transition-all select-none ${
                                                     cloudSavingId === r.id
                                                         ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 cursor-wait'
+                                                        : r.cloudSavedAt
+                                                        ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
                                                         : 'bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border-slate-200 dark:border-slate-700'
                                                 }`}
                                                 title="Googleドライブへ最新データを上書き保存"
                                             >
                                                 {cloudSavingId === r.id ? (
-                                                    <>
+                                                    <div className="flex items-center gap-1">
                                                         <span className="inline-block animate-spin text-sm leading-none text-sky-600 dark:text-sky-400">↻</span>
                                                         <span>保存中</span>
+                                                    </div>
+                                                ) : r.cloudSavedAt ? (
+                                                    <>
+                                                        <div className="flex items-center gap-1 leading-tight">
+                                                            <span className="text-emerald-600 dark:text-emerald-400 font-black">✓</span>
+                                                            <span>保存済</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 opacity-90 leading-none mt-0.5 scale-90">
+                                                            {r.cloudSavedAt}
+                                                        </span>
                                                     </>
                                                 ) : (
-                                                    <>
+                                                    <div className="flex items-center gap-1">
                                                         <span>☁️</span>
                                                         <span>クラウド保存</span>
-                                                    </>
+                                                    </div>
                                                 )}
                                             </button>
 
