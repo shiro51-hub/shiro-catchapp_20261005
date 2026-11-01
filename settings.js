@@ -266,7 +266,7 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
-    // 潮時表画像の自動読み取り（サーバー混雑完全回避・自動モデル切替版）
+    // 潮時表画像の自動読み取り（思考オフ・即答高速化版）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -279,23 +279,23 @@ function SettingsPanel({
         }
 
         setIsAnalyzingTide(true);
-        setToastMessage('潮時・月齢データを解析中...');
+        setToastMessage('潮時・月齢データを高速解析中...');
 
         try {
             const base64Data = await fileToBase64(file);
 
-            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考過程や前置きは一切不要です。不明な項目は空文字 "" にしてください。
+            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考や前置きは不要です。不明な項目は空文字 "" にしてください。
 {"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
 
-            // 混雑に備えて3.8 Flash、3.7 Flash、3.6 Flash、3.5 Flashを順に待機
             const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
             let parsed = null;
             let lastErr = null;
 
             for (let i = 0; i < targetModels.length; i++) {
                 const model = targetModels[i];
+                // 画像解析に十分な15秒のタイマーを設定
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8秒で応答がなければ次へ
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                 try {
                     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${activeKey}`;
@@ -312,8 +312,12 @@ function SettingsPanel({
                             }],
                             generationConfig: {
                                 temperature: 0.1,
-                                maxOutputTokens: 250,
-                                response_mime_type: "application/json"
+                                maxOutputTokens: 300,
+                                response_mime_type: "application/json",
+                                // 思考モードをオフにして即答させる設定（Gemini 3.7等の遅延を解消）
+                                thinkingConfig: {
+                                    thinkingBudget: 0
+                                }
                             }
                         })
                     });
@@ -329,26 +333,23 @@ function SettingsPanel({
                             const eIdx = clean.lastIndexOf('}');
                             if (sIdx !== -1 && eIdx !== -1) {
                                 parsed = JSON.parse(clean.substring(sIdx, eIdx + 1));
-                                break; // 成功したらループ終了
+                                break;
                             }
                         }
                     } else {
-                        // 503混雑、429制限、high demandなどの場合はエラーで止めず次のモデルへバトンタッチ
                         const errData = await res.json().catch(() => ({}));
                         const errMsg = errData.error?.message || `HTTP ${res.status}`;
                         lastErr = new Error(errMsg);
-                        
-                        // 混雑時は即座に次のモデルを試行
-                        continue;
+                        continue; // 次のモデルへ
                     }
                 } catch (err) {
                     clearTimeout(timeoutId);
-                    lastErr = err.name === 'AbortError' ? new Error(`モデル ${model} がタイムアウト`) : err;
+                    lastErr = err.name === 'AbortError' ? new Error(`モデル ${model} が応答タイムアウト`) : err;
                     continue; // タイムアウト時も次のモデルへ
                 }
             }
 
-            if (!parsed) throw lastErr || new Error('すべてのAIモデルが混雑中で解析できませんでした');
+            if (!parsed) throw lastErr || new Error('解析結果を取得できませんでした');
 
             // フォームへの自動入力
             let count = 0;
