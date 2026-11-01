@@ -30,12 +30,28 @@ window.getModelRotationOrder = function(currentSelectedValue) {
     return allIds;
 };
 
+// 月齢（0〜29.5）から最適な月相アイコンを返す関数
+const getMoonPhaseIcon = (ageStr) => {
+    const age = parseFloat(ageStr);
+    if (isNaN(age)) return '🌙';
+    if (age >= 28.5 || age < 1.5) return '🌑';  // 新月
+    if (age < 6.0) return '🌒';                  // 繊月・三日月
+    if (age < 9.0) return '🌓';                  // 上弦の月
+    if (age < 13.5) return '🌔';                 // 十三夜・張月
+    if (age < 16.5) return '🌕';                 // 満月
+    if (age < 21.0) return '🌖';                 // 寝待月
+    if (age < 24.0) return '🌗';                 // 下弦の月（画像21.5付近）
+    return '🌘';                                 // 有明月
+};
+
 function SettingsPanel({
     isSettingsOpen, setIsSettingsOpen,
     portCount, starboardCount, onCountChange,
     point, setPoint, waterTemp, setWaterTemp,
     waterDepth, setWaterDepth, tide, setTide,
-    tideState, setTideState, highTide1, setHighTide1,
+    tideState, setTideState,
+    moonAge, setMoonAge,
+    highTide1, setHighTide1,
     highTide2, setHighTide2, lowTide1, setLowTide1,
     lowTide2, setLowTide2, weather1, setWeather1,
     weather2, setWeather2, windDir1, setWindDir1,
@@ -249,27 +265,107 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
+    // 潮時表画像の自動読み取り（月齢抽出・画像タイプ自動判定・高速解析版）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
+        const activeKey = (userApiKey || '').trim();
+        if (!activeKey) {
+            setToastMessage('APIキーが未入力です。「システム」タブでGemini APIキーを設定してください。');
+            if (tideImageInputRef.current) tideImageInputRef.current.value = '';
+            return;
+        }
+
         setIsAnalyzingTide(true);
-        setToastMessage('潮時表をAI解析中...');
+        setToastMessage('潮時・月齢データを高速解析中...');
 
         try {
-            const prompt = `この画像は潮時表（タイドグラフ）のスクリーンショットです。
-以下の潮時情報を読み取り、JSON形式のみで出力してください。不明な項目は空文字 "" にしてください。
-{"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","highTide1":"満潮1(例: 05:24)","highTide2":"満潮2(例: 17:40)","lowTide1":"干潮1(例: 11:15)","lowTide2":"干潮2(例: 23:50)"}`;
+            // 縦長スクショとトリミング画像を自動判別して最適クロップ
+            const base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        // 縦横比が1.7以上の縦長スクショのみ下部30%(広告等)をカット
+                        const isLongScreenshot = (img.height / img.width) > 1.7;
+                        const cropHeight = isLongScreenshot ? (img.height * 0.70) : img.height;
+                        const targetWidth = Math.min(img.width, 720);
+                        const scale = targetWidth / img.width;
 
-            const parsed = await callVisionApi(file, prompt);
+                        canvas.width = targetWidth;
+                        canvas.height = cropHeight * scale;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, img.width, cropHeight, 0, 0, canvas.width, canvas.height);
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                        resolve(dataUrl.split(',')[1]);
+                    };
+                    img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            // 潮回り・満干潮に加え、月齢（moonAge）も指定
+            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考過程や解説は不要です。不明な項目は空文字 "" にしてください。
+{"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
+
+            const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+            let parsed = null;
+            let lastErr = null;
+
+            for (const model of targetModels) {
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${activeKey}`;
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: {
+                                temperature: 0.1,
+                                maxOutputTokens: 150,
+                                response_mime_type: "application/json"
+                            }
+                        })
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (rawText) {
+                            const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            parsed = JSON.parse(clean);
+                            break;
+                        }
+                    } else {
+                        lastErr = new Error(`HTTP ${res.status}`);
+                    }
+                } catch (err) {
+                    lastErr = err;
+                }
+            }
+
+            if (!parsed) throw lastErr || new Error('潮時表の解析データを取得できませんでした');
+
             let count = 0;
             if (parsed.tideState) { setTideState(parsed.tideState); count++; }
+            if (parsed.moonAge && typeof setMoonAge === 'function') { setMoonAge(parsed.moonAge); count++; }
             if (parsed.highTide1) { setHighTide1(parsed.highTide1); count++; }
             if (parsed.highTide2) { setHighTide2(parsed.highTide2); count++; }
             if (parsed.lowTide1) { setLowTide1(parsed.lowTide1); count++; }
             if (parsed.lowTide2) { setLowTide2(parsed.lowTide2); count++; }
 
-            setToastMessage(`潮時表の解析完了！\n${count}項目の潮時データを自動入力しました`);
+            setToastMessage(`潮時表の解析完了！\n潮回り「${parsed.tideState || '-'}」・月齢「${parsed.moonAge || '-'}」を入力しました`);
         } catch (err) {
             console.error(err);
             setToastMessage(`潮時表の解析に失敗しました: ${err.message}`);
@@ -725,15 +821,34 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 <input ref={tideImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleTideImageAnalysis} />
 
                                 <div className="pt-1 space-y-2">
-                                    <div>
-                                        <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">潮回り（大潮・中潮など）</label>
-                                        <input
-                                            type="text"
-                                            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                                            value={tideState}
-                                            onChange={(e) => setTideState(e.target.value)}
-                                            placeholder="例: 中潮"
-                                        />
+                                    {/* 潮回りと月齢を横並びに配置 */}
+                                    <div className="grid grid-cols-5 gap-2">
+                                        <div className="col-span-3">
+                                            <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">潮回り</label>
+                                            <input
+                                                type="text"
+                                                className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-black text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                                value={tideState}
+                                                onChange={(e) => setTideState(e.target.value)}
+                                                placeholder="例: 小潮"
+                                            />
+                                        </div>
+
+                                        <div className="col-span-2">
+                                            <label className="text-xs font-bold text-amber-700 dark:text-amber-400 block mb-1">月齢</label>
+                                            <div className="relative flex items-center">
+                                                <span className="absolute left-2.5 text-base select-none pointer-events-none">
+                                                    {getMoonPhaseIcon(moonAge)}
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border border-amber-200 dark:border-slate-600 rounded-lg pl-8 pr-2 py-2 font-black text-sm bg-amber-50/50 dark:bg-slate-800 text-amber-950 dark:text-amber-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                                    value={moonAge || ''}
+                                                    onChange={(e) => typeof setMoonAge === 'function' && setMoonAge(e.target.value)}
+                                                    placeholder="21.5"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-2">
