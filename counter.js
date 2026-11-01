@@ -376,21 +376,52 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
     const isNearPrevSlack = prevEvent && (nowMinutes - prevEvent.minutes) <= 30;
     const isSlackWater = isNearNextSlack || isNearPrevSlack;
 
-    // 月齢アイコン取得用の関数（ファイル間共有の安全呼び出し）
-    const getMoonIcon = (ageStr) => {
-        if (typeof getMoonPhaseIcon === 'function') return getMoonPhaseIcon(ageStr);
-        if (typeof window.getMoonPhaseIcon === 'function') return window.getMoonPhaseIcon(ageStr);
-        const a = parseFloat(ageStr);
-        if (isNaN(a)) return '';
-        if (a >= 28.5 || a < 1.5) return '🌑';
-        if (a < 6.0) return '🌒';
-        if (a < 9.0) return '🌓';
-        if (a < 13.5) return '🌔';
-        if (a < 16.5) return '🌕';
-        if (a < 21.0) return '🌖';
-        if (a < 24.0) return '🌗';
-        return '🌘';
+    // 月齢のアイコン・和名・ピーク強調判定
+    const getMoonDisplayInfo = (ageVal) => {
+        const a = parseFloat(ageVal);
+        if (isNaN(a)) return null;
+
+        let icon = '🌑';
+        let name = '';
+        let isPeak = false;
+
+        // 8区分の月相アイコン判定
+        if (a >= 28.5 || a < 1.5) icon = '🌑';
+        else if (a < 6.0) icon = '🌒';
+        else if (a < 9.0) icon = '🌓';
+        else if (a < 13.5) icon = '🌔';
+        else if (a < 16.5) icon = '🌕';
+        else if (a < 21.0) icon = '🌖';
+        else if (a < 24.0) icon = '🌗';
+        else icon = '🌘';
+
+        // 和名 ＆ ドンピシャピーク判定（新月・上弦・満月・下弦当日のみisPeak: true）
+        if (a >= 29.0 || a < 1.0) {
+            name = '新月';
+            isPeak = true;
+        } else if (a < 6.5) {
+            name = '三日月';
+        } else if (a >= 6.5 && a <= 8.0) {
+            name = '上弦';
+            isPeak = true;
+        } else if (a < 14.3) {
+            name = '満月前';
+        } else if (a >= 14.3 && a <= 15.5) {
+            name = '満月';
+            isPeak = true;
+        } else if (a < 21.5) {
+            name = '満月後';
+        } else if (a >= 21.5 && a <= 23.0) {
+            name = '下弦';
+            isPeak = true;
+        } else {
+            name = '有明月';
+        }
+
+        return { icon, name, isPeak };
     };
+
+    const moonInfo = (moonAge && String(moonAge).trim() !== '') ? getMoonDisplayInfo(moonAge) : null;
 
     return (
         <div className={`rounded-xl px-2.5 py-1.5 border shadow-sm transition-all duration-300 flex items-center justify-between shrink-0 ${
@@ -398,7 +429,7 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
                 ? 'bg-gradient-to-r from-sky-100 via-cyan-100 to-sky-50 dark:from-sky-950/70 dark:via-cyan-950/60 dark:to-slate-800 border-cyan-400 dark:border-cyan-500' 
                 : 'bg-sky-100/70 dark:bg-slate-800/90 border-sky-200 dark:border-sky-700 shadow-2xs'
         }`}>
-            {/* 左側：既存の潮時情報（フォントサイズ・レイアウトは完全保持） */}
+            {/* 左側：既存の潮時情報（フォントサイズ・レイアウトは100%保持） */}
             <div className="flex-1 flex flex-col gap-0.5 min-w-0 pr-1.5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -442,21 +473,38 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
                 </div>
             </div>
 
-            {/* 一番右端：月齢枠（上が月のアイコン、真下が月齢数値・中心軸を完全ロック） */}
-            {moonAge && String(moonAge).trim() !== '' && (
-                <div className="flex flex-col items-center justify-center shrink-0 pl-2 ml-1 border-l border-sky-300/60 dark:border-slate-700/80 min-w-[38px] select-none">
-                    <span className="text-xl sm:text-2xl leading-none filter drop-shadow-xs">
-                        {getMoonIcon(moonAge)}
+            {/* 一番右端：左に月のアイコン、右に和名（上）と月齢（下） */}
+            {moonInfo && (
+                <div className="flex items-center shrink-0 pl-2 ml-1 border-l border-sky-300/60 dark:border-slate-700/80 select-none">
+                    {/* 左側：月のアイコン */}
+                    <span className="text-2xl leading-none filter drop-shadow-xs mr-1.5">
+                        {moonInfo.icon}
                     </span>
-                    <span className="text-[11px] sm:text-xs font-black text-sky-900 dark:text-sky-200 tracking-tight leading-none mt-1">
-                        {moonAge}
-                    </span>
+
+                    {/* 右側：上段（和名） ＋ 下段（月齢数値） */}
+                    <div className="flex flex-col items-center justify-center">
+                        {moonInfo.isPeak ? (
+                            /* ピーク当日：ミニバッジで強調（日中：濃い琥珀色 / 夜間：発光ゴールド） */
+                            <span className="text-[10px] font-black leading-none px-1 py-0.5 rounded bg-amber-200/90 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-2xs whitespace-nowrap">
+                                {moonInfo.name}
+                            </span>
+                        ) : (
+                            /* 通常日：控えめで落ち着いた文字色 */
+                            <span className="text-[10px] font-bold leading-none text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                {moonInfo.name}
+                            </span>
+                        )}
+
+                        {/* 下段：月齢数値 */}
+                        <span className="text-[11px] font-black text-sky-950 dark:text-sky-200 tracking-tight leading-none mt-1">
+                            {moonAge}
+                        </span>
+                    </div>
                 </div>
             )}
         </div>
     );
 };
-
 window.ResetButton = ResetButton;
 window.SeatInput = SeatInput;
 window.CounterCardTap = CounterCardTap;
