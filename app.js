@@ -2396,8 +2396,9 @@ const [records, setRecords] = React.useState([]);
                             );
                         })()}
 
-                        <TideAlertBanner
+                        <<TideAlertBanner
                             tideState={tideState}
+                            moonAge={moonAge}
                             highTide1={highTide1}
                             highTide2={highTide2}
                             lowTide1={lowTide1}
