@@ -910,6 +910,7 @@ React.useEffect(() => {
     const [waterDepth, setWaterDepth] = React.useState('');
     const [tide, setTide] = React.useState('');
     const [tideState, setTideState] = React.useState('');
+    const [moonAge, setMoonAge] = React.useState(''); // ★追加
     const [highTide1, setHighTide1] = React.useState('');
     const [highTide2, setHighTide2] = React.useState('');
     const [lowTide1, setLowTide1] = React.useState('');
@@ -1048,6 +1049,7 @@ React.useEffect(() => {
                     setWaterDepth(todayRec.waterDepth || '');
                     setTide(todayRec.tide || '');
                     setTideState(todayRec.tideState || '');
+                    setMoonAge(todayRec.moonAge || ''); // ★追加
                     setHighTide1(todayRec.highTide1 || '');
                     setHighTide2(todayRec.highTide2 || '');
                     setLowTide1(todayRec.lowTide1 || '');
@@ -1068,7 +1070,7 @@ React.useEffect(() => {
                     setStarboardSeats([]);
                     setTargetFish(''); setSizeMin(''); setSizeMax('');
                     setPoint(''); setWaterTemp(''); setWaterDepth(''); setTide('');
-                    setTideState(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2('');
+                    setTideState(''); setMoonAge(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2(''); // ★setMoonAge追加
                     setWeather1(''); setWeather2(''); setWindDir1(''); setWindDir2('');
                     setWindSpeed1(''); setWindSpeed2(''); setWaveHeight1(''); setWaveHeight2('');
                     setDetailedMemo('');
@@ -1089,7 +1091,7 @@ React.useEffect(() => {
                 anglers: stats.anglers, avg: stats.avg, min: stats.min, max: stats.max, topAnglerName: stats.topNamesString,
                 portTotal: pTotal, starboardTotal: sTotal,
                 port: portSeats, starboard: starboardSeats, sizeMin, sizeMax,
-                point, waterTemp, waterDepth, tide, tideState,
+                point, waterTemp, waterDepth, tide, tideState, moonAge, // ★moonAge追加
                 highTide1, highTide2, lowTide1, lowTide2,
                 weather1, weather2, windDir1, windDir2, windSpeed1, windSpeed2, waveHeight1, waveHeight2,
                 detailedMemo
@@ -1918,7 +1920,9 @@ React.useEffect(() => {
                 portCount={portSeatCount} starboardCount={starboardSeatCount} onCountChange={handleSeatCountChange}
                 point={point} setPoint={setPoint} waterTemp={waterTemp} setWaterTemp={setWaterTemp}
                 waterDepth={waterDepth} setWaterDepth={setWaterDepth} tide={tide} setTide={setTide}
-                tideState={tideState} setTideState={setTideState} highTide1={highTide1} setHighTide1={setHighTide1}
+                tideState={tideState} setTideState={setTideState}
+                moonAge={moonAge} setMoonAge={setMoonAge}
+                highTide1={highTide1} setHighTide1={setHighTide1}
                 highTide2={highTide2} setHighTide2={setHighTide2} lowTide1={lowTide1} setLowTide1={setLowTide1}
                 lowTide2={lowTide2} setLowTide2={setLowTide2} weather1={weather1} setWeather1={setWeather1}
                 weather2={weather2} setWeather2={setWeather2} windDir1={windDir1} setWindDir1={setWindDir1}
