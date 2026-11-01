@@ -910,7 +910,7 @@ React.useEffect(() => {
     const [waterDepth, setWaterDepth] = React.useState('');
     const [tide, setTide] = React.useState('');
     const [tideState, setTideState] = React.useState('');
-    const [moonAge, setMoonAge] = React.useState(''); // ★追加
+    const [moonAge, setMoonAge] = React.useState(() => localStorage.getItem('fishing_moon_age') || '');
     const [highTide1, setHighTide1] = React.useState('');
     const [highTide2, setHighTide2] = React.useState('');
     const [lowTide1, setLowTide1] = React.useState('');
@@ -925,7 +925,11 @@ React.useEffect(() => {
     const [waveHeight2, setWaveHeight2] = React.useState('');
     const [detailedMemo, setDetailedMemo] = React.useState('');
 
-    const [records, setRecords] = React.useState([]);
+    React.useEffect(() => {
+        localStorage.setItem('fishing_moon_age', moonAge || '');
+    }, [moonAge]);
+    
+const [records, setRecords] = React.useState([]);
     const [portSeatCount, setPortSeatCount] = React.useState(() => localStorage.getItem('port_seat_count') || '');
     const [starboardSeatCount, setStarboardSeatCount] = React.useState(() => localStorage.getItem('starboard_seat_count') || '');
 
@@ -1049,7 +1053,7 @@ React.useEffect(() => {
                     setWaterDepth(todayRec.waterDepth || '');
                     setTide(todayRec.tide || '');
                     setTideState(todayRec.tideState || '');
-                    setMoonAge(todayRec.moonAge || ''); // ★追加
+                    setMoonAge(todayRec.moonAge || localStorage.getItem('fishing_moon_age') || ''); // ★ここに追加！
                     setHighTide1(todayRec.highTide1 || '');
                     setHighTide2(todayRec.highTide2 || '');
                     setLowTide1(todayRec.lowTide1 || '');
@@ -1070,7 +1074,7 @@ React.useEffect(() => {
                     setStarboardSeats([]);
                     setTargetFish(''); setSizeMin(''); setSizeMax('');
                     setPoint(''); setWaterTemp(''); setWaterDepth(''); setTide('');
-                    setTideState(''); setMoonAge(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2(''); // ★setMoonAge追加
+                    setTideState(''); setMoonAge(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2(''); // ★ここにも追加！
                     setWeather1(''); setWeather2(''); setWindDir1(''); setWindDir2('');
                     setWindSpeed1(''); setWindSpeed2(''); setWaveHeight1(''); setWaveHeight2('');
                     setDetailedMemo('');
