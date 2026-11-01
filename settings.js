@@ -32,15 +32,16 @@ window.getModelRotationOrder = function(currentSelectedValue) {
 
 // 月齢（0〜29.5）から最適な月相アイコンを返す関数
 const getMoonPhaseIcon = (ageStr) => {
+    if (!ageStr || String(ageStr).trim() === '') return '';
     const age = parseFloat(ageStr);
-    if (isNaN(age)) return '🌙';
+    if (isNaN(age)) return '';
     if (age >= 28.5 || age < 1.5) return '🌑';  // 新月
     if (age < 6.0) return '🌒';                  // 繊月・三日月
     if (age < 9.0) return '🌓';                  // 上弦の月
     if (age < 13.5) return '🌔';                 // 十三夜・張月
     if (age < 16.5) return '🌕';                 // 満月
     if (age < 21.0) return '🌖';                 // 寝待月
-    if (age < 24.0) return '🌗';                 // 下弦の月（画像21.5付近）
+    if (age < 24.0) return '🌗';                 // 下弦の月
     return '🌘';                                 // 有明月
 };
 
@@ -821,9 +822,9 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 <input ref={tideImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleTideImageAnalysis} />
 
                                 <div className="pt-1 space-y-2">
-                                    {/* 潮回りと月齢を横並びに配置 */}
-                                    <div className="grid grid-cols-5 gap-2">
-                                        <div className="col-span-3">
+                                    {/* 潮回りと月齢を50%ずつ均等配置・同色統一版 */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
                                             <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">潮回り</label>
                                             <input
                                                 type="text"
@@ -834,18 +835,23 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             />
                                         </div>
 
-                                        <div className="col-span-2">
-                                            <label className="text-xs font-bold text-amber-700 dark:text-amber-400 block mb-1">月齢</label>
+                                        <div>
+                                            <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">月齢</label>
                                             <div className="relative flex items-center">
-                                                <span className="absolute left-2.5 text-base select-none pointer-events-none">
-                                                    {getMoonPhaseIcon(moonAge)}
-                                                </span>
+                                                {/* 月齢データが存在するときだけ月のマークを表示 */}
+                                                {moonAge && String(moonAge).trim() !== '' && (
+                                                    <span className="absolute left-2.5 text-base select-none pointer-events-none">
+                                                        {getMoonPhaseIcon(moonAge)}
+                                                    </span>
+                                                )}
                                                 <input
                                                     type="text"
-                                                    className="w-full border border-amber-200 dark:border-slate-600 rounded-lg pl-8 pr-2 py-2 font-black text-sm bg-amber-50/50 dark:bg-slate-800 text-amber-950 dark:text-amber-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                                    className={`w-full border border-gray-200 dark:border-slate-600 rounded-lg py-2 font-black text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 ${
+                                                        moonAge && String(moonAge).trim() !== '' ? 'pl-8 pr-2' : 'px-2.5'
+                                                    }`}
                                                     value={moonAge || ''}
                                                     onChange={(e) => typeof setMoonAge === 'function' && setMoonAge(e.target.value)}
-                                                    placeholder="21.5"
+                                                    placeholder=""
                                                 />
                                             </div>
                                         </div>
