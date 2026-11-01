@@ -665,7 +665,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
                     {/* タブ 1: 基本設定 */}
                     {activeSettingsTab === 'basic' && (
-                        {/* 画面テーマ切り替え（アイデア2：大型カード選択方式） */}
+                        <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
+                            {/* 画面テーマ切り替え（アイデア2：大型カード選択方式） */}
                             <div className="p-3 bg-amber-50/70 dark:bg-slate-900/60 rounded-xl border border-amber-200/80 dark:border-slate-500 shadow-2xs space-y-2">
                                 <div>
                                     <span className="font-black text-sm block text-gray-800 dark:text-slate-100">画面テーマ</span>
