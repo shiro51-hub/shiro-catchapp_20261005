@@ -72,6 +72,11 @@ function SettingsPanel({
     const [showKey, setShowKey] = React.useState(false);
     const [tempGasUrl, setTempGasUrl] = React.useState(gasBackupUrl || '');
     const [isCloudRestoring, setIsCloudRestoring] = React.useState(false);
+    const [isCloudSaving, setIsCloudSaving] = React.useState(false);
+    const [isCloudSaved, setIsCloudSaved] = React.useState(false);
+    const [lastSyncTime, setLastSyncTime] = React.useState(() => {
+        return localStorage.getItem('fishing_last_gas_sync_time') || '';
+    });
 
     React.useEffect(() => {
         setTempGasUrl(gasBackupUrl || '');
@@ -1064,17 +1069,24 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
+                                    {lastSyncTime && (
+                                        <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-sky-200 dark:border-slate-700">
+                                            最終同期: {lastSyncTime}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => {
+                                        disabled={isCloudSaving}
+                                        onClick={async () => {
                                             const targetUrl = (gasBackupUrl || tempGasUrl || '').trim();
                                             if (!targetUrl) {
                                                 setToastMessage('受取URLが設定されていません。下の入力欄に登録してください。');
                                                 return;
                                             }
+                                            setIsCloudSaving(true);
                                             setToastMessage('Googleドライブへ全データを保存中...');
                                             try {
                                                 let currentRecords = records;
@@ -1091,31 +1103,57 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                     exportedAt: new Date().toISOString(),
                                                     records: currentRecords || []
                                                 };
-                                                fetch(targetUrl, {
+                                                await fetch(targetUrl, {
                                                     method: 'POST',
                                                     mode: 'no-cors',
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify(exportPayload)
-                                                }).then(() => {
-                                                    setToastMessage('Googleドライブに最新データを保存しました！');
-                                                }).catch((err) => {
-                                                    setToastMessage(`保存に失敗しました: ${err.message}`);
                                                 });
-                                            } catch (e) {
-                                                setToastMessage(`エラー: ${e.message}`);
+
+                                                const now = new Date();
+                                                const timeStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                                localStorage.setItem('fishing_last_gas_sync_time', timeStr);
+                                                setLastSyncTime(timeStr);
+                                                setIsCloudSaved(true);
+                                                setToastMessage('Googleドライブに最新データを保存しました！');
+                                            } catch (err) {
+                                                setToastMessage(`保存に失敗しました: ${err.message}`);
+                                            } finally {
+                                                setIsCloudSaving(false);
                                             }
                                         }}
-                                        className="bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                        className={`font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none ${
+                                            isCloudSaved
+                                                ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white ring-2 ring-emerald-300 dark:ring-emerald-800'
+                                                : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white'
+                                        }`}
                                     >
-                                        <span>☁️</span>
-                                        <span>クラウド保存</span>
+                                        {isCloudSaving ? (
+                                            <>
+                                                <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                <span>保存中...</span>
+                                            </>
+                                        ) : isCloudSaved ? (
+                                            <>
+                                                <span>✓</span>
+                                                <span>クラウド保存済み</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>☁️</span>
+                                                <span>クラウド保存</span>
+                                            </>
+                                        )}
                                     </button>
 
                                     <button
                                         type="button"
                                         disabled={isCloudRestoring}
                                         onClick={handleRestoreFromCloud}
-                                        className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                        className="bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
                                     >
                                         {isCloudRestoring ? (
                                             <>
