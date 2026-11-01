@@ -266,7 +266,7 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
-    // 潮時表画像の自動読み取り（月齢抽出・画像タイプ自動判定・高速解析版）
+    // 潮時表画像の自動読み取り（トリミング画像・フルスクショ両対応＆エラー防止版）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -279,42 +279,53 @@ function SettingsPanel({
         }
 
         setIsAnalyzingTide(true);
-        setToastMessage('潮時・月齢データを高速解析中...');
+        setToastMessage('潮時・月齢データを解析中...');
 
         try {
-            // 縦長スクショとトリミング画像を自動判別して最適クロップ
+            // 1. 安全な画像リサイズ＆JPEG変換（Canvas破損エラーを完全に防ぐ処理）
             const base64Data = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        // 縦横比が1.7以上の縦長スクショのみ下部30%(広告等)をカット
-                        const isLongScreenshot = (img.height / img.width) > 1.7;
-                        const cropHeight = isLongScreenshot ? (img.height * 0.70) : img.height;
-                        const targetWidth = Math.min(img.width, 720);
-                        const scale = targetWidth / img.width;
+                        const maxDim = 800; // 最速かつ文字がくっきり読める最適サイズ
+                        let w = img.width;
+                        let h = img.height;
 
-                        canvas.width = targetWidth;
-                        canvas.height = cropHeight * scale;
+                        // 縦横比を保ったまま安全に縮小
+                        if (w > h && w > maxDim) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else if (h > maxDim) {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
 
+                        canvas.width = w;
+                        canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, img.width, cropHeight, 0, 0, canvas.width, canvas.height);
+                        
+                        // 背景を白で塗りつぶしてから描画（透過PNGやトリミング画像の黒潰れ防止）
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
 
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                         resolve(dataUrl.split(',')[1]);
                     };
                     img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
                     img.src = event.target.result;
                 };
-                reader.onerror = reject;
+                reader.onerror = () => reject(new Error('ファイルアクセスに失敗しました'));
                 reader.readAsDataURL(file);
             });
 
-            // 潮回り・満干潮に加え、月齢（moonAge）も指定
-            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考過程や解説は不要です。不明な項目は空文字 "" にしてください。
+            // 2. 潮回り・月齢・満干潮の明確な抽出プロンプト
+            const prompt = `この潮見表画像から潮時と月齢の情報を読み取り、必ず以下のJSONフォーマットのみで出力してください。Markdownのコードブロック記号や前置きは含めないでください。不明な項目は空文字 "" にしてください。
 {"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
 
+            // 3. Gemini 3.8 Flash を優先した確実な呼び出し
             const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
             let parsed = null;
             let lastErr = null;
@@ -334,7 +345,7 @@ function SettingsPanel({
                             }],
                             generationConfig: {
                                 temperature: 0.1,
-                                maxOutputTokens: 150,
+                                maxOutputTokens: 300, // JSON途切れを防ぐ十分な幅
                                 response_mime_type: "application/json"
                             }
                         })
@@ -344,20 +355,27 @@ function SettingsPanel({
                         const data = await res.json();
                         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                         if (rawText) {
-                            const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            let clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            const sIdx = clean.indexOf('{');
+                            const eIdx = clean.lastIndexOf('}');
+                            if (sIdx !== -1 && eIdx !== -1) {
+                                clean = clean.substring(sIdx, eIdx + 1);
+                            }
                             parsed = JSON.parse(clean);
                             break;
                         }
                     } else {
-                        lastErr = new Error(`HTTP ${res.status}`);
+                        const errBody = await res.json().catch(() => ({}));
+                        lastErr = new Error(errBody.error?.message || `HTTP ${res.status}`);
                     }
                 } catch (err) {
                     lastErr = err;
                 }
             }
 
-            if (!parsed) throw lastErr || new Error('潮時表の解析データを取得できませんでした');
+            if (!parsed) throw lastErr || new Error('解析結果が得られませんでした');
 
+            // 4. フォームへの反映
             let count = 0;
             if (parsed.tideState) { setTideState(parsed.tideState); count++; }
             if (parsed.moonAge && typeof setMoonAge === 'function') { setMoonAge(parsed.moonAge); count++; }
@@ -366,10 +384,10 @@ function SettingsPanel({
             if (parsed.lowTide1) { setLowTide1(parsed.lowTide1); count++; }
             if (parsed.lowTide2) { setLowTide2(parsed.lowTide2); count++; }
 
-            setToastMessage(`潮時表の解析完了！\n潮回り「${parsed.tideState || '-'}」・月齢「${parsed.moonAge || '-'}」を入力しました`);
+            setToastMessage(`解析完了！\n潮回り「${parsed.tideState || '-'}」・月齢「${parsed.moonAge || '-'}」を入力しました`);
         } catch (err) {
-            console.error(err);
-            setToastMessage(`潮時表の解析に失敗しました: ${err.message}`);
+            console.error('Tide Analysis Error:', err);
+            setToastMessage(`潮時表の解析エラー:\n${err.message || '読み取りに失敗しました'}`);
         } finally {
             setIsAnalyzingTide(false);
             if (tideImageInputRef.current) tideImageInputRef.current.value = '';
