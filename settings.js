@@ -266,7 +266,7 @@ function SettingsPanel({
         throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
     };
 
-    // 潮時表画像の自動読み取り（トリミング画像・フルスクショ両対応＆エラー防止版）
+    // 潮時表画像の自動読み取り（サーバー混雑完全回避・自動モデル切替版）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -282,60 +282,27 @@ function SettingsPanel({
         setToastMessage('潮時・月齢データを解析中...');
 
         try {
-            // 1. 安全な画像リサイズ＆JPEG変換（Canvas破損エラーを完全に防ぐ処理）
-            const base64Data = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const maxDim = 800; // 最速かつ文字がくっきり読める最適サイズ
-                        let w = img.width;
-                        let h = img.height;
+            const base64Data = await fileToBase64(file);
 
-                        // 縦横比を保ったまま安全に縮小
-                        if (w > h && w > maxDim) {
-                            h = Math.round((h * maxDim) / w);
-                            w = maxDim;
-                        } else if (h > maxDim) {
-                            w = Math.round((w * maxDim) / h);
-                            h = maxDim;
-                        }
-
-                        canvas.width = w;
-                        canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // 背景を白で塗りつぶしてから描画（透過PNGやトリミング画像の黒潰れ防止）
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, w, h);
-                        ctx.drawImage(img, 0, 0, w, h);
-
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        resolve(dataUrl.split(',')[1]);
-                    };
-                    img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
-                    img.src = event.target.result;
-                };
-                reader.onerror = () => reject(new Error('ファイルアクセスに失敗しました'));
-                reader.readAsDataURL(file);
-            });
-
-            // 2. 潮回り・月齢・満干潮の明確な抽出プロンプト
-            const prompt = `この潮見表画像から潮時と月齢の情報を読み取り、必ず以下のJSONフォーマットのみで出力してください。Markdownのコードブロック記号や前置きは含めないでください。不明な項目は空文字 "" にしてください。
+            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考過程や前置きは一切不要です。不明な項目は空文字 "" にしてください。
 {"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
 
-            // 3. Gemini 3.8 Flash を優先した確実な呼び出し
-            const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+            // 混雑に備えて3.8 Flash、3.7 Flash、3.6 Flash、3.5 Flashを順に待機
+            const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
             let parsed = null;
             let lastErr = null;
 
-            for (const model of targetModels) {
+            for (let i = 0; i < targetModels.length; i++) {
+                const model = targetModels[i];
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8秒で応答がなければ次へ
+
                 try {
                     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${activeKey}`;
                     const res = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        signal: controller.signal,
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
@@ -345,37 +312,45 @@ function SettingsPanel({
                             }],
                             generationConfig: {
                                 temperature: 0.1,
-                                maxOutputTokens: 300, // JSON途切れを防ぐ十分な幅
+                                maxOutputTokens: 250,
                                 response_mime_type: "application/json"
                             }
                         })
                     });
 
+                    clearTimeout(timeoutId);
+
                     if (res.ok) {
                         const data = await res.json();
                         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                         if (rawText) {
-                            let clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
                             const sIdx = clean.indexOf('{');
                             const eIdx = clean.lastIndexOf('}');
                             if (sIdx !== -1 && eIdx !== -1) {
-                                clean = clean.substring(sIdx, eIdx + 1);
+                                parsed = JSON.parse(clean.substring(sIdx, eIdx + 1));
+                                break; // 成功したらループ終了
                             }
-                            parsed = JSON.parse(clean);
-                            break;
                         }
                     } else {
-                        const errBody = await res.json().catch(() => ({}));
-                        lastErr = new Error(errBody.error?.message || `HTTP ${res.status}`);
+                        // 503混雑、429制限、high demandなどの場合はエラーで止めず次のモデルへバトンタッチ
+                        const errData = await res.json().catch(() => ({}));
+                        const errMsg = errData.error?.message || `HTTP ${res.status}`;
+                        lastErr = new Error(errMsg);
+                        
+                        // 混雑時は即座に次のモデルを試行
+                        continue;
                     }
                 } catch (err) {
-                    lastErr = err;
+                    clearTimeout(timeoutId);
+                    lastErr = err.name === 'AbortError' ? new Error(`モデル ${model} がタイムアウト`) : err;
+                    continue; // タイムアウト時も次のモデルへ
                 }
             }
 
-            if (!parsed) throw lastErr || new Error('解析結果が得られませんでした');
+            if (!parsed) throw lastErr || new Error('すべてのAIモデルが混雑中で解析できませんでした');
 
-            // 4. フォームへの反映
+            // フォームへの自動入力
             let count = 0;
             if (parsed.tideState) { setTideState(parsed.tideState); count++; }
             if (parsed.moonAge && typeof setMoonAge === 'function') { setMoonAge(parsed.moonAge); count++; }
@@ -387,7 +362,7 @@ function SettingsPanel({
             setToastMessage(`解析完了！\n潮回り「${parsed.tideState || '-'}」・月齢「${parsed.moonAge || '-'}」を入力しました`);
         } catch (err) {
             console.error('Tide Analysis Error:', err);
-            setToastMessage(`潮時表の解析エラー:\n${err.message || '読み取りに失敗しました'}`);
+            setToastMessage(`潮時表の解析エラー:\n${err.message || '通信エラー'}`);
         } finally {
             setIsAnalyzingTide(false);
             if (tideImageInputRef.current) tideImageInputRef.current.value = '';
