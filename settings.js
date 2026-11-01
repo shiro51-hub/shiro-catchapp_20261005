@@ -73,7 +73,10 @@ function SettingsPanel({
     const [tempGasUrl, setTempGasUrl] = React.useState(gasBackupUrl || '');
     const [isCloudRestoring, setIsCloudRestoring] = React.useState(false);
     const [isCloudSaving, setIsCloudSaving] = React.useState(false);
-    const [isCloudSaved, setIsCloudSaved] = React.useState(false);
+    // 過去に保存履歴があれば、設定画面を開いた時点から「保存済み」として表示
+    const [isCloudSaved, setIsCloudSaved] = React.useState(() => {
+        return localStorage.getItem('fishing_is_gas_saved') === 'true';
+    });
     const [lastSyncTime, setLastSyncTime] = React.useState(() => {
         return localStorage.getItem('fishing_last_gas_sync_time') || '';
     });
@@ -1113,6 +1116,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 const now = new Date();
                                                 const timeStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                                                 localStorage.setItem('fishing_last_gas_sync_time', timeStr);
+                                                localStorage.setItem('fishing_is_gas_saved', 'true');
                                                 setLastSyncTime(timeStr);
                                                 setIsCloudSaved(true);
                                                 setToastMessage('Googleドライブに最新データを保存しました！');
