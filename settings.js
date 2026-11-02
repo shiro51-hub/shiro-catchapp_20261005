@@ -682,14 +682,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2.5 pt-1 select-none">
-                                    {/* ☀️ ライトモードカード（ダーク時でも白さをキープ） */}
+                                    {/* ☀️ ライトモードカード */}
                                     <button
                                         type="button"
                                         onClick={() => setTheme('light')}
                                         className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
                                             theme !== 'dark'
                                                 ? 'border-sky-500 bg-white ring-2 ring-sky-300/60 shadow-md'
-                                                : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-200/90 shadow-2xs hover:bg-white'
+                                                : 'border-slate-700 bg-slate-850/60 hover:bg-slate-800 text-slate-400 opacity-60 hover:opacity-90'
                                         }`}
                                     >
                                         {/* 選択中チェックマーク */}
@@ -701,14 +701,22 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">☀️</span>
                                         <span className={`text-xs sm:text-sm font-black ${
-                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-700'
+                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-300'
                                         }`}>
                                             ライトモード
                                         </span>
 
-                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-white border border-slate-200 dark:border-slate-300 flex items-center justify-center space-x-1 shadow-2xs">
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
+                                            theme !== 'dark'
+                                                ? 'bg-amber-50/80 border-amber-200/80'
+                                                : 'bg-slate-900 border-slate-750'
+                                        }`}>
                                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                            <span className="text-[10px] font-bold text-slate-700">標準・明るい画面</span>
+                                            <span className={`text-[10px] font-bold ${
+                                                theme !== 'dark' ? 'text-amber-900' : 'text-slate-400'
+                                            }`}>
+                                                標準・明るい画面
+                                            </span>
                                         </div>
                                     </button>
 
@@ -718,8 +726,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         onClick={() => setTheme('dark')}
                                         className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
                                             theme === 'dark'
-                                                ? 'border-indigo-400 bg-slate-900 ring-2 ring-indigo-400/50 shadow-md'
-                                                : 'border-gray-200 bg-slate-900/85 hover:bg-slate-900 shadow-2xs'
+                                                ? 'border-indigo-400 bg-slate-800 ring-2 ring-indigo-400/50 shadow-md'
+                                                : 'border-slate-200 bg-white/70 hover:bg-white text-slate-500 opacity-60 hover:opacity-90'
                                         }`}
                                     >
                                         {/* 選択中チェックマーク */}
@@ -731,14 +739,22 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">🌙</span>
                                         <span className={`text-xs sm:text-sm font-black ${
-                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-200'
+                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-700'
                                         }`}>
                                             ダークモード
                                         </span>
 
-                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-black/50 border border-slate-700 flex items-center justify-center space-x-1">
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
+                                            theme === 'dark'
+                                                ? 'bg-slate-950 border-slate-700'
+                                                : 'bg-emerald-50/80 border-emerald-200/80'
+                                        }`}>
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                            <span className="text-[10px] font-bold text-slate-300">バッテリー省電力</span>
+                                            <span className={`text-[10px] font-bold ${
+                                                theme === 'dark' ? 'text-slate-300' : 'text-emerald-900'
+                                            }`}>
+                                                バッテリー省電力
+                                            </span>
                                         </div>
                                     </button>
                                 </div>
