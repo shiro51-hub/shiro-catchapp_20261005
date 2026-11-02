@@ -453,8 +453,13 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
 
                 <div className="flex items-baseline justify-between pt-0.5">
                     {nextEvent ? (
-                        <div className="text-base sm:text-lg font-bold text-sky-800 dark:text-sky-200 tracking-tight leading-tight truncate mr-1">
-                            <span className="font-black text-sky-600 dark:text-sky-400 mr-0.5">【{nextEvent.type} {nextEvent.timeStr}】</span>まで
+                        <div className="flex items-baseline min-w-0 mr-1">
+                            <span className="text-base sm:text-lg font-black text-sky-600 dark:text-sky-400 tracking-tight leading-tight shrink-0">
+                                【{nextEvent.type} {nextEvent.timeStr}】
+                            </span>
+                            <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 ml-0.5 shrink-0">
+                                まで
+                            </span>
                         </div>
                     ) : (
                         <div className="text-sm sm:text-base font-bold text-sky-700 dark:text-sky-300 leading-tight">
