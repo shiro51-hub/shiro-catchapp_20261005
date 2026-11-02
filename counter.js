@@ -454,7 +454,7 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
                 <div className="flex items-baseline justify-between pt-0.5">
                     {nextEvent ? (
                         <div className="flex items-baseline min-w-0 mr-1">
-                            <span className="text-base sm:text-lg font-black text-sky-600 dark:text-sky-400 tracking-tight leading-tight shrink-0">
+                            <span className="text-xl sm:text-2xl font-black tracking-tight text-sky-700 dark:text-sky-300 leading-none shrink-0">
                                 【{nextEvent.type} {nextEvent.timeStr}】
                             </span>
                             <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 ml-0.5 shrink-0">
@@ -468,7 +468,7 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
                     )}
 
                     {nextEvent && (
-                        <div className="text-base sm:text-lg font-black text-cyan-600 dark:text-cyan-300 flex items-baseline leading-tight shrink-0">
+                        <div className="text-base sm:text-lg font-black text-cyan-600 dark:text-cyan-300 flex items-baseline leading-none shrink-0">
                             <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 mr-1">あと</span>
                             <span className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 dark:text-cyan-300">
                                 {remainingText}
