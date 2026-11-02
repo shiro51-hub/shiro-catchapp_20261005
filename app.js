@@ -1116,6 +1116,7 @@ const [records, setRecords] = React.useState([]);
             let updated = [...prev];
             if (existingIdx >= 0) {
                 recData.id = updated[existingIdx].id;
+                recData.cloudSavedAt = updated[existingIdx].cloudSavedAt; // ★クラウド保存日時を消去せずに引き継ぐ
                 recData.aiGeneratedPatterns = updated[existingIdx].aiGeneratedPatterns;
                 recData.aiGeneratedText = updated[existingIdx].aiGeneratedText;
                 recData.aiAnalysisResult = updated[existingIdx].aiAnalysisResult;
