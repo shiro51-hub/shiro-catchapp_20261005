@@ -682,14 +682,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2.5 pt-1 select-none">
-                                    {/* ☀️ 日中モードカード */}
+                                    {/* ☀️ ライトモードカード（ダーク時でも白さをキープ） */}
                                     <button
                                         type="button"
                                         onClick={() => setTheme('light')}
                                         className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
                                             theme !== 'dark'
-                                                ? 'border-sky-500 bg-white ring-2 ring-sky-300/50 shadow-md'
-                                                : 'border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 opacity-50 hover:opacity-80'
+                                                ? 'border-sky-500 bg-white ring-2 ring-sky-300/60 shadow-md'
+                                                : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-200/90 shadow-2xs hover:bg-white'
                                         }`}
                                     >
                                         {/* 選択中チェックマーク */}
@@ -701,14 +701,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">☀️</span>
                                         <span className={`text-xs sm:text-sm font-black ${
-                                            theme !== 'dark' ? 'text-sky-950' : 'text-gray-500 dark:text-slate-400'
+                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-700'
                                         }`}>
-                                            日中モード
+                                            ライトモード
                                         </span>
 
-                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-stone-100 border border-stone-200 flex items-center justify-center space-x-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            <span className="text-[10px] font-bold text-stone-600">明るい画面</span>
+                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-white border border-slate-200 dark:border-slate-300 flex items-center justify-center space-x-1 shadow-2xs">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                            <span className="text-[10px] font-bold text-slate-700">標準・明るい画面</span>
                                         </div>
                                     </button>
 
@@ -718,8 +718,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         onClick={() => setTheme('dark')}
                                         className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
                                             theme === 'dark'
-                                                ? 'border-indigo-400 bg-slate-800 ring-2 ring-indigo-400/40 shadow-md'
-                                                : 'border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 opacity-50 hover:opacity-80'
+                                                ? 'border-indigo-400 bg-slate-900 ring-2 ring-indigo-400/50 shadow-md'
+                                                : 'border-gray-200 bg-slate-900/85 hover:bg-slate-900 shadow-2xs'
                                         }`}
                                     >
                                         {/* 選択中チェックマーク */}
@@ -731,14 +731,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">🌙</span>
                                         <span className={`text-xs sm:text-sm font-black ${
-                                            theme === 'dark' ? 'text-indigo-200' : 'text-gray-500 dark:text-slate-400'
+                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-200'
                                         }`}>
                                             ダークモード
                                         </span>
 
-                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-slate-950 border border-slate-700 flex items-center justify-center space-x-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                                            <span className="text-[10px] font-bold text-slate-300">夜間・暗所</span>
+                                        <div className="w-full mt-2 py-0.5 px-1.5 rounded bg-black/50 border border-slate-700 flex items-center justify-center space-x-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span className="text-[10px] font-bold text-slate-300">バッテリー省電力</span>
                                         </div>
                                     </button>
                                 </div>
