@@ -468,8 +468,7 @@ const TideAlertBanner = ({ tideState, moonAge, highTide1, highTide2, lowTide1, l
                     )}
 
                     {nextEvent && (
-                        <div className="text-base sm:text-lg font-black text-cyan-600 dark:text-cyan-300 flex items-baseline leading-none shrink-0">
-                            <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 mr-1">あと</span>
+                        <div className="flex items-baseline leading-none shrink-0">
                             <span className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 dark:text-cyan-300">
                                 {remainingText}
                             </span>
