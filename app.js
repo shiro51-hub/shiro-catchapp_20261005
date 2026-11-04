@@ -851,6 +851,17 @@ React.useEffect(() => {
         const saved = localStorage.getItem('theme');
         return saved === 'dark' ? 'dark' : 'light';
     });
+
+    // テーマの変更を監視し、<html> タグへ dark クラスを即時付与・除去
+    React.useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+        localStorage.setItem('theme', theme);
+    }, [theme]);
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
