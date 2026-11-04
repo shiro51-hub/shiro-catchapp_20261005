@@ -847,7 +847,10 @@ React.useEffect(() => {
 
     const [inputSide, setInputSide] = React.useState('both');
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-    const [theme, setTheme] = React.useState(() => localStorage.getItem('theme') || 'light');
+    const [theme, setTheme] = React.useState(() => {
+        const saved = localStorage.getItem('theme');
+        return saved === 'dark' ? 'dark' : 'light';
+    });
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
@@ -2020,24 +2023,62 @@ const [records, setRecords] = React.useState([]);
             )}
 
             <SettingsPanel
-                isSettingsOpen={isSettingsOpen} setIsSettingsOpen={setIsSettingsOpen}
-                portCount={portSeatCount} starboardCount={starboardSeatCount} onCountChange={handleSeatCountChange}
-                point={point} setPoint={setPoint} waterTemp={waterTemp} setWaterTemp={setWaterTemp}
-                waterDepth={waterDepth} setWaterDepth={setWaterDepth} tide={tide} setTide={setTide}
-                tideState={tideState} setTideState={setTideState}
-                moonAge={moonAge} setMoonAge={setMoonAge}
-                highTide1={highTide1} setHighTide1={setHighTide1}
-                highTide2={highTide2} setHighTide2={setHighTide2} lowTide1={lowTide1} setLowTide1={setLowTide1}
-                lowTide2={lowTide2} setLowTide2={setLowTide2} weather1={weather1} setWeather1={setWeather1}
-                weather2={weather2} setWeather2={setWeather2} windDir1={windDir1} setWindDir1={setWindDir1}
-                windDir2={windDir2} setWindDir2={setWindDir2} windSpeed1={windSpeed1} setWindSpeed1={setWindSpeed1}
-                windSpeed2={windSpeed2} setWindSpeed2={setWindSpeed2} waveHeight1={waveHeight1} setWaveHeight1={setWaveHeight1}
-                waveHeight2={waveHeight2} setWaveHeight2={setWaveHeight2} theme={theme} setTheme={setTheme}
-                targetFish={targetFish} setTargetFish={setTargetFish} date={date} setToastMessage={setToastMessage}
+                isSettingsOpen={isSettingsOpen}
+                setIsSettingsOpen={setIsSettingsOpen}
+                portCount={portSeatCount}
+                starboardCount={starboardSeatCount}
+                onCountChange={handleSeatCountChange}
+                point={point}
+                setPoint={setPoint}
+                waterTemp={waterTemp}
+                setWaterTemp={setWaterTemp}
+                waterDepth={waterDepth}
+                setWaterDepth={setWaterDepth}
+                tide={tide}
+                setTide={setTide}
+                tideState={tideState}
+                setTideState={setTideState}
+                moonAge={moonAge}
+                setMoonAge={setMoonAge}
+                highTide1={highTide1}
+                setHighTide1={setHighTide1}
+                highTide2={highTide2}
+                setHighTide2={setHighTide2}
+                lowTide1={lowTide1}
+                setLowTide1={setLowTide1}
+                lowTide2={lowTide2}
+                setLowTide2={setLowTide2}
+                weather1={weather1}
+                setWeather1={setWeather1}
+                weather2={weather2}
+                setWeather2={setWeather2}
+                windDir1={windDir1}
+                setWindDir1={setWindDir1}
+                windDir2={windDir2}
+                setWindDir2={setWindDir2}
+                windSpeed1={windSpeed1}
+                setWindSpeed1={setWindSpeed1}
+                windSpeed2={windSpeed2}
+                setWindSpeed2={setWindSpeed2}
+                waveHeight1={waveHeight1}
+                setWaveHeight1={setWaveHeight1}
+                waveHeight2={waveHeight2}
+                setWaveHeight2={setWaveHeight2}
+                theme={theme}
+                setTheme={setTheme}
+                targetFish={targetFish}
+                setTargetFish={setTargetFish}
+                date={date}
+                setToastMessage={setToastMessage}
                 onFactoryReset={() => { setRecords([]); localStorage.clear(); setToastMessage('初期化完了'); }}
-                records={records} setRecords={setRecords} userApiKey={userApiKey} setUserApiKey={setUserApiKey}
-                selectedAiModel={selectedAiModel} setSelectedAiModel={setSelectedAiModel}
-                gasBackupUrl={gasBackupUrl} setGasBackupUrl={setGasBackupUrl}
+                records={records}
+                setRecords={setRecords}
+                userApiKey={userApiKey}
+                setUserApiKey={setUserApiKey}
+                selectedAiModel={selectedAiModel}
+                setSelectedAiModel={setSelectedAiModel}
+                gasBackupUrl={gasBackupUrl}
+                setGasBackupUrl={setGasBackupUrl}
             />
 
             <MemoModalWithTags
