@@ -1987,6 +1987,7 @@ React.useEffect(() => {
             
             const targetText = [
                 r.date, (r.date || '').replace(/-/g, '/'), r.targetFish, r.point,
+                r.weather1, r.weather2,
                 r.topAnglerName, r.detailedMemo, portNamesAndMemos, starboardNamesAndMemos
             ].join(' ').toLowerCase();
 
@@ -2901,7 +2902,7 @@ React.useEffect(() => {
                                                 {r.waterTemp && <span>{r.waterTemp}℃</span>}
                                                 {r.tide && <span>{r.tide}</span>}
                                                 {r.tideState && <span>{r.tideState}</span>}
-                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${r.weather2}` : ''}</span>}
+                                                {r.weather1 && <span><HighlightText text={r.weather1} query={searchQuery} />{r.weather2 && r.weather1 !== r.weather2 ? <>→<HighlightText text={r.weather2} query={searchQuery} /></> : ''}</span>}
                                                 {(() => {
                                                     const wd1 = r.windDir1 || r.windDir || '';
                                                     const ws1 = r.windSpeed1 || r.windSpeed || '';
