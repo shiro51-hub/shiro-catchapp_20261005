@@ -1173,7 +1173,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         type="button"
                                         disabled={isCloudRestoring}
                                         onClick={handleRestoreFromCloud}
-                                        className="bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                        className="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 font-black py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none"
                                     >
                                         {isCloudRestoring ? (
                                             <>
