@@ -1850,46 +1850,52 @@ const [records, setRecords] = React.useState([]);
         document.body.removeChild(ta);
     };
 
-    // 過去ログから「年（YYYY）」を抽出（重複なし）
-    const availableYears = React.useMemo(() => {
-        const yearSet = new Set();
-        (records || []).forEach(r => {
-            if (r.date && r.date.length >= 4) {
-                yearSet.add(r.date.substring(0, 4));
-            }
-        });
-        return Array.from(yearSet).sort().reverse();
-    }, [records]);
+   // 過去12ヶ月分の月（YYYY-MM）リストをカレンダー基準で12個生成
+    const past12MonthsList = React.useMemo(() => {
+        const list = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            list.push({ val: `${y}-${m}`, label: `${y}年${m}月` });
+        }
+        return list;
+    }, []);
 
-    // 過去ログから「月（YYYY-MM）」を抽出（重複なし・1つだけに整理）
-    const availableMonths = React.useMemo(() => {
-        const monthSet = new Set();
-        (records || []).forEach(r => {
-            if (r.date && r.date.length >= 7) {
-                monthSet.add(r.date.substring(0, 7));
-            }
-        });
-        return Array.from(monthSet).sort().reverse();
-    }, [records]);
+    // 今年を含めた過去10年分の西暦リストを10個生成
+    const past10YearsList = React.useMemo(() => {
+        const list = [];
+        const currentYear = new Date().getFullYear();
+        for (let i = 0; i < 10; i++) {
+            const y = currentYear - i;
+            list.push({ val: String(y), label: `${y}年` });
+        }
+        return list;
+    }, []);
 
-    // 過去3ヶ月（標準: 90日）・年・月で絞り込み
+    // 過去3ヶ月（標準: 90日）・指定月・指定年で絞り込み
     const filteredRecords = React.useMemo(() => {
         const now = new Date();
         const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
 
         return records.filter(r => {
+            // 検索キーワードがない時は期間指定で絞り込み
             if (!searchQuery && historyPeriod !== 'all') {
-                const rDate = parseDate(r.date);
                 if (historyPeriod === '3m') {
+                    // 標準：直近90日以内
+                    const rDate = parseDate(r.date);
                     const cutoff = new Date(now);
                     cutoff.setDate(cutoff.getDate() - 90);
                     if (rDate < cutoff) return false;
-                } else if (historyPeriod.startsWith('year_')) {
-                    const targetYear = historyPeriod.replace('year_', '');
-                    if (!r.date || !r.date.startsWith(targetYear)) return false;
                 } else if (historyPeriod.startsWith('month_')) {
+                    // 月で検索（YYYY-MM）
                     const targetMonth = historyPeriod.replace('month_', '');
                     if (!r.date || !r.date.startsWith(targetMonth)) return false;
+                } else if (historyPeriod.startsWith('year_')) {
+                    // 年で検索（YYYY）
+                    const targetYear = historyPeriod.replace('year_', '');
+                    if (!r.date || !r.date.startsWith(targetYear)) return false;
                 }
             }
 
@@ -2577,7 +2583,7 @@ const [records, setRecords] = React.useState([]);
                                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
                                 </div>
 
-                                {/* 期間選択プルダウン（1.標準 ➔ 2.月指定 ➔ 3.年指定 ➔ 4.全期間） */}
+                                {/* 期間選択プルダウン（1.標準 ➔ 2.過去12ヶ月 ➔ 3.過去10年 ➔ 4.全期間） */}
                                 <div className="relative shrink-0">
                                     <select
                                         value={historyPeriod}
@@ -2587,23 +2593,21 @@ const [records, setRecords] = React.useState([]);
                                         {/* 1. 標準 */}
                                         <option value="3m">過去3ヶ月（標準）</option>
 
-                                        {/* 2. 月で検索（過去12ヶ月） */}
-                                        {availableMonths.length > 0 && (
-                                            <optgroup label="── 月で指定（過去12ヶ月） ──">
-                                                {availableMonths.map(ym => (
-                                                    <option key={`m-${ym}`} value={`month_${ym}`}>{ym.replace('-', '年')}月</option>
-                                                ))}
-                                            </optgroup>
-                                        )}
+                                        {/* 2. 月で検索（カレンダー基準の過去12ヶ月分） */}
+                                        <optgroup label="── 月で指定（過去12ヶ月） ──">
+                                            {past12MonthsList.map(item => (
+                                                <option key={`m-${item.val}`} value={`month_${item.val}`}>
+                                                    {item.label}
+                                                </option>
+                                            ))}
+                                        </optgroup>
 
-                                        {/* 3. 年で検索（過去10年スパン ＆ 各単年） */}
+                                        {/* 3. 年で検索（今年を含めた過去10年分の西暦） */}
                                         <optgroup label="── 年で指定（過去10年） ──">
-                                            <option value="1y_span">過去1年間</option>
-                                            <option value="3y_span">過去3年間</option>
-                                            <option value="5y_span">過去5年間</option>
-                                            <option value="10y_span">過去10年間</option>
-                                            {availableYears.map(y => (
-                                                <option key={`y-${y}`} value={`year_${y}`}>{y}年</option>
+                                            {past10YearsList.map(item => (
+                                                <option key={`y-${item.val}`} value={`year_${item.val}`}>
+                                                    {item.label}
+                                                </option>
                                             ))}
                                         </optgroup>
 
