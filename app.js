@@ -1983,7 +1983,7 @@ const [records, setRecords] = React.useState([]);
     }, [records, searchQuery, sortOrder]);
 
     return (
-        <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative overflow-hidden transition-colors duration-300 bg-gray-100 dark:bg-slate-900">
+        <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative overflow-hidden bg-gray-100 dark:bg-slate-900">
             {toastMessage && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 animate-[fadeIn_0.15s_ease-out]" onClick={() => setToastMessage('')}>
                     <div 
@@ -2087,8 +2087,7 @@ const [records, setRecords] = React.useState([]);
                 setWaveHeight1={setWaveHeight1}
                 waveHeight2={waveHeight2}
                 setWaveHeight2={setWaveHeight2}
-                theme={theme}
-                setTheme={setTheme}
+                theme={theme} setTheme={handleSetTheme}
                 targetFish={targetFish}
                 setTargetFish={setTargetFish}
                 date={date}
