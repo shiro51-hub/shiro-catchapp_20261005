@@ -1041,80 +1041,163 @@ const [records, setRecords] = React.useState([]);
         ]}
     ];
 
-    React.useEffect(() => {
-        const root = document.documentElement;
-        root.classList.remove('dark');
-        if (theme === 'dark') root.classList.add('dark');
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    React.useEffect(() => {
+    // 全レコードを取得する補助関数（メモリに常駐させずストレージから直接安全に取得）
+    const getAllStoredRecords = () => {
         try {
             const saved = localStorage.getItem('fishing_records');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                setRecords(parsed);
-                const todayRec = parsed.find(r => r.date === date);
-                if (todayRec) {
-                    setPortSeats(todayRec.port || []);
-                    setStarboardSeats(todayRec.starboard || []);
-                    setPortSeatCount((todayRec.port || []).length || '');
-                    setStarboardSeatCount((todayRec.starboard || []).length || '');
-                    setTargetFish(todayRec.targetFish || '');
-                    setSizeMin(todayRec.sizeMin || '');
-                    setSizeMax(todayRec.sizeMax || '');
-                    setPoint(todayRec.point || '');
-                    setWaterTemp(todayRec.waterTemp || '');
-                    setWaterDepth(todayRec.waterDepth || '');
-                    setTide(todayRec.tide || '');
-                    setTideState(todayRec.tideState || '');
-                    setMoonAge(todayRec.moonAge || localStorage.getItem('fishing_moon_age') || ''); // ★ここに追加！
-                    setHighTide1(todayRec.highTide1 || '');
-                    setHighTide2(todayRec.highTide2 || '');
-                    setLowTide1(todayRec.lowTide1 || '');
-                    setLowTide2(todayRec.lowTide2 || '');
-                    setWeather1(todayRec.weather1 || todayRec.weather || '');
-                    setWeather2(todayRec.weather2 || '');
-                    setWindDir1(todayRec.windDir1 || todayRec.windDir || '');
-                    setWindDir2(todayRec.windDir2 || '');
-                    setWindSpeed1(todayRec.windSpeed1 || todayRec.windSpeed || '');
-                    setWindSpeed2(todayRec.windSpeed2 || '');
-                    setWaveHeight1(todayRec.waveHeight1 || todayRec.waveHeight || '');
-                    setWaveHeight2(todayRec.waveHeight2 || '');
-                    setDetailedMemo(todayRec.detailedMemo || '');
-                } else {
-                    setPortSeatCount('');
-                    setStarboardSeatCount('');
-                    setPortSeats([]);
-                    setStarboardSeats([]);
-                    setTargetFish(''); setSizeMin(''); setSizeMax('');
-                    setPoint(''); setWaterTemp(''); setWaterDepth(''); setTide('');
-                    setTideState(''); setMoonAge(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2(''); // ★ここにも追加！
-                    setWeather1(''); setWeather2(''); setWindDir1(''); setWindDir2('');
-                    setWindSpeed1(''); setWindSpeed2(''); setWaveHeight1(''); setWaveHeight2('');
-                    setDetailedMemo('');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    };
+
+    // 指定期間のレコードのみをストレージから取り出してメモリ（records）に展開する処理
+    const loadRecordsForPeriod = React.useCallback((periods) => {
+        const all = getAllStoredRecords();
+        if (periods.includes('all')) {
+            setRecords(all);
+            return;
+        }
+
+        const now = new Date();
+        const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
+
+        // 指定された期間（過去3ヶ月、複数月、複数年）に一致するものだけを抽出
+        const matched = all.filter(r => {
+            return periods.some(p => {
+                if (p === '3m') {
+                    const rDate = parseDate(r.date);
+                    const cutoff = new Date(now);
+                    cutoff.setDate(cutoff.getDate() - 90);
+                    return rDate >= cutoff;
                 }
-            }
-        } catch (e) {}
+                if (p.startsWith('month_')) {
+                    const m = p.replace('month_', '');
+                    return r.date && r.date.startsWith(m);
+                }
+                if (p.startsWith('year_')) {
+                    const y = p.replace('year_', '');
+                    return r.date && r.date.startsWith(y);
+                }
+                return false;
+            });
+        });
+
+        setRecords(matched);
+    }, []);
+
+    // 選択された表示期間が変わった時だけ、対象データをストレージから読み直す
+    React.useEffect(() => {
+        loadRecordsForPeriod(selectedPeriods);
+    }, [selectedPeriods, loadRecordsForPeriod]);
+
+    // 日付切り替え時の座席・設定フォーム初期化
+    React.useEffect(() => {
+        const all = getAllStoredRecords();
+        const todayRec = all.find(r => r.date === date);
+        if (todayRec) {
+            setPortSeats(todayRec.port || []);
+            setStarboardSeats(todayRec.starboard || []);
+            setPortSeatCount((todayRec.port || []).length || '');
+            setStarboardSeatCount((todayRec.starboard || []).length || '');
+            setTargetFish(todayRec.targetFish || '');
+            setSizeMin(todayRec.sizeMin || '');
+            setSizeMax(todayRec.sizeMax || '');
+            setPoint(todayRec.point || '');
+            setWaterTemp(todayRec.waterTemp || '');
+            setWaterDepth(todayRec.waterDepth || '');
+            setTide(todayRec.tide || '');
+            setTideState(todayRec.tideState || '');
+            setMoonAge(todayRec.moonAge || localStorage.getItem('fishing_moon_age') || '');
+            setHighTide1(todayRec.highTide1 || '');
+            setHighTide2(todayRec.highTide2 || '');
+            setLowTide1(todayRec.lowTide1 || '');
+            setLowTide2(todayRec.lowTide2 || '');
+            setWeather1(todayRec.weather1 || todayRec.weather || '');
+            setWeather2(todayRec.weather2 || '');
+            setWindDir1(todayRec.windDir1 || todayRec.windDir || '');
+            setWindDir2(todayRec.windDir2 || '');
+            setWindSpeed1(todayRec.windSpeed1 || todayRec.windSpeed || '');
+            setWindSpeed2(todayRec.windSpeed2 || '');
+            setWaveHeight1(todayRec.waveHeight1 || todayRec.waveHeight || '');
+            setWaveHeight2(todayRec.waveHeight2 || '');
+            setDetailedMemo(todayRec.detailedMemo || '');
+        } else {
+            setPortSeatCount('');
+            setStarboardSeatCount('');
+            setPortSeats([]);
+            setStarboardSeats([]);
+            setTargetFish(''); setSizeMin(''); setSizeMax('');
+            setPoint(''); setWaterTemp(''); setWaterDepth(''); setTide('');
+            setTideState(''); setMoonAge(''); setHighTide1(''); setHighTide2(''); setLowTide1(''); setLowTide2('');
+            setWeather1(''); setWeather2(''); setWindDir1(''); setWindDir2('');
+            setWindSpeed1(''); setWindSpeed2(''); setWaveHeight1(''); setWaveHeight2('');
+            setDetailedMemo('');
+        }
     }, [date]);
 
+    // 当日入力データの自動保存（ストレージ本体を直接安全に更新し、現在の表示にも反映）
     React.useEffect(() => {
-        setRecords(prev => {
-            const pTotal = portSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
-            const sTotal = starboardSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
-            const stats = getTopAnglerDetails(portSeats, starboardSeats);
+        const pTotal = portSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
+        const sTotal = starboardSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
+        const stats = getTopAnglerDetails(portSeats, starboardSeats);
 
-            const recData = {
-                id: Date.now(),
-                date, targetFish, total: pTotal + sTotal,
-                anglers: stats.anglers, avg: stats.avg, min: stats.min, max: stats.max, topAnglerName: stats.topNamesString,
-                portTotal: pTotal, starboardTotal: sTotal,
-                port: portSeats, starboard: starboardSeats, sizeMin, sizeMax,
-                point, waterTemp, waterDepth, tide, tideState, moonAge, // ★moonAge追加
-                highTide1, highTide2, lowTide1, lowTide2,
-                weather1, weather2, windDir1, windDir2, windSpeed1, windSpeed2, waveHeight1, waveHeight2,
-                detailedMemo
-            };
+        const recData = {
+            id: Date.now(),
+            date, targetFish, total: pTotal + sTotal,
+            anglers: stats.anglers, avg: stats.avg, min: stats.min, max: stats.max, topAnglerName: stats.topNamesString,
+            portTotal: pTotal, starboardTotal: sTotal,
+            port: portSeats, starboard: starboardSeats, sizeMin, sizeMax,
+            point, waterTemp, waterDepth, tide, tideState, moonAge,
+            highTide1, highTide2, lowTide1, lowTide2,
+            weather1, weather2, windDir1, windDir2, windSpeed1, windSpeed2, waveHeight1, waveHeight2,
+            detailedMemo
+        };
+
+        const all = getAllStoredRecords();
+        const existingIdx = all.findIndex(r => r.date === date);
+        let updatedAll = [...all];
+
+        if (existingIdx >= 0) {
+            recData.id = updatedAll[existingIdx].id;
+            recData.cloudSavedAt = updatedAll[existingIdx].cloudSavedAt;
+            recData.aiGeneratedPatterns = updatedAll[existingIdx].aiGeneratedPatterns;
+            recData.aiGeneratedText = updatedAll[existingIdx].aiGeneratedText;
+            recData.aiAnalysisResult = updatedAll[existingIdx].aiAnalysisResult;
+            recData.aiInput_condition = updatedAll[existingIdx].aiInput_condition;
+            recData.aiInput_scenery = updatedAll[existingIdx].aiInput_scenery;
+            recData.aiInput_tide = updatedAll[existingIdx].aiInput_tide;
+            recData.aiInput_activity = updatedAll[existingIdx].aiInput_activity;
+            recData.aiInput_episode = updatedAll[existingIdx].aiInput_episode;
+            recData.aiInput_size = updatedAll[existingIdx].aiInput_size;
+            recData.aiInput_topAngler = updatedAll[existingIdx].aiInput_topAngler;
+            recData.aiInput_patterns = updatedAll[existingIdx].aiInput_patterns;
+            updatedAll[existingIdx] = recData;
+        } else {
+            const hasData = (pTotal + sTotal > 0) || targetFish || point || waterTemp || waterDepth || tide || tideState || weather1 || windDir1 || sizeMin || sizeMax;
+            if (hasData) {
+                updatedAll.push(recData);
+                updatedAll.sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+        }
+
+        localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
+
+        // 現在画面に展開されている records の該当レコードも同期
+        setRecords(prev => {
+            const idx = prev.findIndex(r => r.date === date);
+            if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = recData;
+                return next;
+            }
+            return prev;
+        });
+    }, [
+        date, targetFish, sizeMin, sizeMax, point, waterTemp, waterDepth, tide, tideState,
+        highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
+        windSpeed1, windSpeed2, waveHeight1, waveHeight2, detailedMemo, portSeats, starboardSeats
+    ]);
 
             const existingIdx = prev.findIndex(r => r.date === date);
             let updated = [...prev];
@@ -1208,7 +1291,8 @@ const [records, setRecords] = React.useState([]);
     };
 
     const handleDeleteRecord = (recordId) => {
-        const target = records.find(r => r.id === recordId);
+        const all = getAllStoredRecords();
+        const target = all.find(r => r.id === recordId);
         
         if (target && target.date === date) {
             setPortSeatCount('');
@@ -1225,11 +1309,12 @@ const [records, setRecords] = React.useState([]);
             setDetailedMemo('');
         }
 
-        setRecords(prev => {
-            const updated = prev.filter(r => r.id !== recordId);
-            localStorage.setItem('fishing_records', JSON.stringify(updated));
-            return updated;
-        });
+        // ストレージ本体から削除
+        const updatedAll = all.filter(r => r.id !== recordId);
+        localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
+
+        // 現在表示中のレコード一覧からも削除
+        setRecords(prev => prev.filter(r => r.id !== recordId));
         setToastMessage('釣果記録を削除しました（画面表示もリセットされました）');
     };
 
@@ -1876,36 +1961,18 @@ const [records, setRecords] = React.useState([]);
         return list;
     }, []);
 
-    // 複数選択された期間（過去3ヶ月、複数月、複数年）での絞り込み
+    // 展開されている期間データ（records）の中から、検索キーワードで絞り込み・ソート
     const filteredRecords = React.useMemo(() => {
-        const now = new Date();
-        const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
+        if (!searchQuery) {
+            return [...records].sort((a, b) => {
+                if (sortOrder === 'top_desc') return (b.max || 0) - (a.max || 0);
+                if (sortOrder === 'top_asc') return (a.max || 0) - (b.max || 0);
+                return new Date(b.date) - new Date(a.date);
+            });
+        }
 
+        const q = searchQuery.toLowerCase();
         return records.filter(r => {
-            // キーワード検索がない時は、選択された期間条件で合否判定（OR条件）
-            if (!searchQuery && !selectedPeriods.includes('all')) {
-                const isMatch = selectedPeriods.some(p => {
-                    if (p === '3m') {
-                        const rDate = parseDate(r.date);
-                        const cutoff = new Date(now);
-                        cutoff.setDate(cutoff.getDate() - 90);
-                        return rDate >= cutoff;
-                    }
-                    if (p.startsWith('month_')) {
-                        const m = p.replace('month_', '');
-                        return r.date && r.date.startsWith(m);
-                    }
-                    if (p.startsWith('year_')) {
-                        const y = p.replace('year_', '');
-                        return r.date && r.date.startsWith(y);
-                    }
-                    return false;
-                });
-                if (!isMatch) return false;
-            }
-
-            if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase();
             const portNamesAndMemos = (r.port || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
             const starboardNamesAndMemos = (r.starboard || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
             
@@ -1920,7 +1987,7 @@ const [records, setRecords] = React.useState([]);
             if (sortOrder === 'top_asc') return (a.max || 0) - (b.max || 0);
             return new Date(b.date) - new Date(a.date);
         });
-    }, [records, searchQuery, sortOrder, selectedPeriods]);
+    }, [records, searchQuery, sortOrder]);
 
     return (
         <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative overflow-hidden transition-colors duration-300 bg-gray-100 dark:bg-slate-900">
