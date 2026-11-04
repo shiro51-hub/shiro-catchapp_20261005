@@ -952,9 +952,7 @@ const [records, setRecords] = React.useState([]);
     const [portSeats, setPortSeats] = React.useState(() => getInitialSeats(portSeatCount));
     const [starboardSeats, setStarboardSeats] = React.useState(() => getInitialSeats(starboardSeatCount));
 
-    // 表示期間のState（'1m': 1ヶ月, '2m': 2ヶ月, '3m': 3ヶ月, 'all': すべて, または 'YYYY-MM'）
-    const [historyPeriod, setHistoryPeriod] = React.useState('1m');
-    // 表示期間のState（初期値: '3m' 過去3ヶ月）
+        // 表示期間のState（初期値: '3m' 過去3ヶ月）
     const [historyPeriod, setHistoryPeriod] = React.useState('3m');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [sortOrder, setSortOrder] = React.useState('date_desc');
