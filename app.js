@@ -954,6 +954,8 @@ const [records, setRecords] = React.useState([]);
 
     // 表示期間のState（'1m': 1ヶ月, '2m': 2ヶ月, '3m': 3ヶ月, 'all': すべて, または 'YYYY-MM'）
     const [historyPeriod, setHistoryPeriod] = React.useState('1m');
+    // 表示期間のState（初期値: '3m' 過去3ヶ月）
+    const [historyPeriod, setHistoryPeriod] = React.useState('3m');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [sortOrder, setSortOrder] = React.useState('date_desc');
     const [expandedRecordId, setExpandedRecordId] = React.useState(null);
@@ -1861,29 +1863,46 @@ const [records, setRecords] = React.useState([]);
         return Array.from(monthSet).sort().reverse();
     }, [records]);
 
+    // 過去ログから存在する「年（YYYY）」を抽出
+    const availableYears = React.useMemo(() => {
+        const yearSet = new Set();
+        (records || []).forEach(r => {
+            if (r.date && r.date.length >= 4) {
+                yearSet.add(r.date.substring(0, 4));
+            }
+        });
+        return Array.from(yearSet).sort().reverse();
+    }, [records]);
+
+    // 過去ログから「月（YYYY-MM）」を抽出
+    const availableMonths = React.useMemo(() => {
+        const monthSet = new Set();
+        (records || []).forEach(r => {
+            if (r.date && r.date.length >= 7) {
+                monthSet.add(r.date.substring(0, 7));
+            }
+        });
+        return Array.from(monthSet).sort().reverse();
+    }, [records]);
+
     const filteredRecords = React.useMemo(() => {
         const now = new Date();
         const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
 
         return records.filter(r => {
-            // 検索キーワードがある場合は全期間を対象にする
+            // キーワード検索が入っていない時は期間で絞り込み
             if (!searchQuery && historyPeriod !== 'all') {
                 const rDate = parseDate(r.date);
-                if (historyPeriod === '1m') {
+                if (historyPeriod === '3m') {
                     const cutoff = new Date(now);
-                    cutoff.setDate(cutoff.getDate() - 30);
+                    cutoff.setDate(cutoff.getDate() - 90); // 過去3ヶ月（約90日）
                     if (rDate < cutoff) return false;
-                } else if (historyPeriod === '2m') {
-                    const cutoff = new Date(now);
-                    cutoff.setDate(cutoff.getDate() - 60);
-                    if (rDate < cutoff) return false;
-                } else if (historyPeriod === '3m') {
-                    const cutoff = new Date(now);
-                    cutoff.setDate(cutoff.getDate() - 90);
-                    if (rDate < cutoff) return false;
-                } else if (historyPeriod.includes('-')) {
-                    // 特定の "YYYY-MM" 指定
-                    if (!r.date || !r.date.startsWith(historyPeriod)) return false;
+                } else if (historyPeriod.startsWith('year_')) {
+                    const targetYear = historyPeriod.replace('year_', '');
+                    if (!r.date || !r.date.startsWith(targetYear)) return false;
+                } else if (historyPeriod.startsWith('month_')) {
+                    const targetMonth = historyPeriod.replace('month_', '');
+                    if (!r.date || !r.date.startsWith(targetMonth)) return false;
                 }
             }
 
@@ -2555,19 +2574,50 @@ const [records, setRecords] = React.useState([]);
                     </div>
                 )}
 
-                {activeTab === 'history' && (
+               {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
-                            {/* 検索バー */}
-                            <div className="relative">
-                                <input 
-                                    type="search" 
-                                    placeholder="日付・魚種・お名前・メモ・ポイントで検索" 
-                                    className="w-full border border-gray-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200" 
-                                    value={searchQuery} 
-                                    onChange={(e) => setSearchQuery(e.target.value)} 
-                                />
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
+                            {/* 検索バー ＆ 期間選択プルダウン（横並び配置） */}
+                            <div className="flex items-center gap-1.5">
+                                <div className="relative flex-1 min-w-0">
+                                    <input 
+                                        type="search" 
+                                        placeholder="日付・魚種・名前・メモで検索" 
+                                        className="w-full border border-gray-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs sm:text-sm font-bold bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200" 
+                                        value={searchQuery} 
+                                        onChange={(e) => setSearchQuery(e.target.value)} 
+                                    />
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
+                                </div>
+
+                                {/* 期間選択プルダウン（標準: 過去3ヶ月） */}
+                                <div className="relative shrink-0">
+                                    <select
+                                        value={historyPeriod}
+                                        onChange={(e) => setHistoryPeriod(e.target.value)}
+                                        className="bg-white dark:bg-slate-800 text-sky-800 dark:text-sky-300 text-xs font-black py-2 px-2.5 rounded-xl border border-sky-300 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+                                    >
+                                        <option value="3m">過去3ヶ月</option>
+
+                                        {availableYears.length > 0 && (
+                                            <optgroup label="── 年で指定 ──">
+                                                {availableYears.map(y => (
+                                                    <option key={`y-${y}`} value={`year_${y}`}>{y}年 すべて</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+
+                                        {availableMonths.length > 0 && (
+                                            <optgroup label="── 月で指定 ──">
+                                                {availableMonths.map(ym => (
+                                                    <option key={`m-${ym}`} value={`month_${ym}`}>{ym.replace('-', '年')}月</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+
+                                        <option value="all">全期間</option>
+                                    </select>
+                                </div>
                             </div>
 
                             {/* 期間選択バー（1ヶ月・2ヶ月・3ヶ月・月別・すべて） */}
