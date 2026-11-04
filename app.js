@@ -2577,31 +2577,37 @@ const [records, setRecords] = React.useState([]);
                                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
                                 </div>
 
-                                {/* 期間選択プルダウン（標準: 過去3ヶ月） */}
+                                {/* 期間選択プルダウン（1.標準 ➔ 2.月指定 ➔ 3.年指定 ➔ 4.全期間） */}
                                 <div className="relative shrink-0">
                                     <select
                                         value={historyPeriod}
                                         onChange={(e) => setHistoryPeriod(e.target.value)}
                                         className="bg-white dark:bg-slate-800 text-sky-800 dark:text-sky-300 text-xs font-black py-2 px-2.5 rounded-xl border border-sky-300 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
                                     >
-                                        <option value="3m">過去3ヶ月</option>
+                                        {/* 1. 標準 */}
+                                        <option value="3m">過去3ヶ月（標準）</option>
 
-                                        {availableYears.length > 0 && (
-                                            <optgroup label="── 年で指定 ──">
-                                                {availableYears.map(y => (
-                                                    <option key={`y-${y}`} value={`year_${y}`}>{y}年 すべて</option>
-                                                ))}
-                                            </optgroup>
-                                        )}
-
+                                        {/* 2. 月で検索（過去12ヶ月） */}
                                         {availableMonths.length > 0 && (
-                                            <optgroup label="── 月で指定 ──">
+                                            <optgroup label="── 月で指定（過去12ヶ月） ──">
                                                 {availableMonths.map(ym => (
                                                     <option key={`m-${ym}`} value={`month_${ym}`}>{ym.replace('-', '年')}月</option>
                                                 ))}
                                             </optgroup>
                                         )}
 
+                                        {/* 3. 年で検索（過去10年スパン ＆ 各単年） */}
+                                        <optgroup label="── 年で指定（過去10年） ──">
+                                            <option value="1y_span">過去1年間</option>
+                                            <option value="3y_span">過去3年間</option>
+                                            <option value="5y_span">過去5年間</option>
+                                            <option value="10y_span">過去10年間</option>
+                                            {availableYears.map(y => (
+                                                <option key={`y-${y}`} value={`year_${y}`}>{y}年</option>
+                                            ))}
+                                        </optgroup>
+
+                                        {/* 4. 全期間 */}
                                         <option value="all">全期間</option>
                                     </select>
                                 </div>
