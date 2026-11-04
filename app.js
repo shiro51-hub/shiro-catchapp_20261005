@@ -864,7 +864,7 @@ React.useEffect(() => {
         setTheme(nextTheme);
     }, []);
 
-    // 起動時のみ保存値と同期
+    // 起動時の初期テーマ同期
     React.useEffect(() => {
         const root = document.documentElement;
         const saved = localStorage.getItem('theme');
@@ -874,6 +874,7 @@ React.useEffect(() => {
             root.classList.remove('dark');
         }
     }, []);
+
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
     const [toastMessage, setToastMessage] = React.useState('');
@@ -881,6 +882,16 @@ React.useEffect(() => {
     // Googleドライブ上書き保存用のステート
     const [gasBackupUrl, setGasBackupUrl] = React.useState(() => localStorage.getItem('fishing_gas_backup_url') || '');
     const [cloudSavingId, setCloudSavingId] = React.useState(null);
+
+    // 全レコードを取得する補助関数（メモリに常駐させずストレージから直接安全に取得）
+    const getAllStoredRecords = () => {
+        try {
+            const saved = localStorage.getItem('fishing_records');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    };
 
     const handleSaveRecordToCloud = async (record) => {
         const targetUrl = (gasBackupUrl || '').trim();
@@ -893,20 +904,12 @@ React.useEffect(() => {
         setToastMessage(`Googleドライブへ【${record.date}】の記録を保存中...`);
 
         try {
-            let currentRecords = records;
-            const savedRaw = localStorage.getItem('fishing_records');
-            if (savedRaw) {
-                try {
-                    const parsed = JSON.parse(savedRaw);
-                    if (Array.isArray(parsed)) currentRecords = parsed;
-                } catch (e) {}
-            }
-
+            const allRecords = getAllStoredRecords();
             const exportPayload = {
                 app: "yamashitamaru",
                 version: "2.0",
                 exportedAt: new Date().toISOString(),
-                records: currentRecords || []
+                records: allRecords || []
             };
 
             await fetch(targetUrl, {
@@ -916,16 +919,15 @@ React.useEffect(() => {
                 body: JSON.stringify(exportPayload)
             });
 
-            // 保存完了時の日時を生成（MM/DD HH:mm）
             const now = new Date();
             const timeStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-            // 対象レコードに同期日時を刻んで保存
-            setRecords(prev => {
-                const next = prev.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item);
-                localStorage.setItem('fishing_records', JSON.stringify(next));
-                return next;
-            });
+            // ストレージ本体を更新
+            const updatedAll = allRecords.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item);
+            localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
+
+            // 表示中の records も同期
+            setRecords(prev => prev.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item));
 
             setToastMessage('Googleドライブに最新データを上書き保存しました！');
         } catch (err) {
@@ -966,7 +968,7 @@ React.useEffect(() => {
         localStorage.setItem('fishing_moon_age', moonAge || '');
     }, [moonAge]);
     
-const [records, setRecords] = React.useState([]);
+    const [records, setRecords] = React.useState([]);
     const [portSeatCount, setPortSeatCount] = React.useState(() => localStorage.getItem('port_seat_count') || '');
     const [starboardSeatCount, setStarboardSeatCount] = React.useState(() => localStorage.getItem('starboard_seat_count') || '');
 
@@ -978,7 +980,7 @@ const [records, setRecords] = React.useState([]);
     const [portSeats, setPortSeats] = React.useState(() => getInitialSeats(portSeatCount));
     const [starboardSeats, setStarboardSeats] = React.useState(() => getInitialSeats(starboardSeatCount));
 
-        // 表示期間のState（初期値: '3m' 過去3ヶ月、複数選択用配列、モーダル開閉フラグ）
+    // 表示期間のState（初期値: '3m' 過去3ヶ月、複数選択用配列、モーダル開閉フラグ）
     const [historyPeriod, setHistoryPeriod] = React.useState('3m');
     const [selectedPeriods, setSelectedPeriods] = React.useState(['3m']);
     const [isPeriodModalOpen, setIsPeriodModalOpen] = React.useState(false);
@@ -1066,16 +1068,6 @@ const [records, setRecords] = React.useState([]);
             { id: 12, label: '【渋い日・船長の意気込み＆感謝】' }
         ]}
     ];
-
-    // 全レコードを取得する補助関数（メモリに常駐させずストレージから直接安全に取得）
-    const getAllStoredRecords = () => {
-        try {
-            const saved = localStorage.getItem('fishing_records');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    };
 
     // 指定期間のレコードのみをストレージから取り出してメモリ（records）に展開する処理
     const loadRecordsForPeriod = React.useCallback((periods) => {
@@ -2087,7 +2079,8 @@ const [records, setRecords] = React.useState([]);
                 setWaveHeight1={setWaveHeight1}
                 waveHeight2={waveHeight2}
                 setWaveHeight2={setWaveHeight2}
-                theme={theme} setTheme={handleSetTheme}
+                theme={theme}
+                setTheme={handleSetTheme}
                 targetFish={targetFish}
                 setTargetFish={setTargetFish}
                 date={date}
@@ -2101,29 +2094,6 @@ const [records, setRecords] = React.useState([]);
                 setSelectedAiModel={setSelectedAiModel}
                 gasBackupUrl={gasBackupUrl}
                 setGasBackupUrl={setGasBackupUrl}
-            />
-
-            <MemoModalWithTags
-                showMemoModal={showMemoModal}
-                setShowMemoModal={setShowMemoModal}
-                tempMemo={tempMemo}
-                setTempMemo={setTempMemo}
-                onAutoSave={handleAutoSaveMemo}
-            />
-
-            <AiInputWizardModal
-                showAiInputModal={showAiInputModal}
-                setShowAiInputModal={setShowAiInputModal}
-                aiCurrentStep={aiCurrentStep}
-                setAiCurrentStep={setAiCurrentStep}
-                wizardSteps={wizardSteps}
-                aiInputData={aiInputData}
-                setAiInputData={setAiInputData}
-                targetRecordForAi={targetRecordForAi}
-                updateAiInputForRecord={updateAiInputForRecord}
-                userApiKey={userApiKey}
-                setUserApiKey={setUserApiKey}
-                handleAiGenerate={handleAiGenerate}
             />
 
             <AiResultModal
