@@ -952,6 +952,8 @@ const [records, setRecords] = React.useState([]);
     const [portSeats, setPortSeats] = React.useState(() => getInitialSeats(portSeatCount));
     const [starboardSeats, setStarboardSeats] = React.useState(() => getInitialSeats(starboardSeatCount));
 
+    // 表示期間のState（'1m': 1ヶ月, '2m': 2ヶ月, '3m': 3ヶ月, 'all': すべて, または 'YYYY-MM'）
+    const [historyPeriod, setHistoryPeriod] = React.useState('1m');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [sortOrder, setSortOrder] = React.useState('date_desc');
     const [expandedRecordId, setExpandedRecordId] = React.useState(null);
@@ -1848,8 +1850,43 @@ const [records, setRecords] = React.useState([]);
         document.body.removeChild(ta);
     };
 
+    // 過去ログから存在する「年-月」リストを抽出
+    const availableMonths = React.useMemo(() => {
+        const monthSet = new Set();
+        (records || []).forEach(r => {
+            if (r.date && r.date.length >= 7) {
+                monthSet.add(r.date.substring(0, 7)); // "YYYY-MM"
+            }
+        });
+        return Array.from(monthSet).sort().reverse();
+    }, [records]);
+
     const filteredRecords = React.useMemo(() => {
+        const now = new Date();
+        const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
+
         return records.filter(r => {
+            // 検索キーワードがある場合は全期間を対象にする
+            if (!searchQuery && historyPeriod !== 'all') {
+                const rDate = parseDate(r.date);
+                if (historyPeriod === '1m') {
+                    const cutoff = new Date(now);
+                    cutoff.setDate(cutoff.getDate() - 30);
+                    if (rDate < cutoff) return false;
+                } else if (historyPeriod === '2m') {
+                    const cutoff = new Date(now);
+                    cutoff.setDate(cutoff.getDate() - 60);
+                    if (rDate < cutoff) return false;
+                } else if (historyPeriod === '3m') {
+                    const cutoff = new Date(now);
+                    cutoff.setDate(cutoff.getDate() - 90);
+                    if (rDate < cutoff) return false;
+                } else if (historyPeriod.includes('-')) {
+                    // 特定の "YYYY-MM" 指定
+                    if (!r.date || !r.date.startsWith(historyPeriod)) return false;
+                }
+            }
+
             if (!searchQuery) return true;
             const q = searchQuery.toLowerCase();
             const portNamesAndMemos = (r.port || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
@@ -1866,7 +1903,7 @@ const [records, setRecords] = React.useState([]);
             if (sortOrder === 'top_asc') return (a.max || 0) - (b.max || 0);
             return new Date(b.date) - new Date(a.date);
         });
-    }, [records, searchQuery, sortOrder]);
+    }, [records, searchQuery, sortOrder, historyPeriod]);
 
     return (
         <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative overflow-hidden transition-colors duration-300 bg-gray-100 dark:bg-slate-900">
@@ -2521,6 +2558,7 @@ const [records, setRecords] = React.useState([]);
                 {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
+                            {/* 検索バー */}
                             <div className="relative">
                                 <input 
                                     type="search" 
@@ -2531,22 +2569,73 @@ const [records, setRecords] = React.useState([]);
                                 />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
                             </div>
+
+                            {/* 期間選択バー（1ヶ月・2ヶ月・3ヶ月・月別・すべて） */}
+                            {!searchQuery && (
+                                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 select-none">
+                                    {[
+                                        { id: '1m', label: '1ヶ月' },
+                                        { id: '2m', label: '2ヶ月' },
+                                        { id: '3m', label: '3ヶ月' },
+                                        { id: 'all', label: 'すべて' }
+                                    ].map(btn => (
+                                        <button
+                                            key={btn.id}
+                                            type="button"
+                                            onClick={() => setHistoryPeriod(btn.id)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black shrink-0 transition-all ${
+                                                historyPeriod === btn.id
+                                                    ? 'bg-sky-600 text-white shadow-xs'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {btn.label}
+                                        </button>
+                                    ))}
+
+                                    {/* 過去月セレクトボックス */}
+                                    {availableMonths.length > 0 && (
+                                        <select
+                                            value={historyPeriod.includes('-') ? historyPeriod : ''}
+                                            onChange={(e) => setHistoryPeriod(e.target.value || '1m')}
+                                            className={`px-2 py-1.5 rounded-lg text-xs font-black shrink-0 border transition-all ${
+                                                historyPeriod.includes('-')
+                                                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                                            }`}
+                                        >
+                                            <option value="" className="text-gray-800 dark:text-slate-100">📅 月を指定...</option>
+                                            {availableMonths.map(ym => (
+                                                <option key={ym} value={ym} className="text-gray-800 dark:text-slate-100">
+                                                    {ym.replace('-', '年')}月
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+
+                                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-auto shrink-0 pr-1">
+                                        {filteredRecords.length}件
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* 並び順切り替えバー */}
                             <div className="flex bg-gray-200 dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-black shadow-inner">
                                 <button 
                                     onClick={() => setSortOrder('date_desc')} 
-                                    className={`flex-1 py-2 rounded-lg transition-all ${sortOrder === 'date_desc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
+                                    className={`flex-1 py-1.5 rounded-lg transition-all ${sortOrder === 'date_desc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
                                 >
                                     日付順
                                 </button>
                                 <button 
                                     onClick={() => setSortOrder('top_desc')} 
-                                    className={`flex-1 py-2 rounded-lg transition-all ${sortOrder === 'top_desc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
+                                    className={`flex-1 py-1.5 rounded-lg transition-all ${sortOrder === 'top_desc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
                                 >
                                     釣果が多い順
                                 </button>
                                 <button 
                                     onClick={() => setSortOrder('top_asc')} 
-                                    className={`flex-1 py-2 rounded-lg transition-all ${sortOrder === 'top_asc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
+                                    className={`flex-1 py-1.5 rounded-lg transition-all ${sortOrder === 'top_asc' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 active:bg-gray-100'}`}
                                 >
                                     釣果が少ない順
                                 </button>
