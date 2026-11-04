@@ -2570,27 +2570,28 @@ const [records, setRecords] = React.useState([]);
                {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
-                            {/* 検索バー ＆ 期間選択プルダウン（横並び配置） */}
-                            <div className="flex items-center gap-1.5">
+                            {/* 検索バー ＆ 期間選択プルダウン（表示欄ゆったり拡大・枠線くっきり強調・文字拡大版） */}
+                            <div className="flex items-center gap-2">
+                                {/* 検索入力欄（枠線を太めスカイブルーにして目立たせ、上下をpy-2.5にゆったり拡大） */}
                                 <div className="relative flex-1 min-w-0">
                                     <input 
                                         type="search" 
                                         placeholder="日付・魚種・名前・メモで検索" 
-                                        className="w-full border border-gray-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs sm:text-sm font-bold bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200" 
+                                        className="w-full border-2 border-sky-400 dark:border-slate-500 rounded-xl pl-9 pr-3 py-2.5 text-sm sm:text-base font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:focus:ring-sky-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-xs sm:placeholder:text-sm" 
                                         value={searchQuery} 
                                         onChange={(e) => setSearchQuery(e.target.value)} 
                                     />
-                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 text-base pointer-events-none font-bold">🔍</span>
                                 </div>
 
-                                {/* 期間選択プルダウン（1.標準 ➔ 2.過去12ヶ月 ➔ 3.過去10年 ➔ 4.全期間） */}
+                                {/* 期間選択プルダウン（高さをpy-2.5に合わせ、文字もtext-smへ拡大） */}
                                 <div className="relative shrink-0">
                                     <select
                                         value={historyPeriod}
                                         onChange={(e) => setHistoryPeriod(e.target.value)}
-                                        className="bg-white dark:bg-slate-800 text-sky-800 dark:text-sky-300 text-xs font-black py-2 px-2.5 rounded-xl border border-sky-300 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
+                                        className="bg-white dark:bg-slate-800 text-sky-900 dark:text-sky-200 text-sm font-black py-2.5 px-2.5 rounded-xl border-2 border-sky-400 dark:border-slate-500 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                                     >
-                                       {/* 1. 基本表示 */}
+                                        {/* 1. 基本表示 */}
                                         <option value="3m">過去3ヶ月</option>
 
                                         {/* 2. 月で検索（カレンダー基準の過去12ヶ月分） */}
