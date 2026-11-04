@@ -1199,33 +1199,7 @@ const [records, setRecords] = React.useState([]);
         windSpeed1, windSpeed2, waveHeight1, waveHeight2, detailedMemo, portSeats, starboardSeats
     ]);
 
-            const existingIdx = prev.findIndex(r => r.date === date);
-            let updated = [...prev];
-            if (existingIdx >= 0) {
-                recData.id = updated[existingIdx].id;
-                recData.cloudSavedAt = updated[existingIdx].cloudSavedAt; // ★クラウド保存日時を消去せずに引き継ぐ
-                recData.aiGeneratedPatterns = updated[existingIdx].aiGeneratedPatterns;
-                recData.aiGeneratedText = updated[existingIdx].aiGeneratedText;
-                recData.aiAnalysisResult = updated[existingIdx].aiAnalysisResult;
-                recData.aiInput_condition = updated[existingIdx].aiInput_condition;
-                recData.aiInput_scenery = updated[existingIdx].aiInput_scenery;
-                recData.aiInput_tide = updated[existingIdx].aiInput_tide;
-                recData.aiInput_activity = updated[existingIdx].aiInput_activity;
-                recData.aiInput_episode = updated[existingIdx].aiInput_episode;
-                recData.aiInput_size = updated[existingIdx].aiInput_size;
-                recData.aiInput_topAngler = updated[existingIdx].aiInput_topAngler;
-                recData.aiInput_patterns = updated[existingIdx].aiInput_patterns;
-                updated[existingIdx] = recData;
-            } else {
-                const hasData = (pTotal + sTotal > 0) || targetFish || point || waterTemp || waterDepth || tide || tideState || weather1 || windDir1 || sizeMin || sizeMax;
-                if (hasData) {
-                    updated.push(recData);
-                    updated.sort((a, b) => new Date(b.date) - new Date(a.date));
-                }
-            }
-            localStorage.setItem('fishing_records', JSON.stringify(updated));
-            return updated;
-        });
+            
     }, [
         date, targetFish, sizeMin, sizeMax, point, waterTemp, waterDepth, tide, tideState,
         highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
