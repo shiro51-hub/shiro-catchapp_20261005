@@ -20,7 +20,31 @@ const loadHtml2Canvas = () => {
 const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 );
+// 検索ワードを安全に分割し、一致した部分のみ色付けする軽量パーツ
+const HighlightText = ({ text = '', query = '' }) => {
+    if (!query || !query.trim() || !text) return <>{text}</>;
 
+    const safeQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${safeQuery})`, 'gi');
+    const parts = String(text).split(regex);
+
+    return (
+        <>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <mark
+                        key={i}
+                        className="bg-yellow-200 text-slate-900 dark:bg-amber-400/40 dark:text-amber-100 font-black px-0.5 rounded"
+                    >
+                        {part}
+                    </mark>
+                ) : (
+                    part
+                )
+            )}
+        </>
+    );
+};
 // デジタル釣果ボードモーダル
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
@@ -2849,11 +2873,13 @@ React.useEffect(() => {
                                         onClick={() => setExpandedRecordId(isExpanded ? null : r.id)}
                                     >
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100">{r.date} {getDayOfWeek(r.date)}</span>
+                                            <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100">
+                                                <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
+                                            </span>
                                             <div className="flex items-center gap-1.5">
                                                 {r.targetFish ? (
                                                     <span className="text-sm bg-sky-200/30 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200 px-3 py-1 rounded-lg font-black select-none border border-sky-300/80 dark:border-sky-700 shadow-2xs">
-                                                        {r.targetFish}
+                                                        <HighlightText text={r.targetFish} query={searchQuery} />
                                                     </span>
                                                 ) : (
                                                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-black border border-gray-200">釣果</span>
@@ -2866,12 +2892,16 @@ React.useEffect(() => {
 
                                         {(r.point || r.waterDepth || r.waterTemp || r.tide || r.tideState || r.weather1 || r.windDir1 || r.windSpeed1) && (
                                             <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">
-                                                {r.point && <span className="font-black text-slate-800 dark:text-slate-100">{r.point}</span>}
+                                                {r.point && (
+                                                    <span className="font-black text-slate-800 dark:text-slate-100">
+                                                        <HighlightText text={r.point} query={searchQuery} />
+                                                    </span>
+                                                )}
                                                 {r.waterDepth && <span>{r.waterDepth}m</span>}
                                                 {r.waterTemp && <span>{r.waterTemp}℃</span>}
                                                 {r.tide && <span>{r.tide}</span>}
                                                 {r.tideState && <span>{r.tideState}</span>}
-                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${weather2}` : ''}</span>}
+                                                {r.weather1 && <span>{r.weather1}{r.weather2 && r.weather1 !== r.weather2 ? `→${r.weather2}` : ''}</span>}
                                                 {(() => {
                                                     const wd1 = r.windDir1 || r.windDir || '';
                                                     const ws1 = r.windSpeed1 || r.windSpeed || '';
@@ -2904,7 +2934,11 @@ React.useEffect(() => {
                                             <div className="flex items-baseline text-slate-800 dark:text-slate-100 shrink-0">
                                                 <IconTrophy className="w-4 h-4 mr-0.5 text-amber-500 self-center" />
                                                 <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">竿頭:</span>
-                                                <span className="text-base sm:text-lg font-black">{r.topAnglerName || '-'}</span>
+                                                <span className="text-base sm:text-lg font-black">
+                                                    {r.topAnglerName ? (
+                                                        <HighlightText text={r.topAnglerName} query={searchQuery} />
+                                                    ) : '-'}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -2925,8 +2959,14 @@ React.useEffect(() => {
                                                                 <div key={`p-detail-${idx}`} className={`flex justify-between items-baseline py-0.5 border-b border-gray-50 dark:border-slate-700/50 last:border-0 ${isTop ? 'font-black text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-slate-300'}`}>
                                                                     <span className="truncate pr-1 text-sm">
                                                                         <span className="font-bold mr-1 text-gray-400">{s.id}.</span>
-                                                                        <span>{s.name || '-'}</span>
-                                                                        {s.memo && <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">({s.memo})</span>}
+                                                                        <span>
+                                                                            <HighlightText text={s.name || '-'} query={searchQuery} />
+                                                                        </span>
+                                                                        {s.memo && (
+                                                                            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">
+                                                                                (<HighlightText text={s.memo} query={searchQuery} />)
+                                                                            </span>
+                                                                        )}
                                                                     </span>
                                                                     <span className="shrink-0 font-black flex items-center text-sm">
                                                                         {isTop && <span className="text-xs mr-0.5">👑</span>}
@@ -2951,8 +2991,14 @@ React.useEffect(() => {
                                                                 <div key={`s-detail-${idx}`} className={`flex justify-between items-baseline py-0.5 border-b border-gray-50 dark:border-slate-700/50 last:border-0 ${isTop ? 'font-black text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-slate-300'}`}>
                                                                     <span className="truncate pr-1 text-sm">
                                                                         <span className="font-bold mr-1 text-gray-400">{s.id}.</span>
-                                                                        <span>{s.name || '-'}</span>
-                                                                        {s.memo && <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">({s.memo})</span>}
+                                                                        <span>
+                                                                            <HighlightText text={s.name || '-'} query={searchQuery} />
+                                                                        </span>
+                                                                        {s.memo && (
+                                                                            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">
+                                                                                (<HighlightText text={s.memo} query={searchQuery} />)
+                                                                            </span>
+                                                                        )}
                                                                     </span>
                                                                     <span className="shrink-0 font-black flex items-center text-sm">
                                                                         {isTop && <span className="text-xs mr-0.5">👑</span>}
