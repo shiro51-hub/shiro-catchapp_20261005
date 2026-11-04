@@ -952,8 +952,10 @@ const [records, setRecords] = React.useState([]);
     const [portSeats, setPortSeats] = React.useState(() => getInitialSeats(portSeatCount));
     const [starboardSeats, setStarboardSeats] = React.useState(() => getInitialSeats(starboardSeatCount));
 
-        // 表示期間のState（初期値: '3m' 過去3ヶ月）
+        // 表示期間のState（初期値: '3m' 過去3ヶ月、複数選択用配列、モーダル開閉フラグ）
     const [historyPeriod, setHistoryPeriod] = React.useState('3m');
+    const [selectedPeriods, setSelectedPeriods] = React.useState(['3m']);
+    const [isPeriodModalOpen, setIsPeriodModalOpen] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [sortOrder, setSortOrder] = React.useState('date_desc');
     const [expandedRecordId, setExpandedRecordId] = React.useState(null);
@@ -1850,7 +1852,7 @@ const [records, setRecords] = React.useState([]);
         document.body.removeChild(ta);
     };
 
-   // 過去12ヶ月分の月（YYYY-MM）リストをカレンダー基準で12個生成
+  // 過去12ヶ月分の月（YYYY-MM）リストを生成
     const past12MonthsList = React.useMemo(() => {
         const list = [];
         const now = new Date();
@@ -1863,7 +1865,7 @@ const [records, setRecords] = React.useState([]);
         return list;
     }, []);
 
-    // 今年を含めた過去10年分の西暦リストを10個生成
+    // 今年を含めた過去10年分の西暦リストを生成
     const past10YearsList = React.useMemo(() => {
         const list = [];
         const currentYear = new Date().getFullYear();
@@ -1874,29 +1876,32 @@ const [records, setRecords] = React.useState([]);
         return list;
     }, []);
 
-    // 過去3ヶ月（標準: 90日）・指定月・指定年で絞り込み
+    // 複数選択された期間（過去3ヶ月、複数月、複数年）での絞り込み
     const filteredRecords = React.useMemo(() => {
         const now = new Date();
         const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
 
         return records.filter(r => {
-            // 検索キーワードがない時は期間指定で絞り込み
-            if (!searchQuery && historyPeriod !== 'all') {
-                if (historyPeriod === '3m') {
-                    // 標準：直近90日以内
-                    const rDate = parseDate(r.date);
-                    const cutoff = new Date(now);
-                    cutoff.setDate(cutoff.getDate() - 90);
-                    if (rDate < cutoff) return false;
-                } else if (historyPeriod.startsWith('month_')) {
-                    // 月で検索（YYYY-MM）
-                    const targetMonth = historyPeriod.replace('month_', '');
-                    if (!r.date || !r.date.startsWith(targetMonth)) return false;
-                } else if (historyPeriod.startsWith('year_')) {
-                    // 年で検索（YYYY）
-                    const targetYear = historyPeriod.replace('year_', '');
-                    if (!r.date || !r.date.startsWith(targetYear)) return false;
-                }
+            // キーワード検索がない時は、選択された期間条件で合否判定（OR条件）
+            if (!searchQuery && !selectedPeriods.includes('all')) {
+                const isMatch = selectedPeriods.some(p => {
+                    if (p === '3m') {
+                        const rDate = parseDate(r.date);
+                        const cutoff = new Date(now);
+                        cutoff.setDate(cutoff.getDate() - 90);
+                        return rDate >= cutoff;
+                    }
+                    if (p.startsWith('month_')) {
+                        const m = p.replace('month_', '');
+                        return r.date && r.date.startsWith(m);
+                    }
+                    if (p.startsWith('year_')) {
+                        const y = p.replace('year_', '');
+                        return r.date && r.date.startsWith(y);
+                    }
+                    return false;
+                });
+                if (!isMatch) return false;
             }
 
             if (!searchQuery) return true;
@@ -1915,7 +1920,7 @@ const [records, setRecords] = React.useState([]);
             if (sortOrder === 'top_asc') return (a.max || 0) - (b.max || 0);
             return new Date(b.date) - new Date(a.date);
         });
-    }, [records, searchQuery, sortOrder, historyPeriod]);
+    }, [records, searchQuery, sortOrder, selectedPeriods]);
 
     return (
         <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative overflow-hidden transition-colors duration-300 bg-gray-100 dark:bg-slate-900">
@@ -2570,53 +2575,179 @@ const [records, setRecords] = React.useState([]);
                {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
-                            {/* 検索バー ＆ 期間選択プルダウン（表示欄ゆったり拡大・枠線くっきり強調・文字拡大版） */}
+                            {/* 検索バー ＆ 期間選択ポップアップ起動ボタン */}
                             <div className="flex items-center gap-2">
-                                {/* 検索入力欄（枠線を太めスカイブルーにして目立たせ、上下をpy-2.5にゆったり拡大） */}
+                                {/* 検索入力欄（枠線太め、上下ゆったり、文字切れ防止） */}
                                 <div className="relative flex-1 min-w-0">
                                     <input 
                                         type="search" 
                                         placeholder="日付・魚種・名前・メモで検索" 
-                                        className="w-full border-2 border-sky-400 dark:border-slate-500 rounded-xl pl-9 pr-3 py-2.5 text-sm sm:text-base font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:focus:ring-sky-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-xs sm:placeholder:text-sm" 
+                                        className="w-full border-2 border-sky-400 dark:border-slate-500 rounded-xl pl-9 pr-2.5 py-2.5 text-sm sm:text-base font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:focus:ring-sky-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:text-[11px] sm:placeholder:text-xs" 
                                         value={searchQuery} 
                                         onChange={(e) => setSearchQuery(e.target.value)} 
                                     />
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 text-base pointer-events-none font-bold">🔍</span>
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 text-base pointer-events-none font-bold">🔍</span>
                                 </div>
 
-                                {/* 期間選択プルダウン（高さをpy-2.5に合わせ、文字もtext-smへ拡大） */}
-                                <div className="relative shrink-0">
-                                    <select
-                                        value={historyPeriod}
-                                        onChange={(e) => setHistoryPeriod(e.target.value)}
-                                        className="bg-white dark:bg-slate-800 text-sky-900 dark:text-sky-200 text-sm font-black py-2.5 px-2.5 rounded-xl border-2 border-sky-400 dark:border-slate-500 shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
-                                    >
-                                        {/* 1. 基本表示 */}
-                                        <option value="3m">過去3ヶ月</option>
-
-                                        {/* 2. 月で検索（カレンダー基準の過去12ヶ月分） */}
-                                        <optgroup label="── 月で指定（過去12ヶ月） ──">
-                                            {past12MonthsList.map(item => (
-                                                <option key={`m-${item.val}`} value={`month_${item.val}`}>
-                                                    {item.label}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-
-                                        {/* 3. 年で検索（今年を含めた過去10年分の西暦） */}
-                                        <optgroup label="── 年で指定（過去10年） ──">
-                                            {past10YearsList.map(item => (
-                                                <option key={`y-${item.val}`} value={`year_${item.val}`}>
-                                                    {item.label}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-
-                                        {/* 4. 全期間 */}
-                                        <option value="all">全期間</option>
-                                    </select>
-                                </div>
+                                {/* 期間選択ボタン（タップでポップアップ起動） */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPeriodModalOpen(true)}
+                                    className="shrink-0 bg-white dark:bg-slate-800 text-sky-900 dark:text-sky-200 text-sm font-black py-2.5 px-3 rounded-xl border-2 border-sky-400 dark:border-slate-500 shadow-xs flex items-center gap-1 active:scale-95 transition-all"
+                                >
+                                    <span>📅</span>
+                                    <span>
+                                        {selectedPeriods.includes('all') 
+                                            ? '全期間' 
+                                            : selectedPeriods.length === 1 && selectedPeriods[0] === '3m'
+                                            ? '過去3ヶ月'
+                                            : `${selectedPeriods.length}件選択中`}
+                                    </span>
+                                    <span className="text-xs text-sky-600 dark:text-sky-400">▼</span>
+                                </button>
                             </div>
+
+                            {/* 案C：複数月・年が選べる期間選択モーダル */}
+                            {isPeriodModalOpen && (
+                                <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 animate-[fadeIn_0.15s_ease-out]" onClick={() => setIsPeriodModalOpen(false)}>
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-sky-400 dark:border-slate-600 w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                        {/* モーダルヘッダー */}
+                                        <div className="p-3.5 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-sky-50/80 dark:bg-slate-900/60 shrink-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-lg">📅</span>
+                                                <h3 className="font-black text-slate-800 dark:text-slate-100 text-base">表示期間の指定（複数選択可）</h3>
+                                            </div>
+                                            <button 
+                                                onClick={() => setIsPeriodModalOpen(false)}
+                                                className="w-7 h-7 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        {/* クイック切替バー */}
+                                        <div className="p-2.5 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700 flex gap-1.5 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPeriods(['3m'])}
+                                                className={`flex-1 py-1.5 rounded-lg text-xs font-black border transition-all ${
+                                                    selectedPeriods.length === 1 && selectedPeriods[0] === '3m'
+                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600'
+                                                }`}
+                                            >
+                                                過去3ヶ月
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPeriods(['all'])}
+                                                className={`flex-1 py-1.5 rounded-lg text-xs font-black border transition-all ${
+                                                    selectedPeriods.includes('all')
+                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600'
+                                                }`}
+                                            >
+                                                全期間
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPeriods([])}
+                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900"
+                                            >
+                                                クリア
+                                            </button>
+                                        </div>
+
+                                        {/* 選択ボタンリスト（スクロール領域） */}
+                                        <div className="p-3 overflow-y-auto space-y-4 no-scrollbar">
+                                            {/* 月で選択（過去12ヶ月） */}
+                                            <div>
+                                                <span className="text-xs font-black text-slate-500 dark:text-slate-400 mb-2 block">
+                                                    🌙 月で指定（過去12ヶ月）
+                                                </span>
+                                                <div className="grid grid-cols-3 gap-1.5">
+                                                    {past12MonthsList.map(item => {
+                                                        const pKey = `month_${item.val}`;
+                                                        const isSelected = selectedPeriods.includes(pKey);
+                                                        return (
+                                                            <button
+                                                                key={pKey}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedPeriods(prev => {
+                                                                        const filtered = prev.filter(p => p !== 'all' && p !== '3m');
+                                                                        if (isSelected) {
+                                                                            const next = filtered.filter(p => p !== pKey);
+                                                                            return next.length === 0 ? ['3m'] : next;
+                                                                        } else {
+                                                                            return [...filtered, pKey];
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`py-2 px-1 rounded-xl text-xs font-black border transition-all ${
+                                                                    isSelected
+                                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                                                                        : 'bg-gray-50 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-600'
+                                                                }`}
+                                                            >
+                                                                {item.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* 年で選択（過去10年） */}
+                                            <div>
+                                                <span className="text-xs font-black text-slate-500 dark:text-slate-400 mb-2 block">
+                                                    ⚓ 年で指定（過去10年）
+                                                </span>
+                                                <div className="grid grid-cols-3 gap-1.5">
+                                                    {past10YearsList.map(item => {
+                                                        const pKey = `year_${item.val}`;
+                                                        const isSelected = selectedPeriods.includes(pKey);
+                                                        return (
+                                                            <button
+                                                                key={pKey}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedPeriods(prev => {
+                                                                        const filtered = prev.filter(p => p !== 'all' && p !== '3m');
+                                                                        if (isSelected) {
+                                                                            const next = filtered.filter(p => p !== pKey);
+                                                                            return next.length === 0 ? ['3m'] : next;
+                                                                        } else {
+                                                                            return [...filtered, pKey];
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`py-2 px-1 rounded-xl text-xs font-black border transition-all ${
+                                                                    isSelected
+                                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                                                                        : 'bg-gray-50 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-600'
+                                                                }`}
+                                                            >
+                                                                {item.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* モーダル下部決定ボタン */}
+                                        <div className="p-3 bg-gray-50 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-700 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPeriodModalOpen(false)}
+                                                className="w-full py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black text-sm rounded-xl shadow-md active:scale-95 transition-all"
+                                            >
+                                                この条件で表示する
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                            
                             {/* 並び順切り替えバー */}
