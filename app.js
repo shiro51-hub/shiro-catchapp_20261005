@@ -2590,8 +2590,8 @@ const [records, setRecords] = React.useState([]);
                                         onChange={(e) => setHistoryPeriod(e.target.value)}
                                         className="bg-white dark:bg-slate-800 text-sky-800 dark:text-sky-300 text-xs font-black py-2 px-2.5 rounded-xl border border-sky-300 dark:border-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer"
                                     >
-                                        {/* 1. 標準 */}
-                                        <option value="3m">過去3ヶ月（標準）</option>
+                                       {/* 1. 基本表示 */}
+                                        <option value="3m">過去3ヶ月</option>
 
                                         {/* 2. 月で検索（カレンダー基準の過去12ヶ月分） */}
                                         <optgroup label="── 月で指定（過去12ヶ月） ──">
