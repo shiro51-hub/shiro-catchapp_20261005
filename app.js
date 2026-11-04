@@ -1198,14 +1198,7 @@ const [records, setRecords] = React.useState([]);
         highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
         windSpeed1, windSpeed2, waveHeight1, waveHeight2, detailedMemo, portSeats, starboardSeats
     ]);
-
-            
-    }, [
-        date, targetFish, sizeMin, sizeMax, point, waterTemp, waterDepth, tide, tideState,
-        highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
-        windSpeed1, windSpeed2, waveHeight1, waveHeight2, detailedMemo, portSeats, starboardSeats
-    ]);
-
+         
     const handleCountDelta = (side, index, delta) => {
         const isP = side === 'port';
         const seats = isP ? [...portSeats] : [...starboardSeats];
