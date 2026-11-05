@@ -3005,13 +3005,13 @@ React.useEffect(() => {
                                                 )}
                                             </div>
 
-                                            {/* 右側：右上端の角に最大寄せした特大展開スイッチ（44〜48px） */}
+                                            {/* 右側：右上端の角寄せ特大スイッチ（パターン2：マリンブルー調和型） */}
                                             <div className="shrink-0 -mr-1 -mt-1">
                                                 <span 
                                                     className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all select-none shadow-xs border-2 ${
                                                         isExpanded 
-                                                            ? 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:border-sky-500 shadow-sky-500/20' 
-                                                            : 'bg-white hover:bg-slate-100 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-600 active:scale-95'
+                                                            ? 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:border-sky-400 shadow-sky-500/30' 
+                                                            : 'bg-sky-50/90 hover:bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/80 dark:hover:bg-sky-900/90 dark:text-sky-200 dark:border-sky-500/80 active:scale-95'
                                                     }`}
                                                     title={isExpanded ? '座席詳細を閉じる' : '座席詳細を開く'}
                                                 >
