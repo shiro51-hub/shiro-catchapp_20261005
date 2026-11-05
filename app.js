@@ -618,79 +618,87 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* ツールバー */}
-                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none gap-2">
-                    <div className="flex items-center gap-1.5">
-                        
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                        />
+                {/* 隠しファイル入力（写真枠内のボタンから起動） */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                />
 
-                        <button
-                            type="button"
-                            disabled={isUploading}
-                            onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                            className={`py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-black shadow-xs flex items-center gap-1 transition-all active:scale-95 ${
-                                isUploading
-                                    ? 'bg-gray-300 text-gray-500 cursor-wait'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'
-                            }`}
-                        >
-                            {isUploading ? (
-                                <>
-                                    <span className="inline-block animate-spin text-sm leading-none">🔄</span>
-                                    <span>送信中 ({uploadProgress})...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>📷</span>
-                                    <span>写真を追加</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+                {/* 📷 写真管理枠（追加ボタン統合型） */}
+                <div className="p-2.5 mx-3 mt-2 rounded-xl border border-sky-200 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-900/40 shrink-0">
+                    {imageUrls.length === 0 ? (
+                        /* 写真がまだない時：すっきりした横並び追加ボタン */
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                <span>📷</span>
+                                <span>添付写真なし</span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className={`py-1.5 px-3 rounded-lg text-xs font-black shadow-2xs flex items-center gap-1.5 transition-all select-none active:scale-95 ${
+                                    isUploading
+                                        ? 'bg-gray-300 text-gray-500 cursor-wait'
+                                        : 'bg-sky-600 hover:bg-sky-700 text-white'
+                                }`}
+                            >
+                                <span>{isUploading ? '⏳' : '＋'}</span>
+                                <span>{isUploading ? `送信中 (${uploadProgress})...` : '写真を追加'}</span>
+                            </button>
+                        </div>
+                    ) : (
+                        /* 写真がある時：先頭に「＋ 追加」タイル ＋ サムネイル横スクロール */
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center px-0.5">
+                                <span className="text-[11px] font-bold text-sky-800 dark:text-sky-300">
+                                    📷 添付写真（{imageUrls.length}枚）
+                                </span>
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                    タップで拡大 / ✕で解除
+                                </span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1 items-center no-scrollbar">
+                                {/* 先頭の追加タイル */}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className="w-14 h-14 shrink-0 rounded-lg border-2 border-dashed border-sky-300 dark:border-slate-600 hover:bg-sky-100/60 dark:hover:bg-slate-800 flex flex-col items-center justify-center gap-0.5 text-sky-700 dark:text-sky-300 active:scale-95 transition-all"
+                                >
+                                    <span className="text-base leading-none">{isUploading ? '⏳' : '＋'}</span>
+                                    <span className="text-[9px] font-black">{isUploading ? '読込' : '追加'}</span>
+                                </button>
 
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            onClick={handleUndo}
-                            disabled={history.length <= 1}
-                            className={`py-1 px-2 rounded-lg text-xs sm:text-sm font-black border transition-all flex items-center gap-0.5 ${
-                                history.length > 1
-                                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 shadow-2xs active:scale-90'
-                                    : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
-                            }`}
-                            title="1手前に戻す"
-                        >
-                            <span className="text-sm leading-none">↶</span>
-                            <span>戻す</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleClearAll}
-                            disabled={!tempMemo || !tempMemo.trim()}
-                            className={`py-1 px-1.5 rounded-lg text-sm border transition-all flex items-center justify-center ${
-                                tempMemo && tempMemo.trim()
-                                    ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 shadow-2xs active:scale-90 hover:bg-rose-50'
-                                    : 'opacity-40 bg-transparent text-slate-400 border-transparent cursor-not-allowed'
-                            }`}
-                            title="メモをすべて消去"
-                        >
-                            <span>🗑️</span>
-                        </button>
-
-                        <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700 mx-0.5" />
-
-                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-                            {tempMemo ? `${tempMemo.length}字` : '0字'}
-                        </span>
-                    </div>
+                                {/* 写真サムネイル一覧 */}
+                                {imageUrls.map((url, idx) => (
+                                    <div key={idx} className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 shadow-2xs bg-black group">
+                                        <img 
+                                            src={url} 
+                                            alt={`memo_photo_${idx}`} 
+                                            onClick={() => setPreviewImageUrl(url)}
+                                            className="w-full h-full object-cover cursor-pointer hover:opacity-90 active:opacity-80 transition-opacity"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveImage(url);
+                                            }}
+                                            title="この写真を解除"
+                                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-600/90 text-white flex items-center justify-center text-[10px] font-black shadow-md active:scale-90"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* エラー表示 */}
@@ -700,43 +708,13 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 )}
 
-                {/* 添付写真のサムネイルバー */}
-                {imageUrls.length > 0 && (
-                    <div className="mx-3 mt-2 p-2 bg-slate-100/80 dark:bg-slate-900/70 rounded-xl border border-gray-200 dark:border-slate-700 shrink-0">
-                        <span className="text-[10px] font-black text-gray-500 dark:text-slate-400 mb-1 block">
-                            📷 添付写真（タップで拡大 / ✕で解除）:
-                        </span>
-                        <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-                            {imageUrls.map((url, idx) => (
-                                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-300 dark:border-slate-600 shrink-0 bg-gray-200 group">
-                                    <img 
-                                        src={url} 
-                                        alt={`memo_photo_${idx}`} 
-                                        onClick={() => setPreviewImageUrl(url)}
-                                        className="w-full h-full object-cover cursor-pointer active:opacity-80"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveImage(url)}
-                                        className="absolute top-1 right-1 w-4 h-4 bg-black/75 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm"
-                                        title="写真を解除"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* 🚢 別船の釣果（フォント拡大・注記削除版） */}
+                {/* 🚢 別船の釣果（複数出船時） */}
                 <div className="mx-3 mt-2 rounded-xl border border-sky-300 dark:border-slate-700 bg-sky-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsOtherBoatsOpen(prev => !prev)}
                         className="w-full pl-2.5 pr-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-sky-900 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
                     >
-                        {/* 左側：タイトルと補足テキスト */}
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-base shrink-0">🚢</span>
                             <span className="whitespace-nowrap shrink-0">別船の釣果</span>
@@ -745,7 +723,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             </span>
                         </div>
 
-                        {/* 右側：右寄せにした「入力あり」バッジ ＋ 開閉ボタン */}
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
                             {hasOtherBoatData && (
                                 <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md whitespace-nowrap">
@@ -870,18 +847,23 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
                 
-　　　{/* メモ本文入力（余計なボタンを排したフルエリア版） */}
+                {/* メモ本文入力（文字数を手元右下に配置） */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
-                        className="w-full flex-1 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
+                        className="w-full flex-1 p-3.5 border-2 border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
                         placeholder="メモを入力してください（入力内容は自動保存されます）..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
                         autoFocus
                     />
-                    <div className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-right px-1 shrink-0">
-                        🎙️ 音声入力はキーボードのマイクをご利用ください
+                    
+                    {/* 入力欄の真下：音声案内 ＆ 右下文字数カウント */}
+                    <div className="flex justify-between items-center text-xs text-slate-400 dark:text-slate-500 mt-2 px-1 shrink-0 font-bold select-none">
+                        <span>🎙️ 音声入力はキーボードのマイクをご利用ください</span>
+                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-[11px] text-slate-600 dark:text-slate-300">
+                            {tempMemo ? tempMemo.length : 0} 文字
+                        </span>
                     </div>
                 </div>
 
