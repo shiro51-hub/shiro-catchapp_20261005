@@ -701,37 +701,37 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            <div className="bg-sky-50/80 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
-                                <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">基本海況・ポイント設定</span>
+                            <div className="bg-sky-50/80 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
+                                <span className="font-black text-gray-700 dark:text-slate-200 block text-base">基本海況・ポイント設定</span>
                                 <div>
-                                    <label className="text-xs font-bold text-sky-700 dark:text-sky-300 block mb-1">🎣 釣り物 (候補・手入力)</label>
+                                    <label className="text-xs sm:text-sm font-black text-sky-800 dark:text-sky-300 block mb-1">🎣 釣り物 (候補・手入力)</label>
                                     <input
                                         type="text"
                                         list="target-fish-options"
-                                        className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 font-black text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                        className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                         value={targetFish}
                                         onChange={(e) => setTargetFish(e.target.value)}
                                         placeholder="選択または入力（例: カワハギ / アジ）"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2.5">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">ポイント (候補・手入力)</label>
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">ポイント (候補・手入力)</label>
                                         <input
                                             type="text"
                                             list="point-options"
-                                            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={point}
                                             onChange={(e) => setPoint(e.target.value)}
                                             placeholder="選択または入力"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">水深 (m)</label>
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水深 (m)</label>
                                         <input
                                             type="text"
-                                            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={waterDepth}
                                             onChange={(e) => setWaterDepth(e.target.value)}
                                             placeholder="例: 30〜60"
@@ -739,23 +739,23 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2.5">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">水温 (℃)</label>
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水温 (℃)</label>
                                         <input
                                             type="text"
-                                            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={waterTemp}
                                             onChange={(e) => setWaterTemp(e.target.value)}
                                             placeholder="例: 20〜24"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">潮色 (候補・手入力)</label>
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">潮色 (候補・手入力)</label>
                                         <input
                                             type="text"
                                             list="tide-color-options"
-                                            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={tide}
                                             onChange={(e) => setTide(e.target.value)}
                                             placeholder="例: 澄み / 薄濁り"
