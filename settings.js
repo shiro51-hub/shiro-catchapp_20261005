@@ -65,6 +65,9 @@ function SettingsPanel({
     gasBackupUrl, setGasBackupUrl
 }) {
     const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
+    // ポイントと潮色のドロップダウン開閉State
+    const [isPointDropdownOpen, setIsPointDropdownOpen] = React.useState(false);
+    const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
     const tideImageInputRef = React.useRef(null);
     const weatherImageInputRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
@@ -715,13 +718,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     />
                                 </div>
 
-                                {/* ポイント ＆ 水深 */}
+                                {/* ポイント ＆ 水深（プルダウン複数選択版） */}
                                 <div className="space-y-1.5">
                                     <div className="flex gap-2">
-                                        <div className="flex-[1.8] min-w-0">
+                                        {/* 左側：ポイント（プルダウン付き） */}
+                                        <div className="flex-[1.8] min-w-0 relative">
                                             <div className="flex justify-between items-center mb-1">
                                                 <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 whitespace-nowrap">
-                                                    ポイント (タップで追加・連結)
+                                                    ポイント (プルダウン複数選択)
                                                 </label>
                                                 {point && (
                                                     <button
@@ -733,15 +737,76 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                     </button>
                                                 )}
                                             </div>
-                                            <input
-                                                type="text"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                                value={point}
-                                                onChange={(e) => setPoint(e.target.value)}
-                                                placeholder="例: 久里浜沖〜竹岡沖"
-                                            />
+
+                                            {/* 入力欄 ＆ プルダウン開閉ボタン */}
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="text"
+                                                    className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-10 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                    value={point}
+                                                    onChange={(e) => setPoint(e.target.value)}
+                                                    placeholder="例: 久里浜沖〜竹岡沖"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsPointDropdownOpen(prev => !prev);
+                                                        setIsTideDropdownOpen(false);
+                                                    }}
+                                                    className="absolute right-1 top-1 bottom-1 px-2.5 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
+                                                    title="候補を開く"
+                                                >
+                                                    {isPointDropdownOpen ? '▲' : '▼'}
+                                                </button>
+                                            </div>
+
+                                            {/* ドロップダウンメニュー（複数選択対応） */}
+                                            {isPointDropdownOpen && (
+                                                <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1 border-b border-gray-100 dark:border-slate-700 text-[11px] font-bold text-slate-400">
+                                                        <span>タップで追加・解除</span>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => setIsPointDropdownOpen(false)}
+                                                            className="text-sky-600 dark:text-sky-400 font-black hover:underline"
+                                                        >
+                                                            ✕ 閉じる
+                                                        </button>
+                                                    </div>
+                                                    <div className="max-h-48 overflow-y-auto no-scrollbar py-0.5 space-y-0.5">
+                                                        {['久里浜沖', '鴨居沖', '走水沖', '観音崎沖', '下浦沖', '竹岡沖', '剣崎沖'].map((pName) => {
+                                                            const isSelected = point && point.split('〜').map(s => s.trim()).includes(pName);
+                                                            return (
+                                                                <button
+                                                                    key={pName}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const currentList = point ? point.split('〜').map(s => s.trim()).filter(Boolean) : [];
+                                                                        let nextList;
+                                                                        if (currentList.includes(pName)) {
+                                                                            nextList = currentList.filter(item => item !== pName);
+                                                                        } else {
+                                                                            nextList = [...currentList, pName];
+                                                                        }
+                                                                        setPoint(nextList.join('〜'));
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors select-none ${
+                                                                        isSelected
+                                                                            ? 'bg-sky-100 dark:bg-sky-950/70 text-sky-900 dark:text-sky-300 font-black'
+                                                                            : 'hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-700 dark:text-slate-200'
+                                                                    }`}
+                                                                >
+                                                                    <span>{pName}</span>
+                                                                    {isSelected && <span className="text-sky-600 dark:text-sky-400 font-black">✓</span>}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
+                                        {/* 右側：水深 */}
                                         <div className="w-[110px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                             <input
@@ -753,40 +818,16 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             />
                                         </div>
                                     </div>
-
-                                    {/* ポイントの選択チップ（押すと順に「〜」で連結） */}
-                                    <div className="flex flex-wrap gap-1 pt-0.5">
-                                        {['久里浜沖', '鴨居沖', '走水沖', '観音崎沖', '下浦沖', '竹岡沖', '剣崎沖'].map((pName) => (
-                                            <button
-                                                key={pName}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (!point || !point.trim()) {
-                                                        setPoint(pName);
-                                                    } else if (!point.includes(pName)) {
-                                                        setPoint(`${point}〜${pName}`);
-                                                    }
-                                                }}
-                                                className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
-                                                    point && point.includes(pName)
-                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
-                                                }`}
-                                            >
-                                                {pName}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
 
-                                {/* 潮色 ＆ 水温（左右入替・上段と完全同一の幅比率） */}
+                                {/* 潮色 ＆ 水温（プルダウン複数選択版） */}
                                 <div className="space-y-1.5 pt-1">
                                     <div className="flex gap-2">
-                                        {/* 左側：潮色（ポイントと同じ約65%幅に拡大） */}
-                                        <div className="flex-[1.8] min-w-0">
+                                        {/* 左側：潮色（プルダウン付き） */}
+                                        <div className="flex-[1.8] min-w-0 relative">
                                             <div className="flex justify-between items-center mb-1">
                                                 <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 whitespace-nowrap">
-                                                    潮色 (タップで追加・連結)
+                                                    潮色 (プルダウン複数選択)
                                                 </label>
                                                 {tide && (
                                                     <button
@@ -798,16 +839,76 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                     </button>
                                                 )}
                                             </div>
-                                            <input
-                                                type="text"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                                value={tide}
-                                                onChange={(e) => setTide(e.target.value)}
-                                                placeholder="例: 澄み〜薄濁り"
-                                            />
+
+                                            {/* 入力欄 ＆ プルダウン開閉ボタン */}
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="text"
+                                                    className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-10 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                    value={tide}
+                                                    onChange={(e) => setTide(e.target.value)}
+                                                    placeholder="例: 澄み〜薄濁り"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsTideDropdownOpen(prev => !prev);
+                                                        setIsPointDropdownOpen(false);
+                                                    }}
+                                                    className="absolute right-1 top-1 bottom-1 px-2.5 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
+                                                    title="候補を開く"
+                                                >
+                                                    {isTideDropdownOpen ? '▲' : '▼'}
+                                                </button>
+                                            </div>
+
+                                            {/* ドロップダウンメニュー（複数選択対応） */}
+                                            {isTideDropdownOpen && (
+                                                <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
+                                                    <div className="flex justify-between items-center px-2 py-1 border-b border-gray-100 dark:border-slate-700 text-[11px] font-bold text-slate-400">
+                                                        <span>タップで追加・解除</span>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => setIsTideDropdownOpen(false)}
+                                                            className="text-sky-600 dark:text-sky-400 font-black hover:underline"
+                                                        >
+                                                            ✕ 閉じる
+                                                        </button>
+                                                    </div>
+                                                    <div className="max-h-48 overflow-y-auto no-scrollbar py-0.5 space-y-0.5">
+                                                        {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => {
+                                                            const isSelected = tide && tide.split('〜').map(s => s.trim()).includes(tName);
+                                                            return (
+                                                                <button
+                                                                    key={tName}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const currentList = tide ? tide.split('〜').map(s => s.trim()).filter(Boolean) : [];
+                                                                        let nextList;
+                                                                        if (currentList.includes(tName)) {
+                                                                            nextList = currentList.filter(item => item !== tName);
+                                                                        } else {
+                                                                            nextList = [...currentList, tName];
+                                                                        }
+                                                                        setTide(nextList.join('〜'));
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors select-none ${
+                                                                        isSelected
+                                                                            ? 'bg-sky-100 dark:bg-sky-950/70 text-sky-900 dark:text-sky-300 font-black'
+                                                                            : 'hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-700 dark:text-slate-200'
+                                                                    }`}
+                                                                >
+                                                                    <span>{tName}</span>
+                                                                    {isSelected && <span className="text-sky-600 dark:text-sky-400 font-black">✓</span>}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* 右側：水温（水深と同じ110px幅・中央揃え） */}
+                                        {/* 右側：水温 */}
                                         <div className="w-[110px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水温 (℃)</label>
                                             <input
@@ -818,30 +919,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 placeholder="20〜24"
                                             />
                                         </div>
-                                    </div>
-
-                                    {/* 潮色の選択チップ（左側に自然に並ぶレイアウト） */}
-                                    <div className="flex flex-wrap gap-1 pt-0.5">
-                                        {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => (
-                                            <button
-                                                key={tName}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (!tide || !tide.trim()) {
-                                                        setTide(tName);
-                                                    } else if (!tide.includes(tName)) {
-                                                        setTide(`${tide}〜${tName}`);
-                                                    }
-                                                }}
-                                                className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
-                                                    tide && tide.includes(tName)
-                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
-                                                }`}
-                                            >
-                                                {tName}
-                                            </button>
-                                        ))}
                                     </div>
                                 </div>
                             </div>
