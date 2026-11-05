@@ -690,7 +690,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                                 handleRemoveImage(url);
                                             }}
                                             title="この写真を解除"
-                                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-600/90 text-white flex items-center justify-center text-[10px] font-black shadow-md active:scale-90"
+                                            className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/75 hover:bg-black/90 text-white flex items-center justify-center text-[9px] font-black shadow-sm active:scale-90 transition-all select-none"
                                         >
                                             ✕
                                         </button>
