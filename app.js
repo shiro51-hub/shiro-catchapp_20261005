@@ -3141,29 +3141,26 @@ React.useEffect(() => {
                                         </div>
                                     )}
 
-                                    {/* 船長メモのプレビュー（ヒットワード周辺の抜粋 ＆ タップでメモ画面起動） */}
+                                    {/* 船長メモのプレビュー（メモ検索ヒット時のみ表示 ＆ タップでメモ画面起動） */}
                                     {(() => {
                                         if (!r.detailedMemo || !r.detailedMemo.trim()) return null;
                                         const rawQ = (searchQuery || '').trim();
+                                        if (!rawQ) return null; // 検索していない時は一切表示しない
+
+                                        // 「〇〇さん」の入力時は「さん」を除いた名前本体で判定
                                         const cleanQ = rawQ.endsWith('さん') && rawQ.length > 2 ? rawQ.slice(0, -2).trim() : rawQ;
                                         const q = cleanQ.toLowerCase();
 
-                                        const isMemoHit = q && r.detailedMemo.toLowerCase().includes(q);
+                                        const lowerMemo = r.detailedMemo.toLowerCase();
+                                        const matchIdx = lowerMemo.indexOf(q);
 
-                                        // メモ内の言葉でヒットした時、またはカード詳細を開いている時だけ表示
-                                        if (!isMemoHit && !isExpanded) return null;
+                                        // メモの中に検索ワードが含まれていない場合は表示しない
+                                        if (matchIdx === -1) return null;
 
                                         // ヒットした単語の前後を抽出（前20文字・後30文字）
-                                        let displayText = r.detailedMemo;
-                                        if (isMemoHit) {
-                                            const lowerMemo = r.detailedMemo.toLowerCase();
-                                            const matchIdx = lowerMemo.indexOf(q);
-                                            if (matchIdx !== -1) {
-                                                const start = Math.max(0, matchIdx - 20);
-                                                const end = Math.min(r.detailedMemo.length, matchIdx + q.length + 30);
-                                                displayText = (start > 0 ? '…' : '') + r.detailedMemo.substring(start, end) + (end < r.detailedMemo.length ? '…' : '');
-                                            }
-                                        }
+                                        const start = Math.max(0, matchIdx - 20);
+                                        const end = Math.min(r.detailedMemo.length, matchIdx + q.length + 30);
+                                        const displayText = (start > 0 ? '…' : '') + r.detailedMemo.substring(start, end) + (end < r.detailedMemo.length ? '…' : '');
 
                                         return (
                                             <div 
@@ -3172,26 +3169,18 @@ React.useEffect(() => {
                                                     openMemoModal(r);
                                                 }}
                                                 title="タップしてメモを開く"
-                                                className={`px-3.5 py-2.5 border-t text-xs font-bold flex items-center justify-between gap-2 leading-relaxed cursor-pointer select-none transition-all active:scale-[0.99] ${
-                                                    isMemoHit 
-                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border-amber-300 dark:border-amber-700/80 text-amber-950 dark:text-amber-200 shadow-2xs' 
-                                                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
-                                                }`}
+                                                className="px-3.5 py-2.5 border-t text-xs font-bold flex items-center justify-between gap-2 leading-relaxed cursor-pointer select-none transition-all active:scale-[0.99] bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border-amber-300 dark:border-amber-700/80 text-amber-950 dark:text-amber-200 shadow-2xs"
                                             >
                                                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                                                    <span className={`shrink-0 font-black flex items-center gap-0.5 ${isMemoHit ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                    <span className="shrink-0 font-black flex items-center gap-0.5 text-amber-700 dark:text-amber-400">
                                                         <span>📝</span>
-                                                        <span>{isMemoHit ? 'ヒットメモ:' : '船長メモ:'}</span>
+                                                        <span>ヒットメモ:</span>
                                                     </span>
                                                     <div className="line-clamp-2 break-all flex-1">
                                                         <HighlightText text={displayText} query={searchQuery} />
                                                     </div>
                                                 </div>
-                                                <span className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-lg border transition-all ${
-                                                    isMemoHit
-                                                        ? 'bg-amber-200/80 dark:bg-amber-900/70 border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-200'
-                                                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300'
-                                                }`}>
+                                                <span className="shrink-0 text-[11px] font-black px-2 py-1 rounded-lg border border-amber-400 dark:border-amber-700 bg-amber-200/80 dark:bg-amber-900/70 text-amber-900 dark:text-amber-200 shadow-2xs">
                                                     開く ➔
                                                 </span>
                                             </div>
