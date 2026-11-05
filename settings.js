@@ -715,83 +715,132 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     />
                                 </div>
 
-                                <div className="flex gap-2">
-                                    {/* ポイント（タップ時全選択 ＆ ワンタップ✕クリアボタン付き） */}
-                                    <div className="flex-[1.8] min-w-0">
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">ポイント (候補・手入力)</label>
-                                        <div className="relative flex items-center">
+                                {/* ポイント ＆ 水深 */}
+                                <div className="space-y-1.5">
+                                    <div className="flex gap-2">
+                                        <div className="flex-[1.8] min-w-0">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 whitespace-nowrap">
+                                                    ポイント (タップで追加・連結)
+                                                </label>
+                                                {point && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPoint('')}
+                                                        className="text-[11px] font-bold text-rose-500 hover:text-rose-600 active:scale-95"
+                                                    >
+                                                        クリア
+                                                    </button>
+                                                )}
+                                            </div>
                                             <input
                                                 type="text"
-                                                list="point-options"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-8 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                                 value={point}
                                                 onChange={(e) => setPoint(e.target.value)}
-                                                onFocus={(e) => e.target.select()}
-                                                placeholder="選択または入力"
+                                                placeholder="例: 久里浜沖〜竹岡沖"
                                             />
-                                            {point && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPoint('')}
-                                                    className="absolute right-2.5 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-black select-none active:scale-90"
-                                                    title="消去して全候補を表示"
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
+                                        </div>
+
+                                        <div className="w-[110px] shrink-0">
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1.5 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                value={waterDepth}
+                                                onChange={(e) => setWaterDepth(e.target.value)}
+                                                placeholder="30〜60"
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* 水深 */}
-                                    <div className="w-[110px] shrink-0">
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
-                                        <input
-                                            type="text"
-                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1.5 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                            value={waterDepth}
-                                            onChange={(e) => setWaterDepth(e.target.value)}
-                                            onFocus={(e) => e.target.select()}
-                                            placeholder="30〜60"
-                                        />
+                                    {/* ポイントの選択チップ（押すと順に「〜」で連結） */}
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                        {['久里浜沖', '鴨居沖', '走水沖', '観音崎沖', '下浦沖', '竹岡沖', '剣崎沖'].map((pName) => (
+                                            <button
+                                                key={pName}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!point || !point.trim()) {
+                                                        setPoint(pName);
+                                                    } else if (!point.includes(pName)) {
+                                                        setPoint(`${point}〜${pName}`);
+                                                    }
+                                                }}
+                                                className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
+                                                    point && point.includes(pName)
+                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
+                                                }`}
+                                            >
+                                                {pName}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    <div>
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水温 (℃)</label>
-                                        <input
-                                            type="text"
-                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                            value={waterTemp}
-                                            onChange={(e) => setWaterTemp(e.target.value)}
-                                            onFocus={(e) => e.target.select()}
-                                            placeholder="例: 20〜24"
-                                        />
-                                    </div>
-                                    
-                                    {/* 潮色（タップ時全選択 ＆ ワンタップ✕クリアボタン付き） */}
-                                    <div>
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">潮色 (候補・手入力)</label>
-                                        <div className="relative flex items-center">
+                                {/* 水温 ＆ 潮色 */}
+                                <div className="space-y-1.5 pt-1">
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水温 (℃)</label>
                                             <input
                                                 type="text"
-                                                list="tide-color-options"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-8 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                value={waterTemp}
+                                                onChange={(e) => setWaterTemp(e.target.value)}
+                                                placeholder="例: 20〜24"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 whitespace-nowrap">
+                                                    潮色
+                                                </label>
+                                                {tide && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTide('')}
+                                                        className="text-[11px] font-bold text-rose-500 hover:text-rose-600 active:scale-95"
+                                                    >
+                                                        クリア
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                                 value={tide}
                                                 onChange={(e) => setTide(e.target.value)}
-                                                onFocus={(e) => e.target.select()}
-                                                placeholder="例: 澄み / 薄濁り"
+                                                placeholder="例: 澄み〜薄濁り"
                                             />
-                                            {tide && (
+                                        </div>
+                                    </div>
+
+                                    {/* 潮色の選択チップ（押すと順に「〜」で連結） */}
+                                    <div className="flex justify-end">
+                                        <div className="flex flex-wrap gap-1 justify-end max-w-[85%]">
+                                            {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => (
                                                 <button
+                                                    key={tName}
                                                     type="button"
-                                                    onClick={() => setTide('')}
-                                                    className="absolute right-2.5 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-black select-none active:scale-90"
-                                                    title="消去して全候補を表示"
+                                                    onClick={() => {
+                                                        if (!tide || !tide.trim()) {
+                                                            setTide(tName);
+                                                        } else if (!tide.includes(tName)) {
+                                                            setTide(`${tide}〜${tName}`);
+                                                        }
+                                                    }}
+                                                    className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
+                                                        tide && tide.includes(tName)
+                                                            ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
+                                                    }`}
                                                 >
-                                                    ✕
+                                                    {tName}
                                                 </button>
-                                            )}
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
