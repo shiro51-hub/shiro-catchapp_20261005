@@ -3230,7 +3230,7 @@ React.useEffect(() => {
                                                         e.stopPropagation(); 
                                                         setSharedRecordId(null); 
                                                     }} 
-                                                    className="w-7 h-7 rounded-full bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 flex items-center justify-center font-black text-xs active:scale-90 transition-all select-none shadow-2xs border border-slate-300 dark:border-slate-600"
+                                                    className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 dark:hover:text-white text-slate-900 dark:text-white border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center font-black text-sm active:scale-90 transition-all select-none shadow-xs"
                                                     title="閉じる"
                                                 >
                                                     ✕
