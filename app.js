@@ -3000,9 +3000,24 @@ React.useEffect(() => {
                                                 ) : (
                                                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-black border border-gray-200">釣果</span>
                                                 )}
-                                                <span className="text-gray-400 dark:text-slate-500">
-                                                    {isExpanded ? <IconChevronUp className="w-5 h-5" /> : <IconChevronDown className="w-5 h-5" />}
-                                                </span>
+                                                <span 
+    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all select-none shadow-xs border-2 shrink-0 ${
+        isExpanded 
+            ? 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:border-sky-500 shadow-sky-500/20' 
+            : 'bg-white hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-500 active:scale-95'
+    }`}
+    title={isExpanded ? '座席詳細を閉じる' : '座席詳細を開く'}
+>
+    {isExpanded ? (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
+        </svg>
+    ) : (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+        </svg>
+    )}
+</span>
                                             </div>
                                         </div>
 
