@@ -2988,36 +2988,43 @@ React.useEffect(() => {
                                         className="p-4 cursor-pointer active:bg-gray-50 dark:active:bg-slate-700/50 select-none" 
                                         onClick={() => setExpandedRecordId(isExpanded ? null : r.id)}
                                     >
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100">
-                                                <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
-                                            </span>
-                                            <div className="flex items-center gap-1.5">
+                                        <div className="flex justify-between items-center mb-2.5">
+                                            {/* 左側：日付 ＆ 釣り物を横並びに集約 */}
+                                            <div className="flex items-center flex-wrap gap-2 min-w-0 pr-2">
+                                                <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100 whitespace-nowrap">
+                                                    <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
+                                                </span>
                                                 {r.targetFish ? (
-                                                    <span className="text-sm bg-sky-200/30 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200 px-3 py-1 rounded-lg font-black select-none border border-sky-300/80 dark:border-sky-700 shadow-2xs">
+                                                    <span className="text-xs sm:text-sm bg-sky-200/40 dark:bg-sky-900/40 text-sky-900 dark:text-sky-200 px-2.5 py-0.5 sm:py-1 rounded-lg font-black select-none border border-sky-300/80 dark:border-sky-700 shadow-2xs whitespace-nowrap">
                                                         <HighlightText text={r.targetFish} query={searchQuery} />
                                                     </span>
                                                 ) : (
-                                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-black border border-gray-200">釣果</span>
+                                                    <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-2 py-0.5 rounded font-black border border-gray-200 dark:border-slate-600 whitespace-nowrap">
+                                                        釣果
+                                                    </span>
                                                 )}
+                                            </div>
+
+                                            {/* 右側：右上端の角に最大寄せした特大展開スイッチ（44〜48px） */}
+                                            <div className="shrink-0 -mr-1 -mt-1">
                                                 <span 
-    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all select-none shadow-xs border-2 shrink-0 ${
-        isExpanded 
-            ? 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:border-sky-500 shadow-sky-500/20' 
-            : 'bg-white hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-500 active:scale-95'
-    }`}
-    title={isExpanded ? '座席詳細を閉じる' : '座席詳細を開く'}
->
-    {isExpanded ? (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
-        </svg>
-    ) : (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-        </svg>
-    )}
-</span>
+                                                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all select-none shadow-xs border-2 ${
+                                                        isExpanded 
+                                                            ? 'bg-sky-500 text-white border-sky-600 dark:bg-sky-600 dark:border-sky-500 shadow-sky-500/20' 
+                                                            : 'bg-white hover:bg-slate-100 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-600 active:scale-95'
+                                                    }`}
+                                                    title={isExpanded ? '座席詳細を閉じる' : '座席詳細を開く'}
+                                                >
+                                                    {isExpanded ? (
+                                                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    )}
+                                                </span>
                                             </div>
                                         </div>
 
