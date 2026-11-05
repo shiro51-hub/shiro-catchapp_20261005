@@ -365,7 +365,16 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         return res;
     };
 
+    // メモからポイント流し順（非公開記録）をパース
+    const parsePointLog = (text) => {
+        if (!text) return '';
+        const m = text.match(/【ポイント履歴】\s*([^\n]+)/);
+        return m ? m[1].trim() : '';
+    };
+
     const [boatState, setBoatState] = React.useState(() => parseOtherBoats(tempMemo));
+    const [pointLogText, setPointLogText] = React.useState(() => parsePointLog(tempMemo));
+    const [isPointLogOpen, setIsPointLogOpen] = React.useState(false);
 
     const updateTextAndSave = (nextText, recordHistory = true) => {
         setTempMemo(nextText);
@@ -380,30 +389,42 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 別船の入力変更をメモ本文へ同期
-    const handleBoatFieldChange = (field, val) => {
-        const nextState = { ...boatState, [field]: val };
-        setBoatState(nextState);
-
+    // 別船・ポイント履歴の変更をメモ本文へ安全に同期
+    const syncSpecialFieldsToMemo = (newBoatState, newPointLog) => {
         let baseText = (tempMemo || '')
             .replace(/【別船1】[^\n]*\n?/g, '')
             .replace(/【別船2】[^\n]*\n?/g, '')
+            .replace(/【ポイント履歴】[^\n]*\n?/g, '')
             .trim();
 
-        let boatLines = [];
-        if (nextState.b1Min !== '' || nextState.b1Max !== '' || nextState.b1Top !== '') {
-            boatLines.push(`【別船1】 釣果: ${nextState.b1Min}〜${nextState.b1Max} 竿頭: ${nextState.b1Top}`);
+        let headerLines = [];
+        if (newBoatState.b1Min !== '' || newBoatState.b1Max !== '' || newBoatState.b1Top !== '') {
+            headerLines.push(`【別船1】 釣果: ${newBoatState.b1Min}〜${newBoatState.b1Max} 竿頭: ${newBoatState.b1Top}`);
         }
-        if (nextState.b2Min !== '' || nextState.b2Max !== '' || nextState.b2Top !== '') {
-            boatLines.push(`【別船2】 釣果: ${nextState.b2Min}〜${nextState.b2Max} 竿頭: ${nextState.b2Top}`);
+        if (newBoatState.b2Min !== '' || newBoatState.b2Max !== '' || newBoatState.b2Top !== '') {
+            headerLines.push(`【別船2】 釣果: ${newBoatState.b2Min}〜${newBoatState.b2Max} 竿頭: ${newBoatState.b2Top}`);
+        }
+        if (newPointLog && newPointLog.trim() !== '') {
+            headerLines.push(`【ポイント履歴】 ${newPointLog.trim()}`);
         }
 
         let newMemo = baseText;
-        if (boatLines.length > 0) {
-            newMemo = baseText ? `${baseText}\n\n${boatLines.join('\n')}` : boatLines.join('\n');
+        if (headerLines.length > 0) {
+            newMemo = baseText ? `${baseText}\n\n${headerLines.join('\n')}` : headerLines.join('\n');
         }
 
         updateTextAndSave(newMemo, false);
+    };
+
+    const handleBoatFieldChange = (field, val) => {
+        const nextState = { ...boatState, [field]: val };
+        setBoatState(nextState);
+        syncSpecialFieldsToMemo(nextState, pointLogText);
+    };
+
+    const handlePointLogChange = (val) => {
+        setPointLogText(val);
+        syncSpecialFieldsToMemo(boatState, val);
     };
 
     const extractImageUrls = (text) => {
@@ -806,7 +827,40 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                {/* メモ本文入力 */}
+　　　　　　{/* 📍 ポイント流し順・航海覚え書き（AI完全非公開：開閉式） */}
+                <div className="mx-3 mt-2 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
+                    <button
+                        type="button"
+                        onClick={() => setIsPointLogOpen(prev => !prev)}
+                        className="w-full px-3 py-2 flex justify-between items-center text-xs font-black text-amber-900 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                    >
+                        <span className="flex items-center gap-1.5">
+                            <span>📍</span>
+                            <span>ポイント流し順・航海メモ（※AI完全非公開・自分専用）</span>
+                            {pointLogText && pointLogText.trim() !== '' && (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-black">● 記録あり</span>
+                            )}
+                        </span>
+                        <span className="text-amber-700 dark:text-amber-400 font-bold">{isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                    </button>
+
+                    {isPointLogOpen && (
+                        <div className="p-3 border-t border-amber-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
+                            <input
+                                type="text"
+                                placeholder="例：久里浜40m ➔ アシカ島25m ➔ 鴨居沖根周り など"
+                                value={pointLogText}
+                                onChange={(e) => handlePointLogChange(e.target.value)}
+                                className="w-full px-3 py-2 text-xs sm:text-sm font-bold border border-amber-300 dark:border-slate-600 rounded-xl bg-amber-50/30 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            />
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                                🔒 ここに入力したポイント履歴は、AI日報・AIカルテに一切送信されず文章にも絶対に出ません（過去の検索や自分だけの確認用として残ります）。
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+　　　{/* メモ本文入力 */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
@@ -1528,7 +1582,13 @@ React.useEffect(() => {
 
         let extraInfo = "";
         if (record.detailedMemo && record.detailedMemo.trim() !== '') {
-            extraInfo += `\n・詳細メモ・釣行メモ（船長記録）: ${record.detailedMemo.trim()}`;
+            // 【ポイント履歴】は船長専用のためAI送信から完全に除去
+            const sanitizedMemo = record.detailedMemo
+                .replace(/【ポイント履歴】[^\n]*\n?/g, '')
+                .trim();
+            if (sanitizedMemo) {
+                extraInfo += `\n・詳細メモ・釣行メモ（船長記録）: ${sanitizedMemo}`;
+            }
         }
         if (conditionInfo) extraInfo += `\n・船全体の調子（釣況）の評価: ${conditionInfo}`;
         if (sceneryInfo) extraInfo += `\n・海の情景: ${sceneryInfo}`;
@@ -1797,7 +1857,7 @@ React.useEffect(() => {
             "- ポイント: " + (record.point || '久里浜沖周辺'),
             "- 潮色: " + (record.tide || '-') + " / 潮回り: " + (record.tideState || '-'),
             "- 天候・風波: 前半[" + (record.weather1 || '-') + ", 風:" + windDesc1 + ", 波:" + (record.waveHeight1 || '-') + "] / 後半[" + (record.weather2 || '-') + ", 風:" + windDesc2 + ", 波:" + (record.waveHeight2 || '-') + "]",
-            "- 船長メモ/詳細メモ: " + (record.detailedMemo || 'なし'),
+            "- 船長メモ/詳細メモ: " + ((record.detailedMemo || '').replace(/【ポイント履歴】[^\n]*\n?/g, '').trim() || 'なし'),
             "- 左舷状況: 乗船 " + portAnglers + "名 / 合計 " + portTotal + unit + " / 1人平均 " + portAvg + unit + "  座席詳細: " + pSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "- 右舷状況: 乗船 " + starboardAnglers + "名 / 合計 " + starboardTotal + unit + " / 1人平均 " + starboardAvg + unit + "  座席詳細: " + sSeats.map(s => s.id + "番(" + (s.name || '-') + "):" + (s.count || 0) + unit + " [" + (s.memo || '') + "]").join(', '),
             "【指示事項】",
