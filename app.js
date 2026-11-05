@@ -737,19 +737,19 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 )}
 
-                {/* 🚢 別船の釣果（他船枠：開閉式アコーディオン） */}
+                {/* 🚢 別船の釣果（フォント拡大・注記削除版） */}
                 <div className="mx-3 mt-2 rounded-xl border border-sky-300 dark:border-slate-700 bg-sky-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsOtherBoatsOpen(prev => !prev)}
-                        className="w-full px-3 py-2 flex justify-between items-center text-xs font-black text-sky-800 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full px-3.5 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-sky-900 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
                     >
-                        <span className="flex items-center gap-1.5">
-                            <span>🚢</span>
-                            <span>別船の釣果（2隻・3隻出しの時のみ入力）</span>
-                            {hasOtherBoatData && <span className="text-emerald-600 dark:text-emerald-400 font-black">● 入力あり</span>}
+                        <span className="flex items-center gap-2">
+                            <span className="text-base sm:text-lg">🚢</span>
+                            <span>別船の釣果</span>
+                            {hasOtherBoatData && <span className="text-emerald-600 dark:text-emerald-400 text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">● 入力あり</span>}
                         </span>
-                        <span className="text-sky-600 dark:text-sky-400 font-bold">{isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                        <span className="text-sky-600 dark:text-sky-400 text-xs sm:text-sm font-bold">{isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
                     </button>
 
                     {isOtherBoatsOpen && (
@@ -827,21 +827,21 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-　　　　　　{/* 📍 ポイント流し順・航海覚え書き（AI完全非公開：開閉式） */}
+                {/* 📍 実釣ポイント・航海メモ（表記簡潔化・フォント拡大版） */}
                 <div className="mx-3 mt-2 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsPointLogOpen(prev => !prev)}
-                        className="w-full px-3 py-2 flex justify-between items-center text-xs font-black text-amber-900 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full px-3.5 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-amber-950 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
                     >
-                        <span className="flex items-center gap-1.5">
-                            <span>📍</span>
-                            <span>ポイント流し順・航海メモ（※AI完全非公開・自分専用）</span>
+                        <span className="flex items-center gap-2">
+                            <span className="text-base sm:text-lg">📍</span>
+                            <span>実釣ポイント・航海メモ</span>
                             {pointLogText && pointLogText.trim() !== '' && (
-                                <span className="text-emerald-600 dark:text-emerald-400 font-black">● 記録あり</span>
+                                <span className="text-emerald-600 dark:text-emerald-400 text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">● 記録あり</span>
                             )}
                         </span>
-                        <span className="text-amber-700 dark:text-amber-400 font-bold">{isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold">{isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
                     </button>
 
                     {isPointLogOpen && (
@@ -851,10 +851,10 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                 placeholder="例：久里浜40m ➔ アシカ島25m ➔ 鴨居沖根周り など"
                                 value={pointLogText}
                                 onChange={(e) => handlePointLogChange(e.target.value)}
-                                className="w-full px-3 py-2 text-xs sm:text-sm font-bold border border-amber-300 dark:border-slate-600 rounded-xl bg-amber-50/30 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                className="w-full px-3.5 py-2.5 text-sm sm:text-base font-bold border-2 border-amber-300 dark:border-slate-600 rounded-xl bg-amber-50/30 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
                             />
                             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                                🔒 ここに入力したポイント履歴は、AI日報・AIカルテに一切送信されず文章にも絶対に出ません（過去の検索や自分だけの確認用として残ります）。
+                                🔒 ここに入力したポイント履歴はAI（日報・カルテ）に送信されず、文章には絶対に出ません（自分だけの航海記録として保存されます）。
                             </div>
                         </div>
                     )}
