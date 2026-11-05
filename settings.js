@@ -68,6 +68,10 @@ function SettingsPanel({
     const [isPointDropdownOpen, setIsPointDropdownOpen] = React.useState(false);
     const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
 
+    // ドロップダウン展開時の自動スクロール用Ref
+    const pointRef = React.useRef(null);
+    const tideRef = React.useRef(null);
+
     const tideImageInputRef = React.useRef(null);
     const weatherImageInputRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
@@ -676,10 +680,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </datalist>
                                 </div>
 
-                                {/* 上段：ポイント ＆ 水深（上下完全一致設計） */}
-                                <div className="space-y-1.5">
+                                {/* 上段：ポイント ＆ 水深（自動スクロール対応） */}
+                                <div className="space-y-1.5" ref={pointRef}>
                                     <div className="flex gap-2">
-                                        {/* 左側：ポイント（幅自動拡張 flex-1 ＆ 文字切れ防止） */}
+                                        {/* 左側：ポイント */}
                                         <div className="flex-1 min-w-0 relative">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">
                                                 ポイント
@@ -696,8 +700,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        setIsPointDropdownOpen(prev => !prev);
+                                                        const nextState = !isPointDropdownOpen;
+                                                        setIsPointDropdownOpen(nextState);
                                                         setIsTideDropdownOpen(false);
+                                                        if (nextState) {
+                                                            setTimeout(() => {
+                                                                pointRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                            }, 60);
+                                                        }
                                                     }}
                                                     className="absolute right-0.5 top-1 bottom-1 px-2 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
                                                     title="候補を開く"
@@ -752,12 +762,12 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：水深 */}
+                                        {/* 右側：水深（幅120pxに広げて左へ寄せる・中央揃え） */}
                                         <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                             <input
                                                 type="text"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1 py-2.5 font-bold text-sm sm:text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                                 value={waterDepth}
                                                 onChange={(e) => setWaterDepth(e.target.value)}
                                                 placeholder="30〜60"
@@ -766,10 +776,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                {/* 下段：潮色 ＆ 水温（上段と縦ライン完全同期） */}
-                                <div className="space-y-1.5 pt-1">
+                                {/* 下段：潮色 ＆ 海水温（自動スクロール対応） */}
+                                <div className="space-y-1.5 pt-1" ref={tideRef}>
                                     <div className="flex gap-2">
-                                        {/* 左側：潮色（幅自動拡張 flex-1 ＆ 上段と同一余白） */}
+                                        {/* 左側：潮色 */}
                                         <div className="flex-1 min-w-0 relative">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">
                                                 潮色
@@ -786,8 +796,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        setIsTideDropdownOpen(prev => !prev);
+                                                        const nextState = !isTideDropdownOpen;
+                                                        setIsTideDropdownOpen(nextState);
                                                         setIsPointDropdownOpen(false);
+                                                        if (nextState) {
+                                                            setTimeout(() => {
+                                                                tideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                            }, 60);
+                                                        }
                                                     }}
                                                     className="absolute right-0.5 top-1 bottom-1 px-2 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
                                                     title="候補を開く"
@@ -842,12 +858,12 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：海水温 */}
+                                        {/* 右側：海水温（幅120pxに広げて左へ寄せる・中央揃え） */}
                                         <div className="w-[120px] shrink-0">
-                                            <label className="text-xs font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">海水温 (℃)</label>
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">海水温 (℃)</label>
                                             <input
                                                 type="text"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1 py-2.5 font-bold text-sm sm:text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                                 value={waterTemp}
                                                 onChange={(e) => setWaterTemp(e.target.value)}
                                                 placeholder="20〜24"
