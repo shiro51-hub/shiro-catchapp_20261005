@@ -1980,8 +1980,34 @@ React.useEffect(() => {
             });
         }
 
-        const q = searchQuery.toLowerCase();
+        const rawQ = searchQuery.trim();
+        const isHonorific = /.+さん$/.test(rawQ); // 「〇〇さん」の入力かどうかを判定
+        const exactTargetName = isHonorific ? rawQ.slice(0, -2).trim().toLowerCase() : null;
+        const q = rawQ.toLowerCase();
+
         return records.filter(r => {
+            // 座席の名前一覧
+            const seatNames = [
+                ...(r.port || []).map(s => (s.name || '').trim().toLowerCase()),
+                ...(r.starboard || []).map(s => (s.name || '').trim().toLowerCase())
+            ].filter(Boolean);
+
+            // 竿頭の名前一覧（複数名対応）
+            const topNames = (r.topAnglerName || '')
+                .split(/[・,\s]+/)
+                .map(n => n.trim().toLowerCase())
+                .filter(Boolean);
+
+            // 【アイデア1】「〇〇さん」と入力された場合は名前の完全一致を優先判定
+            if (exactTargetName) {
+                const nameMatched = seatNames.includes(exactTargetName) || topNames.includes(exactTargetName);
+                if (nameMatched) return true;
+                // メモ欄などに「原さん」と直接書かれている場合もヒット
+                const memoText = [r.detailedMemo, ...(r.port || []).map(s => s.memo), ...(r.starboard || []).map(s => s.memo)].join(' ').toLowerCase();
+                return memoText.includes(q);
+            }
+
+            // 通常のキーワード入力時はこれまで通りの部分一致
             const portNamesAndMemos = (r.port || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
             const starboardNamesAndMemos = (r.starboard || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
             
