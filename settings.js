@@ -752,8 +752,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：水深（幅96px固定・中央揃え） */}
-                                        <div className="w-[96px] shrink-0">
+                                        {/* 右側：水深 */}
+                                        <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                             <input
                                                 type="text"
@@ -842,9 +842,9 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：水温（幅96px固定・中央揃え・上段と完全同一） */}
-                                        <div className="w-[96px] shrink-0">
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水温 (℃)</label>
+                                        {/* 右側：海水温 */}
+                                        <div className="w-[120px] shrink-0">
+                                            <label className="text-xs font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">海水温 (℃)</label>
                                             <input
                                                 type="text"
                                                 className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1 py-2.5 font-bold text-sm sm:text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
