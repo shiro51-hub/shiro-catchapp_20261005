@@ -779,24 +779,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                {/* 水温 ＆ 潮色 */}
+                                {/* 潮色 ＆ 水温（左右入替・上段と完全同一の幅比率） */}
                                 <div className="space-y-1.5 pt-1">
-                                    <div className="grid grid-cols-2 gap-2.5">
-                                        <div>
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水温 (℃)</label>
-                                            <input
-                                                type="text"
-                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                                value={waterTemp}
-                                                onChange={(e) => setWaterTemp(e.target.value)}
-                                                placeholder="例: 20〜24"
-                                            />
-                                        </div>
-
-                                        <div>
+                                    <div className="flex gap-2">
+                                        {/* 左側：潮色（ポイントと同じ約65%幅に拡大） */}
+                                        <div className="flex-[1.8] min-w-0">
                                             <div className="flex justify-between items-center mb-1">
                                                 <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 whitespace-nowrap">
-                                                    潮色
+                                                    潮色 (タップで追加・連結)
                                                 </label>
                                                 {tide && (
                                                     <button
@@ -816,32 +806,42 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 placeholder="例: 澄み〜薄濁り"
                                             />
                                         </div>
+
+                                        {/* 右側：水温（水深と同じ110px幅・中央揃え） */}
+                                        <div className="w-[110px] shrink-0">
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水温 (℃)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1.5 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                value={waterTemp}
+                                                onChange={(e) => setWaterTemp(e.target.value)}
+                                                placeholder="20〜24"
+                                            />
+                                        </div>
                                     </div>
 
-                                    {/* 潮色の選択チップ（押すと順に「〜」で連結） */}
-                                    <div className="flex justify-end">
-                                        <div className="flex flex-wrap gap-1 justify-end max-w-[85%]">
-                                            {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => (
-                                                <button
-                                                    key={tName}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (!tide || !tide.trim()) {
-                                                            setTide(tName);
-                                                        } else if (!tide.includes(tName)) {
-                                                            setTide(`${tide}〜${tName}`);
-                                                        }
-                                                    }}
-                                                    className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
-                                                        tide && tide.includes(tName)
-                                                            ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
-                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
-                                                    }`}
-                                                >
-                                                    {tName}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    {/* 潮色の選択チップ（左側に自然に並ぶレイアウト） */}
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                        {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => (
+                                            <button
+                                                key={tName}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!tide || !tide.trim()) {
+                                                        setTide(tName);
+                                                    } else if (!tide.includes(tName)) {
+                                                        setTide(`${tide}〜${tName}`);
+                                                    }
+                                                }}
+                                                className={`text-xs px-2 py-1 rounded-lg border font-bold transition-all active:scale-95 ${
+                                                    tide && tide.includes(tName)
+                                                        ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-sky-50'
+                                                }`}
+                                            >
+                                                {tName}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
