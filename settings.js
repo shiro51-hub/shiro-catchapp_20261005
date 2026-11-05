@@ -71,6 +71,7 @@ function SettingsPanel({
     // ドロップダウン展開時の自動スクロール用Ref
     const pointRef = React.useRef(null);
     const tideRef = React.useRef(null);
+    const scrollContainerRef = React.useRef(null);
 
     const tideImageInputRef = React.useRef(null);
     const weatherImageInputRef = React.useRef(null);
@@ -625,7 +626,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                 </div>
 
                 {/* スクロールコンテンツ */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm sm:text-base no-scrollbar bg-white dark:bg-slate-800">
+                <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 text-sm sm:text-base no-scrollbar bg-white dark:bg-slate-800">
 
                     {/* タブ 1: 基本設定 */}
                     {activeSettingsTab === 'basic' && (
@@ -680,7 +681,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </datalist>
                                 </div>
 
-                                {/* 上段：ポイント ＆ 水深（自動スクロール対応） */}
+                                {/* 上段：ポイント ＆ 水深（確実自動スクロール版） */}
                                 <div className="space-y-1.5" ref={pointRef}>
                                     <div className="flex gap-2">
                                         {/* 左側：ポイント */}
@@ -703,10 +704,12 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                         const nextState = !isPointDropdownOpen;
                                                         setIsPointDropdownOpen(nextState);
                                                         setIsTideDropdownOpen(false);
-                                                        if (nextState) {
+                                                        if (nextState && scrollContainerRef.current && pointRef.current) {
                                                             setTimeout(() => {
-                                                                pointRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                                            }, 60);
+                                                                // 親コンテナ内でポイント欄が上に来るよう確実にスクロール
+                                                                const topPos = pointRef.current.offsetTop - 10;
+                                                                scrollContainerRef.current.scrollTo({ top: topPos, behavior: 'smooth' });
+                                                            }, 80);
                                                         }
                                                     }}
                                                     className="absolute right-0.5 top-1 bottom-1 px-2 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
@@ -762,7 +765,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：水深（幅120pxに広げて左へ寄せる・中央揃え） */}
+                                        {/* 右側：水深 */}
                                         <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                             <input
@@ -776,7 +779,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                {/* 下段：潮色 ＆ 海水温（自動スクロール対応） */}
+                                {/* 下段：潮色 ＆ 海水温（確実自動スクロール版） */}
                                 <div className="space-y-1.5 pt-1" ref={tideRef}>
                                     <div className="flex gap-2">
                                         {/* 左側：潮色 */}
@@ -799,10 +802,12 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                         const nextState = !isTideDropdownOpen;
                                                         setIsTideDropdownOpen(nextState);
                                                         setIsPointDropdownOpen(false);
-                                                        if (nextState) {
+                                                        if (nextState && scrollContainerRef.current && tideRef.current) {
                                                             setTimeout(() => {
-                                                                tideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                                            }, 60);
+                                                                // 潮色メニューが一番下まで全て収まるようにしっかりスクロール
+                                                                const targetScrollTop = tideRef.current.offsetTop + 180;
+                                                                scrollContainerRef.current.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                                                            }, 80);
                                                         }
                                                     }}
                                                     className="absolute right-0.5 top-1 bottom-1 px-2 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-black select-none active:scale-90"
@@ -858,7 +863,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：海水温（幅120pxに広げて左へ寄せる・中央揃え） */}
+                                        {/* 右側：海水温 */}
                                         <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">海水温 (℃)</label>
                                             <input
