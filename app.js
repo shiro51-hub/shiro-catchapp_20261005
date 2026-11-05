@@ -3216,47 +3216,7 @@ React.useEffect(() => {
                                         );
                                     })()}
 
-                                   {sharedRecordId === r.id && (
-                                        <div className="w-full bg-slate-100/90 dark:bg-slate-900/90 p-3 border-t border-sky-200 dark:border-slate-700 shadow-inner space-y-2 animate-[fadeIn_0.15s_ease-out]">
-                                            {/* ヘッダー：タイトル ＆ 右上✕ボタン */}
-                                            <div className="flex justify-between items-center px-0.5">
-                                                <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                                                    <span>📤</span>
-                                                    <span>共有先を選択</span>
-                                                </span>
-                                                <button 
-                                                    type="button"
-                                                    onClick={(e) => { 
-                                                        e.stopPropagation(); 
-                                                        setSharedRecordId(null); 
-                                                    }} 
-                                                    className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 dark:hover:text-white text-slate-900 dark:text-white border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center font-black text-sm active:scale-90 transition-all select-none shadow-xs"
-                                                    title="閉じる"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-
-                                            {/* LINE / メール 共有ボタン */}
-                                            <div className="grid grid-cols-2 gap-2 pt-0.5">
-                                                <button 
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); shareToLine(r); }} 
-                                                    className="bg-[#06C755] hover:bg-[#05b34c] text-white py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
-                                                >
-                                                    <IconLine /> LINEで共有
-                                                </button>
-                                                <button 
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); shareToEmail(r); }} 
-                                                    className="bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
-                                                >
-                                                    <IconMail /> メールで共有
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
+                                   
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             <button
@@ -3420,6 +3380,48 @@ React.useEffect(() => {
                                             </button>
                                         </div>
                                     </div>
+        
+        {/* 共有パネル：共有ボタンの真下に展開する独立枠エリア */}
+                                        {sharedRecordId === r.id && (
+                                            <div className="mt-2.5 p-3 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-sky-50/70 dark:bg-slate-900/90 shadow-sm space-y-2.5 animate-[fadeIn_0.15s_ease-out]">
+                                                {/* パネル上段：タイトル ＆ 角丸四角の濃色✕ボタン */}
+                                                <div className="flex justify-between items-center px-0.5">
+                                                    <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                                        <span>📤</span>
+                                                        <span>共有先を選択</span>
+                                                    </span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            setSharedRecordId(null); 
+                                                        }} 
+                                                        className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 dark:hover:text-white text-slate-900 dark:text-white border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center font-black text-sm active:scale-90 transition-all select-none shadow-xs"
+                                                        title="閉じる"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+
+                                                {/* LINE / メール 共有ボタン（1つの内枠プレート内に集約） */}
+                                                <div className="grid grid-cols-2 gap-2 p-1.5 bg-white dark:bg-slate-800 rounded-xl border border-sky-200 dark:border-slate-700 shadow-2xs">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); shareToLine(r); }} 
+                                                        className="bg-[#06C755] hover:bg-[#05b34c] text-white py-2.5 rounded-lg text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
+                                                    >
+                                                        <IconLine /> LINEで共有
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); shareToEmail(r); }} 
+                                                        className="bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
+                                                    >
+                                                        <IconMail /> メールで共有
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                 </div>
                             );
                         })}
