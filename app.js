@@ -2305,8 +2305,14 @@ React.useEffect(() => {
                         {activeTab === 'history' ? 'SeaNote Archive' : activeTab === 'counter' ? 'Count Fish' : 'CatchLog Pro'}
                     </span>
                 </div>
-                <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full active:bg-blue-800/50 shrink-0">
-                    <IconSettings className="w-6 h-6 text-blue-100" />
+                <button 
+                    type="button"
+                    onClick={() => setIsSettingsOpen(true)} 
+                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all shrink-0 select-none"
+                    title="設定を開く"
+                    aria-label="設定"
+                >
+                    <IconSettings className="w-7 h-7 text-white/95 drop-shadow-xs" />
                 </button>
             </div>
 
