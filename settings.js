@@ -716,20 +716,33 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
 
                                 <div className="flex gap-2">
-                                    {/* ポイント（約65%に横幅拡大） */}
+                                    {/* ポイント（タップ時全選択 ＆ ワンタップ✕クリアボタン付き） */}
                                     <div className="flex-[1.8] min-w-0">
                                         <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">ポイント (候補・手入力)</label>
-                                        <input
-                                            type="text"
-                                            list="point-options"
-                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                            value={point}
-                                            onChange={(e) => setPoint(e.target.value)}
-                                            placeholder="選択または入力"
-                                        />
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="text"
+                                                list="point-options"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-8 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                value={point}
+                                                onChange={(e) => setPoint(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
+                                                placeholder="選択または入力"
+                                            />
+                                            {point && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPoint('')}
+                                                    className="absolute right-2.5 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-black select-none active:scale-90"
+                                                    title="消去して全候補を表示"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* 水深（「100〜100」がジャストで収まる約35%幅・中央揃え） */}
+                                    {/* 水深 */}
                                     <div className="w-[110px] shrink-0">
                                         <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                         <input
@@ -737,6 +750,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1.5 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={waterDepth}
                                             onChange={(e) => setWaterDepth(e.target.value)}
+                                            onFocus={(e) => e.target.select()}
                                             placeholder="30〜60"
                                         />
                                     </div>
@@ -750,19 +764,35 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={waterTemp}
                                             onChange={(e) => setWaterTemp(e.target.value)}
+                                            onFocus={(e) => e.target.select()}
                                             placeholder="例: 20〜24"
                                         />
                                     </div>
+                                    
+                                    {/* 潮色（タップ時全選択 ＆ ワンタップ✕クリアボタン付き） */}
                                     <div>
                                         <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">潮色 (候補・手入力)</label>
-                                        <input
-                                            type="text"
-                                            list="tide-color-options"
-                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                                            value={tide}
-                                            onChange={(e) => setTide(e.target.value)}
-                                            placeholder="例: 澄み / 薄濁り"
-                                        />
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="text"
+                                                list="tide-color-options"
+                                                className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl pl-3 pr-8 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                                value={tide}
+                                                onChange={(e) => setTide(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
+                                                placeholder="例: 澄み / 薄濁り"
+                                            />
+                                            {tide && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTide('')}
+                                                    className="absolute right-2.5 w-5 h-5 rounded-full bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-black select-none active:scale-90"
+                                                    title="消去して全候補を表示"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
