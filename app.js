@@ -757,7 +757,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
                             {hasOtherBoatData && (
                                 <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md whitespace-nowrap">
-                                    ● 入力あり
+                                    ● 記録あり
                                 </span>
                             )}
                             <span className="text-sky-600 dark:text-sky-400 text-xs sm:text-sm font-bold whitespace-nowrap">
