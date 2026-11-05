@@ -2213,6 +2213,21 @@ React.useEffect(() => {
                 setGasBackupUrl={setGasBackupUrl}
             />
 
+            <AiInputWizardModal
+                showAiInputModal={showAiInputModal}
+                setShowAiInputModal={setShowAiInputModal}
+                aiCurrentStep={aiCurrentStep}
+                setAiCurrentStep={setAiCurrentStep}
+                wizardSteps={wizardSteps}
+                aiInputData={aiInputData}
+                setAiInputData={setAiInputData}
+                targetRecordForAi={targetRecordForAi}
+                updateAiInputForRecord={updateAiInputForRecord}
+                userApiKey={userApiKey}
+                setUserApiKey={setUserApiKey}
+                handleAiGenerate={handleAiGenerate}
+            />
+
             <AiResultModal
                 showAiModal={showAiModal}
                 setShowAiModal={setShowAiModal}
