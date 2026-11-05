@@ -3080,7 +3080,15 @@ React.useEffect(() => {
                                             </div>
                                         </div>
                                     )}
-
+{/* 船長メモのハイライトプレビュー（検索時またはメモ存在時に表示） */}
+                                    {r.detailedMemo && r.detailedMemo.trim() !== '' && (
+                                        <div className="px-3.5 py-2 bg-amber-50/60 dark:bg-slate-900/60 border-t border-amber-200/50 dark:border-slate-700/60 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-start gap-1.5 leading-relaxed">
+                                            <span className="shrink-0 text-amber-600 dark:text-amber-400 font-black">📝 メモ:</span>
+                                            <div className="line-clamp-2 break-all flex-1">
+                                                <HighlightText text={r.detailedMemo} query={searchQuery} />
+                                            </div>
+                                        </div>
+                                    )}
                                     {sharedRecordId === r.id && (
                                         <div className="w-full bg-gray-50 dark:bg-slate-900/80 p-3 border-t border-gray-200 dark:border-slate-700 shadow-inner space-y-2 animate-[fadeIn_0.15s_ease-out]">
                                             <span className="text-xs font-bold text-gray-600 dark:text-slate-300 block">共有先を選択</span>
