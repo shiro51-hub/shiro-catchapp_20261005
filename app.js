@@ -718,9 +718,9 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-base shrink-0">🚢</span>
                             <span className="whitespace-nowrap shrink-0">別船の釣果</span>
-                            <span className="text-[11px] sm:text-xs font-bold text-sky-600/80 dark:text-sky-400/80 whitespace-nowrap">
-                                （複数出船時）
-                            </span>
+                            <span className="text-[11px] sm:text-xs font-bold text-sky-900 dark:text-sky-300 whitespace-nowrap">
+    （複数出船時）
+</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
