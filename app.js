@@ -742,14 +742,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     <button
                         type="button"
                         onClick={() => setIsOtherBoatsOpen(prev => !prev)}
-                        className="w-full px-3.5 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-sky-900 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full pl-2.5 pr-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-sky-900 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
                     >
-                        <span className="flex items-center gap-2">
-                            <span className="text-base sm:text-lg">🚢</span>
-                            <span>別船の釣果</span>
-                            {hasOtherBoatData && <span className="text-emerald-600 dark:text-emerald-400 text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">● 入力あり</span>}
-                        </span>
-                        <span className="text-sky-600 dark:text-sky-400 text-xs sm:text-sm font-bold">{isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                        {/* 左側：タイトルと補足テキスト */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-base shrink-0">🚢</span>
+                            <span className="whitespace-nowrap shrink-0">別船の釣果</span>
+                            <span className="text-[11px] sm:text-xs font-bold text-sky-600/80 dark:text-sky-400/80 whitespace-nowrap">
+                                （複数出船時）
+                            </span>
+                        </div>
+
+                        {/* 右側：右寄せにした「入力あり」バッジ ＋ 開閉ボタン */}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                            {hasOtherBoatData && (
+                                <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                    ● 入力あり
+                                </span>
+                            )}
+                            <span className="text-sky-600 dark:text-sky-400 text-xs sm:text-sm font-bold whitespace-nowrap">
+                                {isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}
+                            </span>
+                        </div>
                     </button>
 
                     {isOtherBoatsOpen && (
