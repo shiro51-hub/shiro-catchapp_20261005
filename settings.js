@@ -674,92 +674,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     {/* タブ 1: 基本設定 */}
                     {activeSettingsTab === 'basic' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-                            {/* 画面テーマ切り替え（アイデア2：大型カード選択方式） */}
-                            <div className="p-3 bg-amber-50/70 dark:bg-slate-900/60 rounded-xl border border-amber-200/80 dark:border-slate-500 shadow-2xs space-y-2">
-                                <div>
-                                    <span className="font-black text-sm block text-gray-800 dark:text-slate-100">画面テーマ</span>
-                                    <span className="text-xs text-gray-500 dark:text-slate-400">日中モード／夜間ダークモードの選択</span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2.5 pt-1 select-none">
-                                    {/* ☀️ ライトモードカード */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setTheme('light')}
-                                        className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
-                                            theme !== 'dark'
-                                                ? 'border-sky-500 bg-white ring-2 ring-sky-300/60 shadow-md'
-                                                : 'border-slate-700 bg-slate-850/60 hover:bg-slate-800 text-slate-400 opacity-60 hover:opacity-90'
-                                        }`}
-                                    >
-                                        {/* 選択中チェックマーク */}
-                                        {theme !== 'dark' && (
-                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-black shadow-xs">
-                                                ✓
-                                            </span>
-                                        )}
-
-                                        <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">☀️</span>
-                                        <span className={`text-xs sm:text-sm font-black ${
-                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-300'
-                                        }`}>
-                                            ライトモード
-                                        </span>
-
-                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
-                                            theme !== 'dark'
-                                                ? 'bg-amber-50/80 border-amber-200/80'
-                                                : 'bg-slate-900 border-slate-750'
-                                        }`}>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                            <span className={`text-[10px] font-bold ${
-                                                theme !== 'dark' ? 'text-amber-900' : 'text-slate-400'
-                                            }`}>
-                                                標準・明るい画面
-                                            </span>
-                                        </div>
-                                    </button>
-
-                                    {/* 🌙 ダークモードカード */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setTheme('dark')}
-                                        className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
-                                            theme === 'dark'
-                                                ? 'border-indigo-400 bg-slate-800 ring-2 ring-indigo-400/50 shadow-md'
-                                                : 'border-slate-200 bg-white/70 hover:bg-white text-slate-500 opacity-60 hover:opacity-90'
-                                        }`}
-                                    >
-                                        {/* 選択中チェックマーク */}
-                                        {theme === 'dark' && (
-                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black shadow-xs">
-                                                ✓
-                                            </span>
-                                        )}
-
-                                        <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">🌙</span>
-                                        <span className={`text-xs sm:text-sm font-black ${
-                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-700'
-                                        }`}>
-                                            ダークモード
-                                        </span>
-
-                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
-                                            theme === 'dark'
-                                                ? 'bg-slate-950 border-slate-700'
-                                                : 'bg-emerald-50/80 border-emerald-200/80'
-                                        }`}>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                            <span className={`text-[10px] font-bold ${
-                                                theme === 'dark' ? 'text-slate-300' : 'text-emerald-900'
-                                            }`}>
-                                                バッテリー省電力
-                                            </span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
+                            
                             <div className="bg-emerald-50/60 dark:bg-slate-900/60 p-3 rounded-xl border border-emerald-200/80 dark:border-slate-500 space-y-2 shadow-2xs">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">座席表の釣座設定（0〜15席）</span>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1035,7 +950,93 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
 
-                            {/* 1. Gemini AI設定 */}
+          {/* 画面テーマ切り替え（システム最上部へ移動） */}
+                            <div className="p-3 bg-amber-50/70 dark:bg-slate-900/60 rounded-xl border border-amber-200/80 dark:border-slate-500 shadow-2xs space-y-2">
+                                <div>
+                                    <span className="font-black text-sm block text-gray-800 dark:text-slate-100">画面テーマ</span>
+                                    <span className="text-xs text-gray-500 dark:text-slate-400">日中モード／夜間ダークモードの選択</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2.5 pt-1 select-none">
+                                    {/* ☀️ ライトモードカード */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setTheme('light')}
+                                        className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                                            theme !== 'dark'
+                                                ? 'border-sky-500 bg-white ring-2 ring-sky-300/60 shadow-md'
+                                                : 'border-slate-700 bg-slate-850/60 hover:bg-slate-800 text-slate-400 opacity-60 hover:opacity-90'
+                                        }`}
+                                    >
+                                        {/* 選択中チェックマーク */}
+                                        {theme !== 'dark' && (
+                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-black shadow-xs">
+                                                ✓
+                                            </span>
+                                        )}
+
+                                        <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">☀️</span>
+                                        <span className={`text-xs sm:text-sm font-black ${
+                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-300'
+                                        }`}>
+                                            ライトモード
+                                        </span>
+
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
+                                            theme !== 'dark'
+                                                ? 'bg-amber-50/80 border-amber-200/80'
+                                                : 'bg-slate-900 border-slate-750'
+                                        }`}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                            <span className={`text-[10px] font-bold ${
+                                                theme !== 'dark' ? 'text-amber-900' : 'text-slate-400'
+                                            }`}>
+                                                標準・明るい画面
+                                            </span>
+                                        </div>
+                                    </button>
+
+                                    {/* 🌙 ダークモードカード */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setTheme('dark')}
+                                        className={`relative flex flex-col items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                                            theme === 'dark'
+                                                ? 'border-indigo-400 bg-slate-800 ring-2 ring-indigo-400/50 shadow-md'
+                                                : 'border-slate-200 bg-white/70 hover:bg-white text-slate-500 opacity-60 hover:opacity-90'
+                                        }`}
+                                    >
+                                        {/* 選択中チェックマーク */}
+                                        {theme === 'dark' && (
+                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black shadow-xs">
+                                                ✓
+                                            </span>
+                                        )}
+
+                                        <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">🌙</span>
+                                        <span className={`text-xs sm:text-sm font-black ${
+                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-700'
+                                        }`}>
+                                            ダークモード
+                                        </span>
+
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
+                                            theme === 'dark'
+                                                ? 'bg-slate-950 border-slate-700'
+                                                : 'bg-emerald-50/80 border-emerald-200/80'
+                                        }`}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span className={`text-[10px] font-bold ${
+                                                theme === 'dark' ? 'text-slate-300' : 'text-emerald-900'
+                                            }`}>
+                                                バッテリー省電力
+                                            </span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                {/* 1. Gemini AI設定 */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 
