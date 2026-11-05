@@ -2202,6 +2202,14 @@ React.useEffect(() => {
                 setToastMessage={setToastMessage}
             />
 
+            <MemoModalWithTags
+                showMemoModal={showMemoModal}
+                setShowMemoModal={setShowMemoModal}
+                tempMemo={tempMemo}
+                setTempMemo={setTempMemo}
+                onAutoSave={handleAutoSaveMemo}
+            />
+
             {/* ヘッダー */}
             <div 
                 onTouchStart={handleSwipeStart}
