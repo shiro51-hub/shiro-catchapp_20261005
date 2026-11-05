@@ -838,12 +838,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             <span className="text-base shrink-0">📍</span>
                             <span className="whitespace-nowrap shrink-0">実釣ポイント・航海メモ</span>
                             {pointLogText && pointLogText.trim() !== '' && (
-                                <span className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-xs font-black bg-emerald-100 dark:bg-emerald-950/70 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap scale-95 origin-left">
+                                <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap">
                                     ● 記録あり
                                 </span>
                             )}
                         </span>
-                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold shrink-0 ml-1">
+                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold shrink-0 ml-1 whitespace-nowrap">
                             {isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}
                         </span>
                     </button>
