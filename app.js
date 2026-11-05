@@ -832,16 +832,20 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     <button
                         type="button"
                         onClick={() => setIsPointLogOpen(prev => !prev)}
-                        className="w-full px-3.5 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-amber-950 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full pl-2.5 pr-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-amber-950 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
                     >
-                        <span className="flex items-center gap-2">
-                            <span className="text-base sm:text-lg">📍</span>
-                            <span>実釣ポイント・航海メモ</span>
+                        <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-base shrink-0">📍</span>
+                            <span className="whitespace-nowrap shrink-0">実釣ポイント・航海メモ</span>
                             {pointLogText && pointLogText.trim() !== '' && (
-                                <span className="text-emerald-600 dark:text-emerald-400 text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">● 記録あり</span>
+                                <span className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-xs font-black bg-emerald-100 dark:bg-emerald-950/70 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap scale-95 origin-left">
+                                    ● 記録あり
+                                </span>
                             )}
                         </span>
-                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold">{isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}</span>
+                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold shrink-0 ml-1">
+                            {isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}
+                        </span>
                     </button>
 
                     {isPointLogOpen && (
