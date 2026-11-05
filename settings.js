@@ -715,9 +715,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    <div>
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">ポイント (候補・手入力)</label>
+                                <div className="flex gap-2">
+                                    {/* ポイント（約65%に横幅拡大） */}
+                                    <div className="flex-[1.8] min-w-0">
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">ポイント (候補・手入力)</label>
                                         <input
                                             type="text"
                                             list="point-options"
@@ -727,14 +728,16 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             placeholder="選択または入力"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1">水深 (m)</label>
+
+                                    {/* 水深（「100〜100」がジャストで収まる約35%幅・中央揃え） */}
+                                    <div className="w-[110px] shrink-0">
+                                        <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                         <input
                                             type="text"
-                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 font-bold text-base bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                                            className="w-full border-2 border-gray-200 dark:border-slate-600 rounded-xl px-1.5 py-2.5 font-bold text-base text-center bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                                             value={waterDepth}
                                             onChange={(e) => setWaterDepth(e.target.value)}
-                                            placeholder="例: 30〜60"
+                                            placeholder="30〜60"
                                         />
                                     </div>
                                 </div>
