@@ -20,11 +20,18 @@ const loadHtml2Canvas = () => {
 const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 );
-// 検索ワードを安全に分割し、一致した部分のみ色付けする軽量パーツ
+// 検索ワードを安全に分割し、一致した部分のみ色付けする軽量パーツ（「〇〇さん」入力対応版）
 const HighlightText = ({ text = '', query = '' }) => {
     if (!query || !query.trim() || !text) return <>{text}</>;
 
-    const safeQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let raw = query.trim();
+    // 「〇〇さん」と入力された場合は「さん」を取り除いた名前本体をハイライト対象にする
+    if (raw.endsWith('さん') && raw.length > 2) {
+        raw = raw.slice(0, -2).trim();
+    }
+    if (!raw) return <>{text}</>;
+
+    const safeQuery = raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${safeQuery})`, 'gi');
     const parts = String(text).split(regex);
 
@@ -34,7 +41,7 @@ const HighlightText = ({ text = '', query = '' }) => {
                 regex.test(part) ? (
                     <mark
                         key={i}
-                        className="bg-yellow-200 text-slate-900 dark:bg-amber-400/40 dark:text-amber-100 font-black px-0.5 rounded"
+                        className="bg-yellow-300 text-slate-900 dark:bg-amber-400 dark:text-slate-950 font-black px-1 py-0.5 rounded shadow-xs"
                     >
                         {part}
                     </mark>
@@ -44,8 +51,7 @@ const HighlightText = ({ text = '', query = '' }) => {
             )}
         </>
     );
-};
-// デジタル釣果ボードモーダル
+};// デジタル釣果ボードモーダル
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
     const [isGenerating, setIsGenerating] = React.useState(false);
