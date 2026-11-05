@@ -621,15 +621,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                 {/* ツールバー */}
                 <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between shrink-0 select-none gap-2">
                     <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            onClick={insertCurrentTime}
-                            className="py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-xs flex items-center gap-1 transition-all"
-                        >
-                            <span className="text-sm sm:text-base leading-none">⏰</span>
-                            <span>時刻</span>
-                        </button>
-
+                        
                         <input
                             type="file"
                             accept="image/*"
@@ -878,12 +870,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
                 
-　　　{/* メモ本文入力 */}
+　　　{/* メモ本文入力（余計なボタンを排したフルエリア版） */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
                         className="w-full flex-1 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none leading-relaxed"
-                        placeholder="メモを入力してください。「現在時刻を挿入」で【HH:MM】が入ります。入力内容は自動保存されます..."
+                        placeholder="メモを入力してください（入力内容は自動保存されます）..."
                         value={tempMemo}
                         onChange={(e) => updateTextAndSave(e.target.value)}
                         autoFocus
