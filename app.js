@@ -1986,41 +1986,49 @@ React.useEffect(() => {
             });
         }
 
-        const rawQ = searchQuery.trim();
-        const isHonorific = /.+さん$/.test(rawQ); // 「〇〇さん」の入力かどうかを判定
-        const exactTargetName = isHonorific ? rawQ.slice(0, -2).trim().toLowerCase() : null;
-        const q = rawQ.toLowerCase();
+       const rawQ = searchQuery.trim();
+        // 万が一「〇〇さん」と入力されても末尾の「さん」を自動除去
+        const cleanQ = rawQ.endsWith('さん') && rawQ.length > 2 ? rawQ.slice(0, -2).trim() : rawQ;
+        const q = cleanQ.toLowerCase();
 
         return records.filter(r => {
             // 座席の名前一覧
             const seatNames = [
-                ...(r.port || []).map(s => (s.name || '').trim().toLowerCase()),
-                ...(r.starboard || []).map(s => (s.name || '').trim().toLowerCase())
+                ...(r.port || []).map(s => (s.name || '').trim()),
+                ...(r.starboard || []).map(s => (s.name || '').trim())
             ].filter(Boolean);
 
             // 竿頭の名前一覧（複数名対応）
             const topNames = (r.topAnglerName || '')
                 .split(/[・,\s]+/)
-                .map(n => n.trim().toLowerCase())
+                .map(n => n.trim())
                 .filter(Boolean);
 
-            // 【アイデア1】「〇〇さん」と入力された場合は名前の完全一致を優先判定
-            if (exactTargetName) {
-                const nameMatched = seatNames.includes(exactTargetName) || topNames.includes(exactTargetName);
-                if (nameMatched) return true;
-                // メモ欄などに「原さん」と直接書かれている場合もヒット
-                const memoText = [r.detailedMemo, ...(r.port || []).map(s => s.memo), ...(r.starboard || []).map(s => s.memo)].join(' ').toLowerCase();
-                return memoText.includes(q);
-            }
+            const allNames = [...seatNames, ...topNames];
 
-            // 通常のキーワード入力時はこれまで通りの部分一致
-            const portNamesAndMemos = (r.port || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
-            const starboardNamesAndMemos = (r.starboard || []).map(s => `${s.name || ''} ${s.memo || ''}`).join(' ');
-            
+            // 1. 名前欄の自動判定（名字のみ完全一致、またはスペース区切りフルネームの名字一致）
+            const isNameMatched = allNames.some(name => {
+                const lowerName = name.toLowerCase();
+                // 「原」など名字そのまま一致
+                if (lowerName === q) return true;
+                // 「原 司郎」などスペース区切りの名字一致
+                const parts = lowerName.split(/[\s ]+/);
+                if (parts[0] === q) return true;
+                // 2文字以上の入力なら、くっついたフルネームの先頭一致も拾う（例:「原司」で「原司郎」）
+                if (q.length >= 2 && lowerName.startsWith(q)) return true;
+                return false;
+            });
+
+            if (isNameMatched) return true;
+
+            // 2. 日付・魚種・ポイント・天候・メモ欄の全体検索（部分一致）
+            const portMemos = (r.port || []).map(s => s.memo || '').join(' ');
+            const starboardMemos = (r.starboard || []).map(s => s.memo || '').join(' ');
+
             const targetText = [
                 r.date, (r.date || '').replace(/-/g, '/'), r.targetFish, r.point,
                 r.weather1, r.weather2,
-                r.topAnglerName, r.detailedMemo, portNamesAndMemos, starboardNamesAndMemos
+                r.detailedMemo, portMemos, starboardMemos
             ].join(' ').toLowerCase();
 
             return targetText.includes(q);
