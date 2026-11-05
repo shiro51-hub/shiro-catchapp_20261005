@@ -722,17 +722,19 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             {/* ドロップダウンメニュー */}
                                             {isPointDropdownOpen && (
                                                 <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
-                                                    <div className="flex justify-between items-center px-2 py-1 border-b border-gray-100 dark:border-slate-700 text-[11px] font-bold text-slate-400">
-                                                        <span>タップで追加・解除</span>
+                                                    <div className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100 dark:border-slate-700">
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">
+                                                            タップで<br />追加・解除
+                                                        </span>
                                                         <button 
-    type="button" 
-    onClick={() => setIsPointDropdownOpen(false)}
-    className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 text-xs sm:text-sm font-black flex items-center gap-1 active:scale-95 transition-all select-none"
-    title="閉じる"
->
-    <span className="text-sm font-black">✕</span>
-    <span>閉じる</span>
-</button>
+                                                            type="button" 
+                                                            onClick={() => setIsPointDropdownOpen(false)}
+                                                            className="px-3 py-1 rounded-lg bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-700 dark:text-slate-100 text-xs sm:text-sm font-black flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 transition-all select-none shrink-0"
+                                                            title="閉じる"
+                                                        >
+                                                            <span className="text-sm font-black leading-none">✕</span>
+                                                            <span className="leading-none tracking-wider">閉じる</span>
+                                                        </button>
                                                     </div>
                                                     <div className="max-h-48 overflow-y-auto no-scrollbar py-0.5 space-y-0.5">
                                                         {['久里浜沖', '鴨居沖', '走水沖', '観音崎沖', '下浦沖', '竹岡沖', '剣崎沖'].map((pName) => {
@@ -822,17 +824,19 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             {/* ドロップダウンメニュー */}
                                             {isTideDropdownOpen && (
                                                 <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
-                                                    <div className="flex justify-between items-center px-2 py-1 border-b border-gray-100 dark:border-slate-700 text-[11px] font-bold text-slate-400">
-                                                        <span>タップで追加・解除</span>
+                                                    <div className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100 dark:border-slate-700">
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">
+                                                            タップで<br />追加・解除
+                                                        </span>
                                                         <button 
-    type="button" 
-    onClick={() => setIsTideDropdownOpen(false)}
-    className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 text-xs sm:text-sm font-black flex items-center gap-1 active:scale-95 transition-all select-none"
-    title="閉じる"
->
-    <span className="text-sm font-black">✕</span>
-    <span>閉じる</span>
-</button>
+                                                            type="button" 
+                                                            onClick={() => setIsTideDropdownOpen(false)}
+                                                            className="px-3 py-1 rounded-lg bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-700 dark:text-slate-100 text-xs sm:text-sm font-black flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 transition-all select-none shrink-0"
+                                                            title="閉じる"
+                                                        >
+                                                            <span className="text-sm font-black leading-none">✕</span>
+                                                            <span className="leading-none tracking-wider">閉じる</span>
+                                                        </button>
                                                     </div>
                                                     <div className="max-h-48 overflow-y-auto no-scrollbar py-0.5 space-y-0.5">
                                                         {['澄み', '薄濁り', '濁り', '笹濁り', '激濁り'].map((tName) => {
