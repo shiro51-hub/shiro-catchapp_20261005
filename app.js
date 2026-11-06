@@ -2731,15 +2731,15 @@ React.useEffect(() => {
                             </div>
                         )}
 
-                        {/* 魚のサイズ（縮小） ＆ 船長メモ（下段の釣果リセットと上下幅を完全同期） */}
-                        <div className="flex items-stretch gap-2 shrink-0">
+                        {/* 魚のサイズ ＆ 船長メモ（下段の釣果リセットと上下幅を完全一致） */}
+                        <div className="grid grid-cols-[1fr_88px] gap-2 shrink-0">
                             {/* 左側：魚のサイズ（下段のモード切替バーと右端ラインを一致） */}
-                            <div className="flex-[1.8] min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2 py-1.5 flex flex-col justify-between">
+                            <div className="min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2.5 py-1.5 flex flex-col justify-between">
                                 <div className="text-[11px] font-black text-gray-500 dark:text-slate-400 mb-0.5 flex items-center">
                                     <IconRuler className="w-3.5 h-3.5 mr-1 text-sky-500 dark:text-sky-400 shrink-0" /> 
                                     <span>魚のサイズ (cm)</span>
                                 </div>
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center space-x-1.5">
                                     <div className="flex-1 flex items-center border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 focus-within:border-sky-400 dark:focus-within:border-sky-500 overflow-hidden min-w-0">
                                         <span className="pl-1 text-[10px] text-gray-400 font-bold shrink-0">小</span>
                                         <input 
@@ -2764,19 +2764,19 @@ React.useEffect(() => {
                                 </div>
                             </div>
 
-                            {/* 右側：船長メモ（下段の釣果リセットボタンと横幅を完全一致） */}
-                           <button
-    type="button"
-    onClick={() => openMemoModal(null)}
-    className={`w-[100px] rounded-xl shadow-sm border px-2 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
+                            {/* 右側：船長メモ（下段の釣果リセットと同一幅） */}
+                            <button
+                                type="button"
+                                onClick={() => openMemoModal(null)}
+                                className={`w-full rounded-xl shadow-sm border px-1 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none overflow-hidden ${
                                     detailedMemo && detailedMemo.trim() !== ''
                                         ? 'bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-300'
                                         : 'bg-sky-50 dark:bg-slate-800 border-sky-200 dark:border-slate-700 text-sky-800 dark:text-sky-300'
                                 }`}
                             >
                                 <div className="flex items-center justify-center gap-1">
-                                    <span className="text-xl sm:text-2xl leading-none">📝</span>
-                                    <span className="text-xs sm:text-sm font-black tracking-tight whitespace-nowrap">船長メモ</span>
+                                    <span className="text-lg leading-none">📝</span>
+                                    <span className="text-xs font-black tracking-tight whitespace-nowrap">船長メモ</span>
                                 </div>
                                 <span className="text-[10px] font-bold opacity-75 mt-0.5 leading-none whitespace-nowrap">
                                     {detailedMemo && detailedMemo.trim() !== '' ? `${detailedMemo.length}文字` : 'タップ記録'}
