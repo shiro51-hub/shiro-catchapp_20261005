@@ -2731,17 +2731,17 @@ React.useEffect(() => {
                             </div>
                         )}
 
-                        {/* 魚のサイズ（縮小） ＆ 船長メモ（リセットボタンと同じ横幅に拡大） */}
+                        {/* 魚のサイズ（縮小） ＆ 船長メモ（下段の釣果リセットと上下幅を完全同期） */}
                         <div className="flex items-stretch gap-2 shrink-0">
                             {/* 左側：魚のサイズ（下段のモード切替バーと右端ラインを一致） */}
-                            <div className="flex-1 min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2.5 py-2 flex flex-col justify-between">
-                                <div className="text-[11px] sm:text-xs font-black text-gray-500 dark:text-slate-400 mb-1 flex items-center">
+                            <div className="flex-[1.8] min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2 py-1.5 flex flex-col justify-between">
+                                <div className="text-[11px] font-black text-gray-500 dark:text-slate-400 mb-0.5 flex items-center">
                                     <IconRuler className="w-3.5 h-3.5 mr-1 text-sky-500 dark:text-sky-400 shrink-0" /> 
                                     <span>魚のサイズ (cm)</span>
                                 </div>
-                                <div className="flex items-center space-x-1.5">
+                                <div className="flex items-center space-x-1">
                                     <div className="flex-1 flex items-center border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 focus-within:border-sky-400 dark:focus-within:border-sky-500 overflow-hidden min-w-0">
-                                        <span className="pl-1.5 text-[11px] text-gray-400 font-bold shrink-0">小</span>
+                                        <span className="pl-1 text-[10px] text-gray-400 font-bold shrink-0">小</span>
                                         <input 
                                             type="number" 
                                             className="w-full py-1 bg-transparent text-center font-black text-sm sm:text-base text-gray-800 dark:text-slate-100 focus:outline-none min-w-0" 
@@ -2752,7 +2752,7 @@ React.useEffect(() => {
                                     </div>
                                     <span className="text-gray-400 font-bold text-xs shrink-0">〜</span>
                                     <div className="flex-1 flex items-center border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 focus-within:border-sky-400 dark:focus-within:border-sky-500 overflow-hidden min-w-0">
-                                        <span className="pl-1.5 text-[11px] text-gray-400 font-bold shrink-0">大</span>
+                                        <span className="pl-1 text-[10px] text-gray-400 font-bold shrink-0">大</span>
                                         <input 
                                             type="number" 
                                             className="w-full py-1 bg-transparent text-center font-black text-sm sm:text-base text-gray-800 dark:text-slate-100 focus:outline-none min-w-0" 
@@ -2768,7 +2768,7 @@ React.useEffect(() => {
                             <button
                                 type="button"
                                 onClick={() => openMemoModal(null)}
-                                className={`w-32 sm:w-36 rounded-xl shadow-sm border px-2 py-2 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
+                                className={`flex-1 min-w-0 rounded-xl shadow-sm border px-2 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
                                     detailedMemo && detailedMemo.trim() !== ''
                                         ? 'bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-300'
                                         : 'bg-sky-50 dark:bg-slate-800 border-sky-200 dark:border-slate-700 text-sky-800 dark:text-sky-300'
@@ -2776,9 +2776,9 @@ React.useEffect(() => {
                             >
                                 <div className="flex items-center justify-center gap-1">
                                     <span className="text-xl sm:text-2xl leading-none">📝</span>
-                                    <span className="text-xs sm:text-sm font-black tracking-tight">船長メモ</span>
+                                    <span className="text-xs sm:text-sm font-black tracking-tight whitespace-nowrap">船長メモ</span>
                                 </div>
-                                <span className="text-[10px] font-bold opacity-75 mt-0.5 leading-none">
+                                <span className="text-[10px] font-bold opacity-75 mt-0.5 leading-none whitespace-nowrap">
                                     {detailedMemo && detailedMemo.trim() !== '' ? `${detailedMemo.length}文字` : 'タップ記録'}
                                 </span>
                             </button>
