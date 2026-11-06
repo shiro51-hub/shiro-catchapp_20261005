@@ -2765,10 +2765,10 @@ React.useEffect(() => {
                             </div>
 
                             {/* 右側：船長メモ（下段の釣果リセットボタンと横幅を完全一致） */}
-                            <button
-                                type="button"
-                                onClick={() => openMemoModal(null)}
-                                className={`flex-1 min-w-0 rounded-xl shadow-sm border px-2 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
+                           <button
+    type="button"
+    onClick={() => openMemoModal(null)}
+    className={`w-[100px] rounded-xl shadow-sm border px-2 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
                                     detailedMemo && detailedMemo.trim() !== ''
                                         ? 'bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-300'
                                         : 'bg-sky-50 dark:bg-slate-800 border-sky-200 dark:border-slate-700 text-sky-800 dark:text-sky-300'
