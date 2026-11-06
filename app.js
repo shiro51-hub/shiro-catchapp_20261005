@@ -2731,10 +2731,10 @@ React.useEffect(() => {
                             </div>
                         )}
 
-                       {/* 上下完全同期グリッド：船長メモを釣果リセットと同じ幅まで自動拡張 */}
-                        <div className="grid grid-cols-[1fr_auto] gap-2 shrink-0">
-                            {/* 上段・左：魚のサイズ */}
-                            <div className="min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2.5 py-1.5 flex flex-col justify-between">
+                       {/* 魚のサイズ（w-2/3） ＆ 船長メモ（w-1/3：釣果リセットと全く同じ幅に拡大） */}
+                        <div className="flex space-x-2 items-stretch shrink-0">
+                            {/* 左側：魚のサイズ（縮小：下のモード切替と同じ w-2/3） */}
+                            <div className="w-2/3 min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2.5 py-1.5 flex flex-col justify-between">
                                 <div className="text-[11px] font-black text-gray-500 dark:text-slate-400 mb-0.5 flex items-center">
                                     <IconRuler className="w-3.5 h-3.5 mr-1 text-sky-500 dark:text-sky-400 shrink-0" /> 
                                     <span>魚のサイズ (cm)</span>
@@ -2764,77 +2764,28 @@ React.useEffect(() => {
                                 </div>
                             </div>
 
-                            {/* 上段・右：船長メモ（下の釣果リセットと同一の横幅枠） */}
+                            {/* 右側：船長メモ（下の釣果リセットと同一の w-1/3 に横幅を拡大） */}
                             <button
                                 type="button"
                                 onClick={() => openMemoModal(null)}
-                                className={`w-full h-full rounded-xl shadow-sm border px-3 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none ${
+                                className={`w-1/3 rounded-xl shadow-sm border px-1 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none shrink-0 ${
                                     detailedMemo && detailedMemo.trim() !== ''
                                         ? 'bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-300'
                                         : 'bg-sky-50 dark:bg-slate-800 border-sky-200 dark:border-slate-700 text-sky-800 dark:text-sky-300'
                                 }`}
                             >
                                 <div className="flex items-center justify-center gap-1">
-                                    <span className="text-xl sm:text-2xl leading-none">📝</span>
+                                    <span className="text-lg sm:text-xl leading-none">📝</span>
                                     <span className="text-xs sm:text-sm font-black tracking-tight whitespace-nowrap">船長メモ</span>
                                 </div>
                                 <span className="text-[10px] font-bold opacity-75 mt-0.5 leading-none whitespace-nowrap">
                                     {detailedMemo && detailedMemo.trim() !== '' ? `${detailedMemo.length}文字` : 'タップ記録'}
                                 </span>
                             </button>
-
-                            {/* 下段・左：モード切替バー */}
-                            <div className="flex bg-gray-200 dark:bg-slate-800 p-1 rounded-xl border border-gray-300 dark:border-slate-700 shadow-inner">
-                                <button
-                                    type="button"
-                                    onClick={() => setCounterMode('tap')}
-                                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${
-                                        counterMode === 'tap'
-                                            ? 'bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-sm'
-                                            : 'text-gray-500 dark:text-slate-400'
-                                    }`}
-                                >
-                                    タップ
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setCounterMode('slide')}
-                                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${
-                                        counterMode === 'slide'
-                                            ? 'bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-sm'
-                                            : 'text-gray-500 dark:text-slate-400'
-                                    }`}
-                                >
-                                    ⇄ スライド
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setCounterMode('keypad')}
-                                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${
-                                        counterMode === 'keypad'
-                                            ? 'bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-sm'
-                                            : 'text-gray-500 dark:text-slate-400'
-                                    }`}
-                                >
-                                    🔢 テンキー
-                                </button>
-                            </div>
-
-                            {/* 下段・右：釣果リセット */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (window.confirm('釣果カウントのみをリセットしますか？\n（サイズやお名前は保持されます）')) {
-                                        resetOnlyCounts();
-                                    }
-                                }}
-                                className="w-full bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-200 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm px-3 py-1.5 flex flex-col items-center justify-center text-center active:scale-95 transition-all select-none"
-                                title="釣果数をリセット"
-                            >
-                                <span className="text-base sm:text-lg text-sky-600 dark:text-sky-400 leading-none mb-0.5">🔄</span>
-                                <span className="text-[11px] sm:text-xs font-black tracking-tight whitespace-nowrap">釣果リセット</span>
-                            </button>
                         </div>
+
+                        {/* 下段：ResetButtonコンポーネントを標準呼び出し */}
+                        <ResetButton onReset={resetOnlyCounts} counterMode={counterMode} setCounterMode={setCounterMode} />
 
                         <div className="h-16 shrink-0 pointer-events-none"></div>
                     </div>
