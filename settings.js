@@ -1009,11 +1009,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
     value={selectedAiModel}
     onChange={handleModelChange}
 >
-    {((window.AI_MODEL_LIST && window.AI_MODEL_LIST.length > 0) ? window.AI_MODEL_LIST : [
-        { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash" },
-        { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash" },
-        { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash" }
-    ]).map((opt) => (
+    {(window.AI_MODEL_LIST || []).map((opt) => (
         <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
             {opt.label}
         </option>
