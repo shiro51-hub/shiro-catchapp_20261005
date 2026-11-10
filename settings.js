@@ -43,6 +43,9 @@ function SettingsPanel({
     const [isPointDropdownOpen, setIsPointDropdownOpen] = React.useState(false);
     const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
 
+    // ★ この1行を追加（ai_service.jsのリストを確実に取り込む）
+    const modelOptions = React.useMemo(() => window.AI_MODEL_LIST || [], [isSettingsOpen]);
+
     // ドロップダウン展開時の自動スクロール用Ref
     const pointRef = React.useRef(null);
     const tideRef = React.useRef(null);
@@ -1009,7 +1012,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
     value={selectedAiModel}
     onChange={handleModelChange}
 >
-    {(window.AI_MODEL_LIST || []).map((opt) => (
+    {(modelOptions.length > 0 ? modelOptions : (window.AI_MODEL_LIST || [])).map((opt) => (
         <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
             {opt.label}
         </option>
