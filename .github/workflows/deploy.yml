@@ -23,26 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build and Pre-compile JSX
-        run: |
-          mkdir -p dist
-          cp -r . dist/ 2>/dev/null || true
-          rm -rf dist/.git dist/.github dist/dist
-          npm install -D @babel/core @babel/cli @babel/preset-react
-          npx babel api.js counter.js settings.js report.js app.js --out-dir dist --presets @babel/preset-react
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
