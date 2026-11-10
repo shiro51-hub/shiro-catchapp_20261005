@@ -177,42 +177,7 @@ function SettingsPanel({
         });
     };
 
-    // 画像ファイルを Base64 に軽量圧縮変換
-    const fileToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const maxDim = 900;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height && width > maxDim) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else if (height > maxDim) {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-                    resolve(dataUrl.split(',')[1]);
-                };
-                img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
-                img.src = e.target.result;
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    };
-
+    
     // 潮時・月齢画像の自動解析（ai_service.js 経由）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
