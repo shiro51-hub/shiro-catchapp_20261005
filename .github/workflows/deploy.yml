@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main"] # ブランチ名が master の場合は master に変更
 
 permissions:
   contents: read
@@ -34,13 +34,13 @@ jobs:
           cp -r . dist/ 2>/dev/null || true
           rm -rf dist/.git dist/.github dist/dist
 
-          # Babel CLIを一時インストールしてJSXファイルを純粋なJSに事前変換
-          npx --yes @babel/cli@7.24.8 @babel/core@7.24.8 @babel/preset-react@7.24.7 \
-            api.js counter.js settings.js report.js app.js \
+          # Babelパッケージをインストールして確実に対象JSをコンパイル
+          npm install -D @babel/core @babel/cli @babel/preset-react
+          npx babel api.js counter.js settings.js report.js app.js \
             --out-dir dist \
             --presets @babel/preset-react
 
-          # 公開用 index.html から Babel スタンドアロンの読み込みと text/babel 指定を除去
+          # 公開用 index.html から Babel スタンドアロン読み込みと text/babel を除去
           sed -i '/babel\.min\.js/d' dist/index.html
           sed -i 's/type="text\/babel"/type="text\/javascript"/g' dist/index.html
 
