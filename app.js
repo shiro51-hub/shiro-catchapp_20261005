@@ -1593,47 +1593,14 @@ React.useEffect(() => {
 
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通り（時系列の出来事を主軸に描写・大げさな全体表現は使わずシンプルにトップと二番手を紹介・オデコがいる場合は全員安打禁止）に指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
-        try {
-            const modelQueue = typeof window.getModelRotationOrder === 'function'
-                ? window.getModelRotationOrder(selectedAiModel)
-                : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
-
-            let text = null;
-            let lastError = null;
-
-            for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
-                const currentModel = modelQueue[mIdx];
-                const isPreferredModel = (mIdx === 0);
-                const maxAttempts = isPreferredModel ? 3 : 1;
-
-                if (mIdx > 0) {
-                    setToastMessage(`混雑のため【${currentModel}】へ切り替えて作成中...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-
-                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                    try {
-                        if (isPreferredModel && attempt > 1) {
-                            setToastMessage(`サーバー混雑のため【${currentModel}】で再試行中... (${attempt}/${maxAttempts})`);
-                            await new Promise(resolve => setTimeout(resolve, attempt * 1500));
-                        }
-
-                        text = await callGeminiApi(activeApiKey, `${systemPrompt}\n\n${userQuery}`, currentModel, false);
-                        if (text) break;
-                    } catch (err) {
-                        lastError = err;
-                        const errMsg = ((err && err.message) || String(err)).toLowerCase();
-                        const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429');
-
-                        if (!isBusy) throw err;
-                        if (isPreferredModel && attempt < maxAttempts) continue;
-                    }
-                }
-
-                if (text) break;
-            }
-
-            if (!text && lastError) throw lastError;
+       try {
+            const text = await window.callAiText({
+                prompt: `${systemPrompt}\n\n${userQuery}`,
+                selectedModel: selectedAiModel,
+                isJson: false,
+                apiKey: activeApiKey,
+                onStatusUpdate: (msg) => setToastMessage(msg)
+            });
 
             if (text) {
                 setToastMessage('');
@@ -1888,46 +1855,13 @@ React.useEffect(() => {
         const prompt = promptLines.join('\n');
 
         try {
-            const modelQueue = typeof window.getModelRotationOrder === 'function'
-                ? window.getModelRotationOrder(selectedAiModel)
-                : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
-
-            let text = null;
-            let lastError = null;
-
-            for (let mIdx = 0; mIdx < modelQueue.length; mIdx++) {
-                const targetModel = modelQueue[mIdx];
-                const isPreferredModel = (mIdx === 0);
-                const maxAttempts = isPreferredModel ? 3 : 1;
-
-                if (mIdx > 0) {
-                    setToastMessage(`混雑のため【${targetModel}】へ切り替えて再試行中...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-
-                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                    try {
-                        if (isPreferredModel && attempt > 1) {
-                            setToastMessage(`サーバー混雑のため【${targetModel}】で再試行中... (${attempt}/${maxAttempts})`);
-                            await new Promise(resolve => setTimeout(resolve, attempt * 1500));
-                        }
-
-                        text = await callGeminiApi(activeApiKey, prompt, targetModel, true);
-                        if (text) break;
-                    } catch (err) {
-                        lastError = err;
-                        const errMsg = ((err && err.message) || String(err)).toLowerCase();
-                        const isBusy = errMsg.includes('503') || errMsg.includes('500') || errMsg.includes('overloaded') || errMsg.includes('service unavailable') || errMsg.includes('429') || errMsg.includes('resource_exhausted') || errMsg.includes('quota');
-
-                        if (!isBusy) throw err;
-                        if (isPreferredModel && attempt < maxAttempts) continue;
-                    }
-                }
-
-                if (text) break;
-            }
-
-            if (!text) throw lastError || new Error('設定されているすべてのモデルで応答が得られませんでした');
+            const text = await window.callAiText({
+                prompt: prompt,
+                selectedModel: selectedAiModel,
+                isJson: true,
+                apiKey: activeApiKey,
+                onStatusUpdate: (msg) => setToastMessage(msg)
+            });
 
             let cleanJson = text.trim();
             if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replace(/^```json/, '');
