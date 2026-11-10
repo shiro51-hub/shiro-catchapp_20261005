@@ -4,34 +4,35 @@
 
 // 【モデルマスター定義】
 // 今後モデルの追加・変更・削除を行う際はこの配列のみを編集します
+window.AI_MODEL_LIST = [
+    { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+    { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+    { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
+];
+
+window.AI_VISION_MODELS = [
+    'gemini-3.8-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash'
+];
+
 const AI_MODEL_CONFIG = {
-    // 画面の選択肢およびテキスト生成（日報・カルテ分析）の優先ローテーション
-    textModels: [
-        { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-        { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
-    ],
-    // 画像解析（気象予報・潮時表）で使用するビジョン対応モデル
-    visionModels: [
-        'gemini-3.8-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash'
-    ],
-    // 各モデルでの再試行回数
+    textModels: window.AI_MODEL_LIST,
+    visionModels: window.AI_VISION_MODELS,
     maxAttemptsPerModel: 2
 };
-// 選択肢用配列の公開
-window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
 
 // モデル表示名から内部IDを取得
 window.getActualModelName = function(modelValue) {
-    const found = AI_MODEL_CONFIG.textModels.find(m => m.value === modelValue || m.id === modelValue);
-    return found ? found.id : AI_MODEL_CONFIG.textModels[0].id;
+    const list = window.AI_MODEL_LIST || [];
+    const found = list.find(m => m.value === modelValue || m.id === modelValue);
+    return found ? found.id : (list[0] ? list[0].id : 'gemini-3.8-flash');
 };
 
 // 選択されたモデルを先頭にしたローテーション配列を取得
 window.getModelRotationOrder = function(currentSelectedValue) {
-    const allIds = AI_MODEL_CONFIG.textModels.map(m => m.id);
+    const list = window.AI_MODEL_LIST || [];
+    const allIds = list.map(m => m.id);
     const currentId = window.getActualModelName(currentSelectedValue);
     const startIndex = allIds.indexOf(currentId);
     if (startIndex !== -1) {
@@ -39,7 +40,6 @@ window.getModelRotationOrder = function(currentSelectedValue) {
     }
     return allIds;
 };
-
 // ==========================================
 // 共通実行エンジン（内部用）
 // ==========================================
