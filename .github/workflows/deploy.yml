@@ -31,17 +31,18 @@ jobs:
       - name: Build & Pre-compile JSX
         run: |
           mkdir -p dist
-          # 全ファイルをdistへ一旦コピー
           cp -r . dist/ 2>/dev/null || true
           rm -rf dist/.git dist/.github dist/dist
 
-          # Babel CLIを使ってJSXを含む全ファイルを純粋なJavaScriptへ事前コンパイル
-          npx --yes @babel/cli @babel/core @babel/preset-react babel \
-            api.js counter.js settings.js report.js app.js \
+          # 1. 必要なBabelパッケージを正規にローカルインストール
+          npm install --no-audit --no-fund --save-dev @babel/core @babel/cli @babel/preset-react
+
+          # 2. babel コマンドを単独実行して純粋なJavaScriptを出力
+          npx babel api.js counter.js settings.js report.js app.js \
             --out-dir dist \
             --presets @babel/preset-react
 
-          # dist/index.html を純粋JS読み込み（Babel完全不要）に書き換え
+          # 3. 公開用 index.html から Babel を完全に除去し、通常のJS実行に置換
           sed -i 's/<script src="https:\/\/unpkg.com\/@babel\/standalone[^"]*"><\/script>//g' dist/index.html
           sed -i 's/type="text\/babel"/type="text\/javascript"/g' dist/index.html
 
