@@ -2,45 +2,45 @@
 // ai_service.js : AIモデル一元管理 ＆ 共通通信サービス
 // ==========================================
 
-// 【モデルマスター定義】
-// 今後モデルの追加・変更・削除を行う際はこの配列のみを編集します
-window.AI_MODEL_LIST = [
-    { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-    { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-    { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
-];
-
-window.AI_VISION_MODELS = [
-    'gemini-3.8-flash',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash'
-];
-
 const AI_MODEL_CONFIG = {
-    textModels: window.AI_MODEL_LIST,
-    visionModels: window.AI_VISION_MODELS,
+    // 画面の選択肢およびテキスト生成の優先順
+    textModels: [
+        { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+        { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+        { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
+    ],
+    // 画像解析用
+    visionModels: [
+        'gemini-3.8-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash'
+    ],
     maxAttemptsPerModel: 2
 };
 
+// 外部から確実に取得できるように関数として公開
+window.getAiModelList = function() {
+    return AI_MODEL_CONFIG.textModels;
+};
+window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
+
 // モデル表示名から内部IDを取得
 window.getActualModelName = function(modelValue) {
-    const list = window.AI_MODEL_LIST || [];
+    const list = AI_MODEL_CONFIG.textModels;
     const found = list.find(m => m.value === modelValue || m.id === modelValue);
-    return found ? found.id : (list[0] ? list[0].id : 'gemini-3.8-flash');
+    return found ? found.id : list[0].id;
 };
 
 // 選択されたモデルを先頭にしたローテーション配列を取得
 window.getModelRotationOrder = function(currentSelectedValue) {
-    const list = window.AI_MODEL_LIST || [];
-    const allIds = list.map(m => m.id);
+    const allIds = AI_MODEL_CONFIG.textModels.map(m => m.id);
     const currentId = window.getActualModelName(currentSelectedValue);
     const startIndex = allIds.indexOf(currentId);
     if (startIndex !== -1) {
         return allIds.slice(startIndex);
     }
     return allIds;
-};
-// ==========================================
+};// ==========================================
 // 共通実行エンジン（内部用）
 // ==========================================
 async function _executeGeminiRequest({
