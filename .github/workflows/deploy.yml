@@ -2,8 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main  # メインブランチ名が master の場合は master に変更してください
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -11,63 +10,27 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: リポジトリのチェックアウト
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-      - name: 依存パッケージのインストール
-        run: |
-          if [ -f package.json ]; then
-            npm install
-          else
-            npm install @babel/core @babel/cli @babel/preset-react
-          fi
-
-      - name: アプリのビルド & キャッシュ対策処理
-        run: |
-          # 公開用ディレクトリを作成
-          mkdir -p dist
-
-          # 1. JSファイルを結合してトランスパイル
-          cat api.js counter.js settings.js report.js app.js > dist/temp_combined.jsx
-          npx babel dist/temp_combined.jsx --out-file dist/bundle.js --presets=@babel/preset-react
-          rm dist/temp_combined.jsx
-
-          # 2. HTMLの調整（キャッシュバスター付与）
-          sed '/<script src="https:\/\/unpkg.com\/@babel\/standalone/d' index.html > dist/index.html
-          CACHE_BUST_TAG="<script src=\"bundle.js?v=${{ github.sha }}\"><\/script>"
-          sed -i "/<script type=\"text\/babel\" src=\"api.js\"><\/script>/c\\$CACHE_BUST_TAG" dist/index.html
-          sed -i '/<script type="text\/babel" src="counter.js"><\/script>/d' dist/index.html
-          sed -i '/<script type="text\/babel" src="settings.js"><\/script>/d' dist/index.html
-          sed -i '/<script type="text\/babel" src="report.js"><\/script>/d' dist/index.html
-          sed -i '/<script type="text\/babel" src="app.js"><\/script>/d' dist/index.html
-
-          # 3. 画像やPWA関連ファイルをコピー
-          cp *.png dist/ 2>/dev/null || true
-          cp *.jpg dist/ 2>/dev/null || true
-          cp *.jpeg dist/ 2>/dev/null || true
-          cp *.svg dist/ 2>/dev/null || true
-          cp *.ico dist/ 2>/dev/null || true
-          cp *.webp dist/ 2>/dev/null || true
-          cp manifest.json dist/ 2>/dev/null || true
-          cp sw.js dist/ 2>/dev/null || true
-
-      - name: GitHub Pages 用アーティファクトのアップロード
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: '.'
 
-      - name: GitHub Pages へデプロイ
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
