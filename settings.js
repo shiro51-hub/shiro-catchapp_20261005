@@ -1010,9 +1010,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
     className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
     value={selectedAiModel}
     onChange={handleModelChange}
-    onFocus={() => {}} 
 >
-    {(window.AI_MODEL_LIST && window.AI_MODEL_LIST.length > 0 ? window.AI_MODEL_LIST : []).map((opt) => (
+    {(aiModelList.length > 0 ? aiModelList : (window.AI_MODEL_LIST || [])).map((opt) => (
         <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
             {opt.label}
         </option>

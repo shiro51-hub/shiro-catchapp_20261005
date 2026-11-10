@@ -2143,6 +2143,7 @@ React.useEffect(() => {
                 setUserApiKey={setUserApiKey}
                 selectedAiModel={selectedAiModel}
                 setSelectedAiModel={setSelectedAiModel}
+                aiModelList={window.AI_MODEL_LIST || []}
                 gasBackupUrl={gasBackupUrl}
                 setGasBackupUrl={setGasBackupUrl}
             />
