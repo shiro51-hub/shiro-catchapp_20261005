@@ -1007,19 +1007,16 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         <span>🤖 使用AIモデル（日報・多角分析用）</span>
                                     </label>
                                     <select
-                                        className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
-                                        value={selectedAiModel || "Gemini 3.8 Flash"}
-                                        onChange={handleModelChange}
-                                    >
-                                        {(Array.isArray(aiModelList) && aiModelList.length > 0 
-                                            ? aiModelList 
-                                            : (Array.isArray(window.AI_MODEL_LIST) ? window.AI_MODEL_LIST : [])
-                                        ).map((opt) => (
-                                            <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
+    className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
+    value={selectedAiModel || "Gemini 3.8 Flash"}
+    onChange={handleModelChange}
+>
+    {(Array.isArray(window.AI_MODEL_LIST) ? window.AI_MODEL_LIST : []).map((opt) => (
+        <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
+            {opt.label}
+        </option>
+    ))}
+</select>
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
