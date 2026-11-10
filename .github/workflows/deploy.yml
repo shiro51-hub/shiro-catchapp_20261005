@@ -23,13 +23,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build & Pre-compile JSX
+        run: |
+          mkdir -p dist
+          # 全ファイルをdistへ一旦コピー
+          cp -r . dist/ 2>/dev/null || true
+          rm -rf dist/.git dist/.github dist/dist
+
+          # Babel CLIを使ってJSXを含む全ファイルを純粋なJavaScriptへ事前コンパイル
+          npx --yes @babel/cli @babel/core @babel/preset-react babel \
+            api.js counter.js settings.js report.js app.js \
+            --out-dir dist \
+            --presets @babel/preset-react
+
+          # dist/index.html を純粋JS読み込み（Babel完全不要）に書き換え
+          sed -i 's/<script src="https:\/\/unpkg.com\/@babel\/standalone[^"]*"><\/script>//g' dist/index.html
+          sed -i 's/type="text\/babel"/type="text\/javascript"/g' dist/index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
