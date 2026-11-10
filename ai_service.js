@@ -7,18 +7,19 @@
 const AI_MODEL_CONFIG = {
     // 画面の選択肢およびテキスト生成（日報・カルテ分析）の優先ローテーション
     textModels: [
-        { label: "Gemini 2.5 Flash（推奨・最速）", value: "Gemini 2.5 Flash", id: "gemini-2.5-flash" },
-        { label: "Gemini 1.5 Flash（高速・安定）", value: "Gemini 1.5 Flash", id: "gemini-1.5-flash" }
+        { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+        { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+        { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
     ],
     // 画像解析（気象予報・潮時表）で使用するビジョン対応モデル
     visionModels: [
-        'gemini-2.5-flash',
-        'gemini-1.5-flash'
+        'gemini-3.8-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash'
     ],
     // 各モデルでの再試行回数
     maxAttemptsPerModel: 2
 };
-
 // 選択肢用配列の公開
 window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
 
