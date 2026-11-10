@@ -1006,9 +1006,9 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
                                         <span>🤖 使用AIモデル（日報・多角分析用）</span>
                                     </label>
-                                    <select
+          <select
     className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
-    value={selectedAiModel || "Gemini 3.8 Flash"}
+    value={selectedAiModel || (window.AI_MODEL_LIST?.[0]?.value || '')}
     onChange={handleModelChange}
 >
     {(Array.isArray(window.AI_MODEL_LIST) ? window.AI_MODEL_LIST : []).map((opt) => (
@@ -1016,7 +1016,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
             {opt.label}
         </option>
     ))}
-</select>
+</select> 
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
