@@ -37,12 +37,12 @@
 <body class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-900 dark:text-slate-100 transition-colors duration-300">
     <div id="root"></div>
 
-    <!-- 純粋なJavaScriptとして直接読み込み（Babelを一切通さないため即座に起動） -->
-    <script src="ai_service.js?v=3"></script>
-    <script src="api.js"></script>
-    <script src="counter.js"></script>
-    <script src="settings.js"></script>
-    <script src="report.js"></script>
-    <script src="app.js"></script>
+    <!-- 分割された各スクリプトを順番に読み込み -->
+    <script src="ai_service.js"></script>
+    <script type="text/babel" src="api.js"></script>
+    <script type="text/babel" src="counter.js"></script>
+    <script type="text/babel" src="settings.js"></script>
+    <script type="text/babel" src="report.js"></script>
+    <script type="text/babel" src="app.js"></script>
 </body>
 </html>
