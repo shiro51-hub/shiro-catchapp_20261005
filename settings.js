@@ -2,33 +2,8 @@
 // settings.js : 設定・海況・システム管理パネル
 // ==========================================
 
-// AIモデルのマスター定義（3.8 Flash先頭、Argon最後尾の快速5モデル構成）
-var AI_MODEL_LIST = [
-    { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-    { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
-    { label: "Gemini 3.6 Flash", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-    { label: "Gemini 3.5 Flash", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
-    { label: "Gemini 4 Argon（従量課金向け）", value: "Gemini 4 Argon", id: "gemini-4-argon" }
-];
-
-// 重複宣言を回避したモデル名変換関数（デフォルトは 3.8 Flash）
-window.getActualModelName = function(modelValue) {
-    var found = AI_MODEL_LIST.find(function(m) {
-        return m.value === modelValue || m.id === modelValue;
-    });
-    return found ? found.id : 'gemini-3.8-flash';
-};
-
-// 重複宣言を回避したローテーション配列生成関数
-window.getModelRotationOrder = function(currentSelectedValue) {
-    var allIds = AI_MODEL_LIST.map(function(m) { return m.id; });
-    var currentId = window.getActualModelName(currentSelectedValue);
-    var startIndex = allIds.indexOf(currentId);
-    if (startIndex !== -1) {
-        return allIds.slice(startIndex);
-    }
-    return allIds;
-};
+// AIモデルマスターは ai_service.js で一元管理
+var AI_MODEL_LIST = window.AI_MODEL_LIST || [];
 
 // 月齢（0〜29.5）から最適な月相アイコンを返す関数
 const getMoonPhaseIcon = (ageStr) => {
@@ -202,82 +177,43 @@ function SettingsPanel({
         });
     };
 
-    const callVisionApi = async (file, prompt) => {
-        const activeKey = (userApiKey || '').trim();
-        if (!activeKey) {
-            throw new Error('APIキーが設定されていません。「システム」タブでGemini APIキーを入力して保存してください。');
-        }
+    // 画像ファイルを Base64 に軽量圧縮変換
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 900;
+                    let width = img.width;
+                    let height = img.height;
 
-        const base64Data = await fileToBase64(file);
-        const visionModels = typeof window.getModelRotationOrder === 'function'
-            ? window.getModelRotationOrder('Gemini 3.8 Flash')
-            : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-4-argon'];
-
-        let lastErr = null;
-
-        for (let i = 0; i < visionModels.length; i++) {
-            const currentModel = visionModels[i];
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${activeKey}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        {
-                            inline_data: {
-                                mime_type: 'image/jpeg',
-                                data: base64Data
-                            }
-                        }
-                    ]
-                }],
-                generationConfig: {
-                    temperature: 0.1,
-                    response_mime_type: "application/json"
-                }
-            };
-
-            try {
-                if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                }
-
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    const errMsg = err.error?.message || `HTTP ${response.status}`;
-                    if (response.status === 503 || response.status === 429 || response.status === 500) {
-                        lastErr = new Error(`モデル ${currentModel} が混雑中: ${errMsg}`);
-                        continue;
+                    if (width > height && width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
                     }
-                    throw new Error(errMsg);
-                }
 
-                const resData = await response.json();
-                const text = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error('解析結果が得られませんでした');
-                
-                const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-                return JSON.parse(clean);
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
 
-            } catch (err) {
-                lastErr = err;
-                const msg = ((err && err.message) || String(err)).toLowerCase();
-                if (msg.includes('503') || msg.includes('429') || msg.includes('overloaded')) {
-                    continue;
-                }
-                throw err;
-            }
-        }
-
-        throw lastErr || new Error('すべてのAIモデルで画像解析に応答できませんでした');
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    resolve(dataUrl.split(',')[1]);
+                };
+                img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     };
 
+    // 潮時・月齢画像の自動解析（ai_service.js 経由）
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -294,69 +230,15 @@ function SettingsPanel({
 
         try {
             const base64Data = await fileToBase64(file);
-
             const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考や前置きは不要です。不明な項目は空文字 "" にしてください。
 {"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
 
-            const targetModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
-            let parsed = null;
-            let lastErr = null;
-
-            for (let i = 0; i < targetModels.length; i++) {
-                const model = targetModels[i];
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-                try {
-                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${activeKey}`;
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        signal: controller.signal,
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: prompt },
-                                    { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
-                                ]
-                            }],
-                            generationConfig: {
-                                temperature: 0.1,
-                                maxOutputTokens: 300,
-                                response_mime_type: "application/json",
-                                thinkingConfig: { thinkingBudget: 0 }
-                            }
-                        })
-                    });
-
-                    clearTimeout(timeoutId);
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (rawText) {
-                            const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                            const sIdx = clean.indexOf('{');
-                            const eIdx = clean.lastIndexOf('}');
-                            if (sIdx !== -1 && eIdx !== -1) {
-                                parsed = JSON.parse(clean.substring(sIdx, eIdx + 1));
-                                break;
-                            }
-                        }
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        const errMsg = errData.error?.message || `HTTP ${res.status}`;
-                        lastErr = new Error(errMsg);
-                        continue;
-                    }
-                } catch (err) {
-                    clearTimeout(timeoutId);
-                    lastErr = err.name === 'AbortError' ? new Error(`モデル ${model} が応答タイムアウト`) : err;
-                    continue;
-                }
-            }
-
-            if (!parsed) throw lastErr || new Error('解析結果を取得できませんでした');
+            const parsed = await window.callAiVision({
+                prompt: prompt,
+                base64Image: base64Data,
+                apiKey: activeKey,
+                onStatusUpdate: (msg) => setToastMessage(msg)
+            });
 
             if (parsed.tideState) setTideState(parsed.tideState);
             if (parsed.moonAge && typeof setMoonAge === 'function') setMoonAge(parsed.moonAge);
@@ -424,7 +306,13 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
 不明な項目は空文字 "" にしてください。
 {"weather1":"前半天気","weather2":"後半天気","windCheck":"矢印の先端と左右の傾きの目視確認メモ","windDir1":"前半の矢印の向き","windDir2":"後半の矢印の向き","windSpeed1":"前半風速幅(例: 2〜7m)","windSpeed2":"後半風速幅(例: 3〜9m)","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
             
-            const parsed = await callVisionApi(file, prompt);
+            const base64Data = await fileToBase64(file);
+            const parsed = await window.callAiVision({
+                prompt: prompt,
+                base64Image: base64Data,
+                apiKey: (userApiKey || '').trim(),
+                onStatusUpdate: (msg) => setToastMessage(msg)
+            });
 
             const arrowToWindDir = (arrow) => {
                 if (!arrow) return '';
