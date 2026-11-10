@@ -28,23 +28,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build & Pre-compile JSX
+      - name: Build and Bundle App
         run: |
           mkdir -p dist
-          cp -r . dist/ 2>/dev/null || true
+          # 静的アセット（画像やアイコン等）をコピー
+          cp -r * dist/ 2>/dev/null || true
           rm -rf dist/.git dist/.github dist/dist
 
-          # 1. 必要なBabelパッケージを正規にローカルインストール
-          npm install --no-audit --no-fund --save-dev @babel/core @babel/cli @babel/preset-react
-
-          # 2. babel コマンドを単独実行して純粋なJavaScriptを出力
-          npx babel api.js counter.js settings.js report.js app.js \
-            --out-dir dist \
-            --presets @babel/preset-react
-
-          # 3. 公開用 index.html から Babel を完全に除去し、通常のJS実行に置換
-          sed -i 's/<script src="https:\/\/unpkg.com\/@babel\/standalone[^"]*"><\/script>//g' dist/index.html
-          sed -i 's/type="text\/babel"/type="text\/javascript"/g' dist/index.html
+          # 高速バンドラー esbuild を使って全JSXファイルを1本の純粋なJSに事前変換
+          npx --yes esbuild \
+            ai_service.js api.js counter.js settings.js report.js app.js \
+            --bundle=false \
+            --loader:.js=jsx \
+            --outdir=dist
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
