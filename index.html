@@ -7,7 +7,6 @@
     <title>山下丸 釣果記録</title>
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.22.0/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
@@ -38,12 +37,12 @@
 <body class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-900 dark:text-slate-100 transition-colors duration-300">
     <div id="root"></div>
 
-    <!-- 分割された各スクリプトを順番に読み込み -->
-    <script src="ai_service.js?v=2"></script>
-    <script type="text/babel" src="api.js"></script>
-    <script type="text/babel" src="counter.js"></script>
-    <script type="text/babel" src="settings.js"></script>
-    <script type="text/babel" src="report.js"></script>
-    <script type="text/babel" src="app.js"></script>
+    <!-- 純粋なJavaScriptとして直接読み込み（Babelを一切通さないため即座に起動） -->
+    <script src="ai_service.js?v=3"></script>
+    <script src="api.js"></script>
+    <script src="counter.js"></script>
+    <script src="settings.js"></script>
+    <script src="report.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
