@@ -38,12 +38,18 @@ function SettingsPanel({
     userApiKey, setUserApiKey, selectedAiModel, setSelectedAiModel,
     gasBackupUrl, setGasBackupUrl
 }) {
-    const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
+   const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
     const [isPointDropdownOpen, setIsPointDropdownOpen] = React.useState(false);
     const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
 
-    // ★ この1行を追加（ai_service.jsのリストを確実に取り込む）
-    const modelOptions = React.useMemo(() => window.AI_MODEL_LIST || [], [isSettingsOpen]);
+    // ★追加：開いた瞬間に最新のモデルリストを取り込んで画面を確実に更新するState
+    const [availableModels, setAvailableModels] = React.useState([]);
+
+    React.useEffect(() => {
+        if (isSettingsOpen) {
+            setAvailableModels(window.AI_MODEL_LIST || []);
+        }
+    }, [isSettingsOpen]);
 
     // ドロップダウン展開時の自動スクロール用Ref
     const pointRef = React.useRef(null);
@@ -1006,17 +1012,17 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
                                         <span>🤖 使用AIモデル（日報・多角分析用）</span>
                                     </label>
-          <select
-    className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
-    value={selectedAiModel || (window.AI_MODEL_LIST?.[0]?.value || '')}
-    onChange={handleModelChange}
->
-    {(Array.isArray(window.AI_MODEL_LIST) ? window.AI_MODEL_LIST : []).map((opt) => (
-        <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
-            {opt.label}
-        </option>
-    ))}
-</select> 
+                                    <select
+                                        className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
+                                        value={selectedAiModel || (availableModels[0] && availableModels[0].value) || ''}
+                                        onChange={handleModelChange}
+                                    >
+                                        {(availableModels.length > 0 ? availableModels : (window.AI_MODEL_LIST || [])).map((opt) => (
+                                            <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
