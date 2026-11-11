@@ -28,6 +28,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # GitHub側でJSXを事前コンパイル（端末側の負荷をゼロ化）
+      - name: Precompile JSX with esbuild
+        run: |
+          for file in api.js counter.js settings.js report.js app.js; do
+            if [ -f "$file" ]; then
+              npx -y esbuild "$file" --outfile="${file}.compiled" --loader=jsx
+              mv "${file}.compiled" "$file"
+            fi
+          done
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
