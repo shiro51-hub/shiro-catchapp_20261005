@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches:
-      - main  # または master（お使いのデフォルトブランチ名）
+      - main
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,19 +28,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 公開ディレクトリを artifact としてアップロード（これが抜けていたか失敗していました）
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'  # ルートディレクトリのファイルを公開する場合
+          path: '.'
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
