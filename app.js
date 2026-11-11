@@ -952,7 +952,12 @@ React.useEffect(() => {
     }, []);
 
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
-    const [selectedAiModel, setSelectedAiModel] = React.useState(() => localStorage.getItem('fishing_ai_model') || 'Gemini 3.8 Flash');
+    const [selectedAiModel, setSelectedAiModel] = React.useState(() => {
+    const saved = localStorage.getItem('fishing_ai_model');
+    if (saved) return saved;
+    const list = window.getAiModelList ? window.getAiModelList() : [];
+    return list.length > 0 ? list[0].value : '';
+});
     const [toastMessage, setToastMessage] = React.useState('');
 
     // Googleドライブ上書き保存用のステート

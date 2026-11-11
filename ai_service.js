@@ -188,10 +188,8 @@ window.callAiText = async function({ prompt, selectedModel = null, isJson = fals
 };
 
 // 2. 画像解析（気象予報・潮時表解析用）★ここがバグの温床でした
-window.callAiVision = async function({ prompt, base64Image, apiKey, selectedModel = null, onStatusUpdate = null }) {
-    // 画面引数（selectedModel）が空でも、保存されている設定（3.5など）を絶対に取り出す
-    const activeSelection = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
-    // 選択されたモデルを「第1走者」にしたキューを作成
+window.callAiVision = async function({ prompt, base64Image, apiKey, selectedModel, onStatusUpdate = null }) {
+    const activeSelection = selectedModel || localStorage.getItem('fishing_ai_model');
     const modelQueue = window.getModelRotationOrder(activeSelection, AI_MODEL_CONFIG.visionModels);
 
     try {
