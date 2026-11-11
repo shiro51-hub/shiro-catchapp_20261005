@@ -3,15 +3,13 @@
 // ==========================================
 
 const AI_MODEL_CONFIG = {
-    // 画面の選択肢およびテキスト生成（日報・多角分析）のローテーション候補
     textModels: [
-        { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
-        { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
         { label: "Gemini 3.5 Flash（標準・推奨）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+        { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
+        { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
         { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
     ],
-    // 画像解析（気象予報・潮時表）のローテーション候補
     visionModels: [
         'gemini-3.5-flash',
         'gemini-3.6-flash',
@@ -21,13 +19,12 @@ const AI_MODEL_CONFIG = {
     maxAttemptsPerModel: 2
 };
 
-// 外部から選択肢を取得できるように公開
 window.getAiModelList = function() {
     return AI_MODEL_CONFIG.textModels;
 };
 window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
 
-// モデル名・IDのゆらぎを吸収して正規のAPI用IDを返す
+// モデル名・IDのゆらぎを完全に吸収
 window.getActualModelName = function(modelValue) {
     if (!modelValue) return 'gemini-3.5-flash';
     const clean = String(modelValue).trim().toLowerCase();
@@ -39,16 +36,16 @@ window.getActualModelName = function(modelValue) {
     );
     if (found) return found.id;
 
-    if (clean.includes('3.8')) return 'gemini-3.8-flash';
-    if (clean.includes('3.7')) return 'gemini-3.7-flash';
-    if (clean.includes('3.6')) return 'gemini-3.6-flash';
     if (clean.includes('3.5')) return 'gemini-3.5-flash';
+    if (clean.includes('3.6')) return 'gemini-3.6-flash';
+    if (clean.includes('3.7')) return 'gemini-3.7-flash';
+    if (clean.includes('3.8')) return 'gemini-3.8-flash';
     if (clean.includes('argon') || clean.includes('4')) return 'gemini-4-argon';
 
     return 'gemini-3.5-flash';
 };
 
-// 選択されたモデルを必ず「配列の先頭（mIdx=0）」に配置するローテーション順序を生成
+// 選択モデルを必ず最優先（mIdx = 0）に配置
 window.getModelRotationOrder = function(currentSelectedValue, baseList = null) {
     const targetId = window.getActualModelName(currentSelectedValue);
     const defaultList = baseList ? [...baseList] : AI_MODEL_CONFIG.textModels.map(m => m.id);
@@ -57,7 +54,7 @@ window.getModelRotationOrder = function(currentSelectedValue, baseList = null) {
 };
 
 // ==========================================
-// 共通実行エンジン（初動明示・混雑時のみ切替通知）
+// 共通実行エンジン（HTTP 400エラーの原因を完全除去）
 // ==========================================
 async function _executeGeminiRequest({
     models,
@@ -79,7 +76,6 @@ async function _executeGeminiRequest({
         const currentModel = models[mIdx];
         const isFirst = (mIdx === 0);
 
-        // ★初動では「開始中」、2番手以降への切り替え時のみ「混雑のため〜」と通知
         if (typeof onStatusUpdate === 'function') {
             if (isFirst) {
                 onStatusUpdate(`【${currentModel}】で解析を開始中...`);
@@ -111,10 +107,11 @@ async function _executeGeminiRequest({
                     });
                 }
 
+                // ★HTTP 400の原因となっていた thinkingBudget は完全排除。
+                // 標準的で最も互換性の高い generationConfig のみを送信
                 const generationConfig = {
                     temperature: 0.1,
-                    ...(isJson ? { responseMimeType: "application/json" } : {}),
-                    thinkingConfig: { thinkingBudget: 0 } // 画像解析と思考の待機時間を完全スキップして高速化
+                    ...(isJson ? { responseMimeType: "application/json" } : {})
                 };
 
                 const res = await fetch(url, {
@@ -134,7 +131,7 @@ async function _executeGeminiRequest({
                         if (errJson.error?.message) errMsg = errJson.error.message;
                     } catch (e) {}
 
-                    // 無料枠や一時的な制限の場合は即座に次のモデルへ
+                    // クォータ上限エラー時のみ次モデルへ即時フォールバック
                     if (errMsg.toLowerCase().includes('limit: 0') || errMsg.toLowerCase().includes('quota exceeded')) {
                         lastError = new Error(errMsg);
                         break;
@@ -168,11 +165,7 @@ async function _executeGeminiRequest({
     throw lastError || new Error('設定されているすべてのAIモデルで応答が得られませんでした');
 }
 
-// ==========================================
-// 外部公開関数
-// ==========================================
-
-// 1. テキスト生成（日報作成・釣況カルテ分析用）
+// 1. テキスト生成（日報・多角分析用）
 window.callAiText = async function({ prompt, selectedModel = null, isJson = false, apiKey, onStatusUpdate = null }) {
     const rawSelected = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
     const modelQueue = window.getModelRotationOrder(rawSelected, AI_MODEL_CONFIG.textModels.map(m => m.id));
