@@ -1,15 +1,16 @@
 // ==========================================
-// ai_service.js : AIモデル一元管理 ＆ 共通通信サービス
+// ai_service.js : AIモデル一元管理 ＆ 共通通信サービス（バグ修正版）
 // ==========================================
 
 const AI_MODEL_CONFIG = {
     textModels: [
-        { label: "Gemini 3.5 Flash（標準・推奨）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+        { label: "Gemini 3.5 Flash（標準）",       value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
         { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
         { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
         { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
+        { label: "Gemini 4 Argon（次世代モデル）",  value: "Gemini 4 Argon",   id: "gemini-4-argon" }
     ],
+    // 画像解析で利用可能な全候補
     visionModels: [
         'gemini-3.5-flash',
         'gemini-3.6-flash',
@@ -24,7 +25,7 @@ window.getAiModelList = function() {
 };
 window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
 
-// モデル名・IDのゆらぎを完全に吸収
+// 表記ゆれを完全吸収して正式なIDを返す
 window.getActualModelName = function(modelValue) {
     if (!modelValue) return 'gemini-3.5-flash';
     const clean = String(modelValue).trim().toLowerCase();
@@ -45,16 +46,17 @@ window.getActualModelName = function(modelValue) {
     return 'gemini-3.5-flash';
 };
 
-// 選択モデルを必ず最優先（mIdx = 0）に配置
+// ★選択モデルを絶対にインデックス0（先頭）にするローテーション生成
 window.getModelRotationOrder = function(currentSelectedValue, baseList = null) {
     const targetId = window.getActualModelName(currentSelectedValue);
-    const defaultList = baseList ? [...baseList] : AI_MODEL_CONFIG.textModels.map(m => m.id);
-    const filtered = defaultList.filter(id => id !== targetId);
-    return [targetId, ...filtered];
+    const defaultList = baseList ? [...baseList] : AI_MODEL_CONFIG.visionModels;
+    // 選択モデル以外の残りを予備として後ろに並べる
+    const others = defaultList.filter(id => id !== targetId);
+    return [targetId, ...others];
 };
 
 // ==========================================
-// 共通実行エンジン（HTTP 400エラーの原因を完全除去）
+// 共通実行エンジン（初動から選択モデル名を表示）
 // ==========================================
 async function _executeGeminiRequest({
     models,
@@ -76,12 +78,13 @@ async function _executeGeminiRequest({
         const currentModel = models[mIdx];
         const isFirst = (mIdx === 0);
 
+        // ★初動（isFirst）で絶対に画面選択モデル名を表示する
         if (typeof onStatusUpdate === 'function') {
             if (isFirst) {
                 onStatusUpdate(`【${currentModel}】で解析を開始中...`);
             } else {
                 onStatusUpdate(`混雑のため【${currentModel}】へ切り替えて再試行中...`);
-                await new Promise(r => setTimeout(r, 1200));
+                await new Promise(r => setTimeout(r, 1000));
             }
         }
 
@@ -92,7 +95,7 @@ async function _executeGeminiRequest({
             try {
                 if (attempt > 1 && typeof onStatusUpdate === 'function') {
                     onStatusUpdate(`応答待ちのため【${currentModel}】で再試行中... (${attempt}/${AI_MODEL_CONFIG.maxAttemptsPerModel})`);
-                    await new Promise(r => setTimeout(r, attempt * 1200));
+                    await new Promise(r => setTimeout(r, attempt * 1000));
                 }
 
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${cleanKey}`;
@@ -107,8 +110,6 @@ async function _executeGeminiRequest({
                     });
                 }
 
-                // ★HTTP 400の原因となっていた thinkingBudget は完全排除。
-                // 標準的で最も互換性の高い generationConfig のみを送信
                 const generationConfig = {
                     temperature: 0.1,
                     ...(isJson ? { responseMimeType: "application/json" } : {})
@@ -131,7 +132,7 @@ async function _executeGeminiRequest({
                         if (errJson.error?.message) errMsg = errJson.error.message;
                     } catch (e) {}
 
-                    // クォータ上限エラー時のみ次モデルへ即時フォールバック
+                    // クォータ超過等の即時リトライ不能エラー時は次のモデルへ
                     if (errMsg.toLowerCase().includes('limit: 0') || errMsg.toLowerCase().includes('quota exceeded')) {
                         lastError = new Error(errMsg);
                         break;
@@ -165,10 +166,15 @@ async function _executeGeminiRequest({
     throw lastError || new Error('設定されているすべてのAIモデルで応答が得られませんでした');
 }
 
-// 1. テキスト生成（日報・多角分析用）
+// ==========================================
+// 外部公開関数（引数抜けでもlocalStorageから完全復帰）
+// ==========================================
+
+// 1. テキスト生成（日報作成・多角分析用）
 window.callAiText = async function({ prompt, selectedModel = null, isJson = false, apiKey, onStatusUpdate = null }) {
-    const rawSelected = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
-    const modelQueue = window.getModelRotationOrder(rawSelected, AI_MODEL_CONFIG.textModels.map(m => m.id));
+    // 画面引数 → localStorage → デフォルト の順で確実に3.5等の指定を取得
+    const activeSelection = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+    const modelQueue = window.getModelRotationOrder(activeSelection, AI_MODEL_CONFIG.visionModels);
 
     return await _executeGeminiRequest({
         models: modelQueue,
@@ -181,10 +187,12 @@ window.callAiText = async function({ prompt, selectedModel = null, isJson = fals
     });
 };
 
-// 2. 画像解析（気象予報・潮時表解析用）
+// 2. 画像解析（気象予報・潮時表解析用）★ここがバグの温床でした
 window.callAiVision = async function({ prompt, base64Image, apiKey, selectedModel = null, onStatusUpdate = null }) {
-    const rawSelected = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
-    const modelQueue = window.getModelRotationOrder(rawSelected, AI_MODEL_CONFIG.visionModels);
+    // 画面引数（selectedModel）が空でも、保存されている設定（3.5など）を絶対に取り出す
+    const activeSelection = selectedModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+    // 選択されたモデルを「第1走者」にしたキューを作成
+    const modelQueue = window.getModelRotationOrder(activeSelection, AI_MODEL_CONFIG.visionModels);
 
     try {
         const rawJsonText = await _executeGeminiRequest({
