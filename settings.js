@@ -194,9 +194,8 @@ function SettingsPanel({
         }
 
        setIsAnalyzingTide(true);
-        // ★修正: 選択中モデル名を即時表示
-        const startModel = selectedAiModel || 'Gemini 3.5 Flash';
-        setToastMessage(`【${startModel}】で潮時・月齢データを解析中...`);
+        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+        setToastMessage(`【${currentSelected}】で潮時・月齢データを解析中...`);
 
         try {
             const base64Data = await fileToBase64(file);
@@ -207,7 +206,7 @@ function SettingsPanel({
                 prompt: prompt,
                 base64Image: base64Data,
                 apiKey: activeKey,
-                selectedModel: selectedAiModel,
+                selectedModel: currentSelected,
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
@@ -234,12 +233,20 @@ function SettingsPanel({
         if (!file) return;
 
         setIsAnalyzingWeather(true);
-        // ★修正: 選択中モデル名を即時表示
-        const startModel = selectedAiModel || 'Gemini 3.5 Flash';
-        setToastMessage(`【${startModel}】で気象予報をAI解析中...`);
+        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+        setToastMessage(`【${currentSelected}】で気象予報をAI解析中...`);
 
         try {
             const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
+...
+            const base64Data = await fileToBase64(file);
+            const parsed = await window.callAiVision({
+                prompt: prompt,
+                base64Image: base64Data,
+                apiKey: (userApiKey || '').trim(),
+                selectedModel: currentSelected,
+                onStatusUpdate: (msg) => setToastMessage(msg)
+            });
 
 【抽出ルール】
 ・天候: 雷マークや発雷確率は無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
