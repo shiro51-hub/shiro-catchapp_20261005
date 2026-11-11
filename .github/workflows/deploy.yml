@@ -28,10 +28,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # esbuild の正しい構文 (--loader:.js=jsx) で変換
+      # ai_service.js を含む全ファイルを確実にコンパイル
       - name: Precompile JSX with esbuild
         run: |
-          for file in api.js counter.js settings.js report.js app.js; do
+          for file in ai_service.js counter.js settings.js report.js app.js; do
             if [ -f "$file" ]; then
               npx -y esbuild "$file" --outfile="${file}.compiled" --loader:.js=jsx
               mv "${file}.compiled" "$file"
