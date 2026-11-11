@@ -159,8 +159,9 @@ window.callAiText = async function({ prompt, selectedModel = null, isJson = fals
 };
 
 // 2. 画像解析（気象予報・潮時表解析用）
-window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpdate = null, timeoutMs = 20000 }) {
+window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpdate = null, timeoutMs = 60000 }) {
     const controller = new AbortController();
+    // タイムアウトを20秒から余裕のある60秒へ拡大
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
@@ -185,7 +186,7 @@ window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpda
     } catch (err) {
         clearTimeout(timer);
         if (err.name === 'AbortError') {
-            throw new Error('画像の解析がタイムアウトしました。通信環境の良い場所で再試行してください。');
+            throw new Error('画像の解析がタイムアウトしました。混雑しているため少し時間を置いて再試行してください。');
         }
         throw err;
     }
