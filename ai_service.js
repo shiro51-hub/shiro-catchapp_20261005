@@ -3,15 +3,18 @@
 // ==========================================
 
 const AI_MODEL_CONFIG = {
-    // 画面の選択肢およびテキスト生成の優先順
+    // 画面の選択肢およびテキスト生成（日報・多角分析）の優先ローテーション順
     textModels: [
-        { label: "Gemini 3.8 Flash（推奨・最速）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 3.6 Flash（高速）", value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-        { label: "Gemini 3.5 Flash（安定）", value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" }
+        { label: "Gemini 3.8 Flash（推奨・最新）", value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
+        { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+        { label: "Gemini 3.5 Flash（標準）",       value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+        { label: "Gemini 4 Argon（次世代モデル）",  value: "Gemini 4 Argon",   id: "gemini-4-argon" }
     ],
-    // 画像解析用
+    // 画像解析用（気象予報・潮時表）の優先順
     visionModels: [
         'gemini-3.8-flash',
+        'gemini-3.7-flash',
         'gemini-3.6-flash',
         'gemini-3.5-flash'
     ],
@@ -40,8 +43,10 @@ window.getModelRotationOrder = function(currentSelectedValue) {
         return allIds.slice(startIndex);
     }
     return allIds;
-};// ==========================================
-// 共通実行エンジン（内部用）
+};
+
+// ==========================================
+// 共通実行エンジン（思考時間対応・リトライ完全連動版）
 // ==========================================
 async function _executeGeminiRequest({
     models,
@@ -50,7 +55,7 @@ async function _executeGeminiRequest({
     base64Image = null,
     isJson = false,
     onStatusUpdate = null,
-    signal = null
+    timeoutMs = 60000 // 思考時間を考慮して1回のタイムアウトを60秒に拡大
 }) {
     const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
     if (!cleanKey) {
@@ -65,10 +70,14 @@ async function _executeGeminiRequest({
 
         if (!isFirst && typeof onStatusUpdate === 'function') {
             onStatusUpdate(`混雑のため【${currentModel}】へ切り替えて再試行中...`);
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 1200));
         }
 
         for (let attempt = 1; attempt <= AI_MODEL_CONFIG.maxAttemptsPerModel; attempt++) {
+            // 試行ごとに独立したコントローラーを用意
+            const attemptController = new AbortController();
+            const attemptTimer = setTimeout(() => attemptController.abort(), timeoutMs);
+
             try {
                 if (attempt > 1 && typeof onStatusUpdate === 'function') {
                     onStatusUpdate(`サーバー混雑のため【${currentModel}】で再試行中... (${attempt}/${AI_MODEL_CONFIG.maxAttemptsPerModel})`);
@@ -99,8 +108,10 @@ async function _executeGeminiRequest({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
-                    signal: signal
+                    signal: attemptController.signal
                 });
+
+                clearTimeout(attemptTimer);
 
                 if (!res.ok) {
                     const errText = await res.text();
@@ -110,7 +121,7 @@ async function _executeGeminiRequest({
                         if (errJson.error?.message) errMsg = errJson.error.message;
                     } catch (e) {}
 
-                    // 無料枠制限（limit: 0等）の場合は即座に次のモデルへ
+                    // 無料枠上限（quota）エラー時は即座に次のモデルへ
                     if (errMsg.toLowerCase().includes('limit: 0') || errMsg.toLowerCase().includes('quota exceeded')) {
                         lastError = new Error(errMsg);
                         break;
@@ -125,11 +136,18 @@ async function _executeGeminiRequest({
                 return outText;
 
             } catch (err) {
+                clearTimeout(attemptTimer);
                 lastError = err;
-                if (err.name === 'AbortError') throw err;
 
+                // タイムアウト発生時もループを脱出させず、リトライ判定に通す
+                const isTimeout = (err.name === 'AbortError');
                 const lowerMsg = (err.message || '').toLowerCase();
-                const isRetryable = lowerMsg.includes('503') || lowerMsg.includes('500') || lowerMsg.includes('overloaded') || lowerMsg.includes('429');
+                const isRetryable = isTimeout || lowerMsg.includes('503') || lowerMsg.includes('500') || lowerMsg.includes('overloaded') || lowerMsg.includes('429');
+
+                if (isTimeout && typeof onStatusUpdate === 'function') {
+                    onStatusUpdate(`応答に時間がかかっているため再試行します...`);
+                }
+
                 if (!isRetryable) break;
             }
         }
@@ -154,16 +172,13 @@ window.callAiText = async function({ prompt, selectedModel = null, isJson = fals
         prompt,
         base64Image: null,
         isJson,
-        onStatusUpdate
+        onStatusUpdate,
+        timeoutMs: 60000
     });
 };
 
 // 2. 画像解析（気象予報・潮時表解析用）
-window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpdate = null, timeoutMs = 60000 }) {
-    const controller = new AbortController();
-    // タイムアウトを20秒から余裕のある60秒へ拡大
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
+window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpdate = null }) {
     try {
         const rawJsonText = await _executeGeminiRequest({
             models: AI_MODEL_CONFIG.visionModels,
@@ -172,10 +187,9 @@ window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpda
             base64Image,
             isJson: true,
             onStatusUpdate,
-            signal: controller.signal
+            timeoutMs: 60000
         });
 
-        clearTimeout(timer);
         const clean = rawJsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
         const sIdx = clean.indexOf('{');
         const eIdx = clean.lastIndexOf('}');
@@ -184,7 +198,6 @@ window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpda
         }
         return JSON.parse(clean);
     } catch (err) {
-        clearTimeout(timer);
         if (err.name === 'AbortError') {
             throw new Error('画像の解析がタイムアウトしました。混雑しているため少し時間を置いて再試行してください。');
         }
