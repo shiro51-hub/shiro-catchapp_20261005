@@ -11,7 +11,7 @@ const AI_MODEL_CONFIG = {
         { label: "Gemini 3.5 Flash（標準）",       value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
         { label: "Gemini 4 Argon（次世代モデル）",  value: "Gemini 4 Argon",   id: "gemini-4-argon" }
     ],
-    // 画像解析用（気象予報・潮時表）の優先順
+    // 画像解析用（気象予報・潮時表）の標準ローテーション
     visionModels: [
         'gemini-3.8-flash',
         'gemini-3.7-flash',
@@ -35,18 +35,15 @@ window.getActualModelName = function(modelValue) {
 };
 
 // 選択されたモデルを先頭にしたローテーション配列を取得
-window.getModelRotationOrder = function(currentSelectedValue) {
-    const allIds = AI_MODEL_CONFIG.textModels.map(m => m.id);
+window.getModelRotationOrder = function(currentSelectedValue, baseList = null) {
+    const sourceList = baseList || AI_MODEL_CONFIG.textModels.map(m => m.id);
     const currentId = window.getActualModelName(currentSelectedValue);
-    const startIndex = allIds.indexOf(currentId);
-    if (startIndex !== -1) {
-        return allIds.slice(startIndex);
-    }
-    return allIds;
+    const filtered = sourceList.filter(id => id !== currentId);
+    return [currentId, ...filtered];
 };
 
 // ==========================================
-// 共通実行エンジン（思考時間対応・リトライ完全連動版）
+// 共通実行エンジン（思考抑制対応・リトライ完全連動版）
 // ==========================================
 async function _executeGeminiRequest({
     models,
@@ -55,7 +52,7 @@ async function _executeGeminiRequest({
     base64Image = null,
     isJson = false,
     onStatusUpdate = null,
-    timeoutMs = 60000 // 思考時間を考慮して1回のタイムアウトを60秒に拡大
+    timeoutMs = 60000
 }) {
     const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
     if (!cleanKey) {
@@ -74,7 +71,6 @@ async function _executeGeminiRequest({
         }
 
         for (let attempt = 1; attempt <= AI_MODEL_CONFIG.maxAttemptsPerModel; attempt++) {
-            // 試行ごとに独立したコントローラーを用意
             const attemptController = new AbortController();
             const attemptTimer = setTimeout(() => attemptController.abort(), timeoutMs);
 
@@ -96,12 +92,16 @@ async function _executeGeminiRequest({
                     });
                 }
 
+                // 思考モード（Thinking）を抑制してOCR・画像解析を高速化
+                const generationConfig = {
+                    temperature: 0.1,
+                    ...(isJson ? { responseMimeType: "application/json" } : {}),
+                    thinkingConfig: { thinkingBudget: 0 }
+                };
+
                 const payload = {
                     contents: [{ parts }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        ...(isJson ? { responseMimeType: "application/json" } : {})
-                    }
+                    generationConfig
                 };
 
                 const res = await fetch(url, {
@@ -121,7 +121,6 @@ async function _executeGeminiRequest({
                         if (errJson.error?.message) errMsg = errJson.error.message;
                     } catch (e) {}
 
-                    // 無料枠上限（quota）エラー時は即座に次のモデルへ
                     if (errMsg.toLowerCase().includes('limit: 0') || errMsg.toLowerCase().includes('quota exceeded')) {
                         lastError = new Error(errMsg);
                         break;
@@ -139,7 +138,6 @@ async function _executeGeminiRequest({
                 clearTimeout(attemptTimer);
                 lastError = err;
 
-                // タイムアウト発生時もループを脱出させず、リトライ判定に通す
                 const isTimeout = (err.name === 'AbortError');
                 const lowerMsg = (err.message || '').toLowerCase();
                 const isRetryable = isTimeout || lowerMsg.includes('503') || lowerMsg.includes('500') || lowerMsg.includes('overloaded') || lowerMsg.includes('429');
@@ -177,17 +175,21 @@ window.callAiText = async function({ prompt, selectedModel = null, isJson = fals
     });
 };
 
-// 2. 画像解析（気象予報・潮時表解析用）
-window.callAiVision = async function({ prompt, base64Image, apiKey, onStatusUpdate = null }) {
+// 2. 画像解析（選択モデル引き継ぎ ＆ 高速化版）
+window.callAiVision = async function({ prompt, base64Image, apiKey, selectedModel = null, onStatusUpdate = null }) {
+    const modelQueue = selectedModel 
+        ? window.getModelRotationOrder(selectedModel, AI_MODEL_CONFIG.visionModels) 
+        : AI_MODEL_CONFIG.visionModels;
+
     try {
         const rawJsonText = await _executeGeminiRequest({
-            models: AI_MODEL_CONFIG.visionModels,
+            models: modelQueue,
             apiKey,
             prompt,
             base64Image,
             isJson: true,
             onStatusUpdate,
-            timeoutMs: 60000
+            timeoutMs: 45000
         });
 
         const clean = rawJsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
