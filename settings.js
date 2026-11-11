@@ -145,7 +145,6 @@ function SettingsPanel({
         "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
-    // 高速化：解像度上限を720px・品質0.7に最適化
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -193,7 +192,7 @@ function SettingsPanel({
             return;
         }
 
-       setIsAnalyzingTide(true);
+        setIsAnalyzingTide(true);
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
         setToastMessage(`【${currentSelected}】で潮時・月齢データを解析中...`);
 
@@ -227,10 +226,17 @@ function SettingsPanel({
         }
     };
 
-    // 天気予報画像の自動解析
+    // 天気予報画像の自動解析（正常統合版）
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
+
+        const activeKey = (userApiKey || '').trim();
+        if (!activeKey) {
+            setToastMessage('APIキーが未入力です。「システム」タブでGemini APIキーを設定してください。');
+            if (weatherImageInputRef.current) weatherImageInputRef.current.value = '';
+            return;
+        }
 
         setIsAnalyzingWeather(true);
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
@@ -238,15 +244,6 @@ function SettingsPanel({
 
         try {
             const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
-...
-            const base64Data = await fileToBase64(file);
-            const parsed = await window.callAiVision({
-                prompt: prompt,
-                base64Image: base64Data,
-                apiKey: (userApiKey || '').trim(),
-                selectedModel: currentSelected,
-                onStatusUpdate: (msg) => setToastMessage(msg)
-            });
 
 【抽出ルール】
 ・天候: 雷マークや発雷確率は無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
@@ -256,13 +253,13 @@ function SettingsPanel({
 
 不明な項目は空文字 "" にしてください。JSONのみ出力：
 {"weather1":"前半天気","weather2":"後半天気","windDir1":"前半矢印向き","windDir2":"後半矢印向き","windSpeed1":"前半風速幅","windSpeed2":"後半風速幅","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
-            
+
             const base64Data = await fileToBase64(file);
             const parsed = await window.callAiVision({
                 prompt: prompt,
                 base64Image: base64Data,
-                apiKey: (userApiKey || '').trim(),
-                selectedModel: selectedAiModel, // ★ 選択中モデルを連携
+                apiKey: activeKey,
+                selectedModel: currentSelected,
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
