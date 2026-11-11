@@ -193,8 +193,10 @@ function SettingsPanel({
             return;
         }
 
-        setIsAnalyzingTide(true);
-        setToastMessage('潮時・月齢データを高速解析中...');
+       setIsAnalyzingTide(true);
+        // ★修正: 選択中モデル名を即時表示
+        const startModel = selectedAiModel || 'Gemini 3.5 Flash';
+        setToastMessage(`【${startModel}】で潮時・月齢データを解析中...`);
 
         try {
             const base64Data = await fileToBase64(file);
@@ -205,7 +207,7 @@ function SettingsPanel({
                 prompt: prompt,
                 base64Image: base64Data,
                 apiKey: activeKey,
-                selectedModel: selectedAiModel, // ★ 選択中モデルを連携
+                selectedModel: selectedAiModel,
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
@@ -232,7 +234,9 @@ function SettingsPanel({
         if (!file) return;
 
         setIsAnalyzingWeather(true);
-        setToastMessage('気象予報をAI解析中...');
+        // ★修正: 選択中モデル名を即時表示
+        const startModel = selectedAiModel || 'Gemini 3.5 Flash';
+        setToastMessage(`【${startModel}】で気象予報をAI解析中...`);
 
         try {
             const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
