@@ -194,7 +194,7 @@ function SettingsPanel({
 
         setIsAnalyzingTide(true);
         // 現在選択中のモデルを完全確定
-        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
         try {
             const base64Data = await fileToBase64(file);
