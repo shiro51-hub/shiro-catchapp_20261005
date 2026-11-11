@@ -193,7 +193,6 @@ function SettingsPanel({
         }
 
         setIsAnalyzingTide(true);
-        // 現在選択中のモデルを完全確定
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
         try {
@@ -226,7 +225,7 @@ function SettingsPanel({
         }
     };
 
-    // 天気予報画像の自動解析
+    // 天気予報画像の自動解析（構文修復版）
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -239,8 +238,7 @@ function SettingsPanel({
         }
 
         setIsAnalyzingWeather(true);
-        // 現在選択中のモデルを完全確定
-        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model') || 'Gemini 3.5 Flash';
+        const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
         try {
             const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
