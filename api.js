@@ -1,83 +1,6 @@
 // ==========================================
-// api.js : Gemini API 通信・ユーティリティ・アイコン定義
+// api.js : ユーティリティ・アイコン定義（AI通信重複削除版）
 // ==========================================
-
-const MODEL_NAME_MAP = {
-    'Gemini 3.8 Flash': 'gemini-3.8-flash',
-    'Gemini 3.7 Flash': 'gemini-3.7-flash',
-    'Gemini 3.6 Flash': 'gemini-3.6-flash',
-    'Gemini 3.5 Flash': 'gemini-3.5-flash',
-    'Gemini 4 Argon': 'gemini-4-argon'
-};
-
-const getActualModelName = (name) => MODEL_NAME_MAP[name] || 'gemini-3.8-flash';
-
-// 5モデルの自動ローテーション優先順（必ず 3.8 Flash が1番手、Argon は最後尾）
-const getModelRotationOrder = () => {
-    return [
-        'gemini-3.8-flash',
-        'gemini-3.7-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash',
-        'gemini-4-argon'
-    ];
-};
-
-window.getModelRotationOrder = getModelRotationOrder;
-const fetchWithBackoff = async (url, options, retries = 5) => {
-    const delays = [1000, 2000, 4000, 8000, 16000];
-    for (let i = 0; i < retries; i++) {
-        try {
-            const res = await fetch(url, options);
-            if (!res.ok) {
-                const errBody = await res.text();
-                let errMsg = `エラー ${res.status}`;
-                try {
-                    const errJson = JSON.parse(errBody);
-                    if (errJson.error?.message) errMsg += `: ${errJson.error.message}`;
-                } catch (e) {}
-                throw new Error(errMsg);
-            }
-            return await res.json();
-        } catch (error) {
-            if (error.name === 'AbortError') throw error;
-            if (i === retries - 1) throw error;
-            await new Promise(r => setTimeout(r, delays[i]));
-        }
-    }
-};
-
-const callGeminiApi = async (apiKey, prompt, model = 'gemini-3.8-flash', isJson = false, base64Image = null, mimeType = 'image/jpeg', signal = null) => {
-    const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
-    if (!cleanKey) throw new Error('APIキーが設定されていません。設定画面の「データ管理」からGemini APIキーを入力してください。');
-    
-    const actualModel = MODEL_NAME_MAP[model] || model;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${cleanKey}`;
-    
-    const parts = [{ text: prompt }];
-    if (base64Image) {
-        parts.push({
-            inlineData: {
-                mimeType: mimeType,
-                data: base64Image
-            }
-        });
-    }
-
-    const payload = {
-        contents: [{ parts }],
-        ...(isJson ? { generationConfig: { responseMimeType: "application/json" } } : {})
-    };
-
-    const result = await fetchWithBackoff(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: signal
-    });
-
-    return result.candidates?.[0]?.content?.parts?.[0]?.text;
-};
 
 const getUnit = (fishName) => {
     if (!fishName || typeof fishName !== 'string') return '匹';
@@ -177,11 +100,6 @@ const IconChart = ({ className = "w-4 h-4 mr-1 text-emerald-500" }) => (<svg cla
 const IconDownload = ({ className = "w-4 h-4 mr-1 text-sky-500" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>);
 const IconUpload = ({ className = "w-4 h-4 mr-1 text-emerald-500" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>);
 
-// 他のファイルから直接参照できるよう window に登録
-window.MODEL_NAME_MAP = MODEL_NAME_MAP;
-window.getActualModelName = getActualModelName;
-window.fetchWithBackoff = fetchWithBackoff;
-window.callGeminiApi = callGeminiApi;
 window.getUnit = getUnit;
 window.getTodayString = getTodayString;
 window.getDayOfWeek = getDayOfWeek;
