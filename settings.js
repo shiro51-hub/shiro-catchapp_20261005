@@ -241,16 +241,17 @@ function SettingsPanel({
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
         try {
-            const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
+            const prompt = `気象予報画像から午前(前半:6〜9時頃)・午後(後半:12〜15時頃)の予報を読み取り、JSON形式のみで出力してください。
 
 【抽出ルール】
-・天候: 雷マークや発雷確率は無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
-・風向き: 画面上の矢印先端が向いている方向を選択肢から選んでください：["真下", "左下", "真左", "左上", "真上", "右上", "真右", "右下"]
-・風速: 6時・9時（前半）、12時・15時（後半）の通常風速と最大瞬間風速の最小〜最大幅を出力（例: "2〜7m/s"）。
+・天候: 雷や落雷マークは無視、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
+・風向き: 矢印が指している方向（風下）ではなく、【風が吹いてくる方角（風向）】を日本語で出力してください（例: 矢印が左下を向いている場合は「北東」、矢印が真左を向いている場合は「東」）。
+  選択肢: ["北", "北東", "東", "南東", "南", "南西", "西", "北西"]
+・風速: 通常風速と最大瞬間風速の最小〜最大幅を出力（例: "3〜7m/s"）。
 ・波高: 選択肢 ["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"] から選んでください。
 
 不明な項目は空文字 "" にしてください。JSONのみ出力：
-{"weather1":"前半天気","weather2":"後半天気","windDir1":"前半矢印向き","windDir2":"後半矢印向き","windSpeed1":"前半風速幅","windSpeed2":"後半風速幅","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
+{"weather1":"前半天気","weather2":"後半天気","windDir1":"前半風向","windDir2":"後半風向","windSpeed1":"前半風速幅","windSpeed2":"後半風速幅","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
 
             const base64Data = await fileToBase64(file);
             const parsed = await window.callAiVision({
@@ -261,30 +262,20 @@ function SettingsPanel({
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
-            const arrowToWindDir = (arrow) => {
-                if (!arrow) return '';
-                const clean = arrow.trim();
-                const map = {
-                    '真下': '北', '左下': '北東', '真左': '東', '左上': '南東',
-                    '真上': '南', '右上': '南西', '真右': '西', '右下': '北西'
-                };
-                if (map[clean]) return map[clean];
-                if (clean.includes('北東')) return '北東';
-                if (clean.includes('北西')) return '北西';
-                if (clean.includes('南東')) return '南東';
-                if (clean.includes('南西')) return '南西';
-                if (clean.includes('北')) return '北';
-                if (clean.includes('南')) return '南';
-                if (clean.includes('東')) return '東';
-                if (clean.includes('西')) return '西';
-                return clean;
+            // AIが直接「北東」「南西」等を返すため、複雑な逆変換マップは不要
+            const cleanWindDir = (dir) => {
+                if (!dir) return '';
+                const d = dir.trim();
+                const valid = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+                const found = valid.find(v => d.includes(v));
+                return found || d;
             };
 
             let count = 0;
             if (parsed.weather1) { setWeather1(parsed.weather1); count++; }
             if (parsed.weather2) { setWeather2(parsed.weather2); count++; }
-            if (parsed.windDir1) { setWindDir1(arrowToWindDir(parsed.windDir1)); count++; }
-            if (parsed.windDir2) { setWindDir2(arrowToWindDir(parsed.windDir2)); count++; }
+            if (parsed.windDir1) { setWindDir1(cleanWindDir(parsed.windDir1)); count++; }
+            if (parsed.windDir2) { setWindDir2(cleanWindDir(parsed.windDir2)); count++; }
             if (parsed.windSpeed1) { setWindSpeed1(parsed.windSpeed1); count++; }
             if (parsed.windSpeed2) { setWindSpeed2(parsed.windSpeed2); count++; }
             if (parsed.waveHeight1) { setWaveHeight1(parsed.waveHeight1); count++; }
