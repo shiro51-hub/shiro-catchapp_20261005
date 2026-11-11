@@ -2,21 +2,18 @@
 // settings.js : 設定・海況・システム管理パネル
 // ==========================================
 
-// AIモデルマスターは ai_service.js で一元管理
-
-// 月齢（0〜29.5）から最適な月相アイコンを返す関数
 const getMoonPhaseIcon = (ageStr) => {
     if (!ageStr || String(ageStr).trim() === '') return '';
     const age = parseFloat(ageStr);
     if (isNaN(age)) return '';
-    if (age >= 28.5 || age < 1.5) return '🌑';  // 新月
-    if (age < 6.0) return '🌒';                  // 繊月・三日月
-    if (age < 9.0) return '🌓';                  // 上弦の月
-    if (age < 13.5) return '🌔';                 // 十三夜・張月
-    if (age < 16.5) return '🌕';                 // 満月
-    if (age < 21.0) return '🌖';                 // 寝待月
-    if (age < 24.0) return '🌗';                 // 下弦の月
-    return '🌘';                                 // 有明月
+    if (age >= 28.5 || age < 1.5) return '🌑';
+    if (age < 6.0) return '🌒';
+    if (age < 9.0) return '🌓';
+    if (age < 13.5) return '🌔';
+    if (age < 16.5) return '🌕';
+    if (age < 21.0) return '🌖';
+    if (age < 24.0) return '🌗';
+    return '🌘';
 };
 
 function SettingsPanel({
@@ -38,11 +35,10 @@ function SettingsPanel({
     userApiKey, setUserApiKey, selectedAiModel, setSelectedAiModel,
     gasBackupUrl, setGasBackupUrl
 }) {
-   const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
+    const [activeSettingsTab, setActiveSettingsTab] = React.useState('basic');
     const [isPointDropdownOpen, setIsPointDropdownOpen] = React.useState(false);
     const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
 
-    // ★追加：開いた瞬間に最新のモデルリストを取り込んで画面を確実に更新するState
     const [availableModels, setAvailableModels] = React.useState([]);
 
     React.useEffect(() => {
@@ -51,7 +47,6 @@ function SettingsPanel({
         }
     }, [isSettingsOpen]);
 
-    // ドロップダウン展開時の自動スクロール用Ref
     const pointRef = React.useRef(null);
     const tideRef = React.useRef(null);
     const scrollContainerRef = React.useRef(null);
@@ -150,6 +145,7 @@ function SettingsPanel({
         "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
+    // 高速化：解像度上限を720px・品質0.7に最適化
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -157,7 +153,7 @@ function SettingsPanel({
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const maxDim = 900;
+                    const maxDim = 720;
                     let width = img.width;
                     let height = img.height;
 
@@ -174,7 +170,7 @@ function SettingsPanel({
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
                     resolve(dataUrl.split(',')[1]);
                 };
                 img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
@@ -185,8 +181,7 @@ function SettingsPanel({
         });
     };
 
-    
-    // 潮時・月齢画像の自動解析（ai_service.js 経由）
+    // 潮時・月齢画像の自動解析
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -203,13 +198,14 @@ function SettingsPanel({
 
         try {
             const base64Data = await fileToBase64(file);
-            const prompt = `この潮見表画像から潮時と月齢情報を読み取り、JSON形式のみを出力してください。思考や前置きは不要です。不明な項目は空文字 "" にしてください。
+            const prompt = `潮見表画像から潮時と月齢を抽出し、以下のJSON形式のみを出力してください。前置きや解説は一切不要です。不明な項目は空文字 "" にしてください。
 {"tideState":"潮回り(大潮,中潮,小潮,若潮,長潮など)","moonAge":"月齢数値(例: 21.5)","highTide1":"満潮1(例: 10:18)","highTide2":"満潮2(例: 19:17)","lowTide1":"干潮1(例: 02:25)","lowTide2":"干潮2(例: 14:23)"}`;
 
             const parsed = await window.callAiVision({
                 prompt: prompt,
                 base64Image: base64Data,
                 apiKey: activeKey,
+                selectedModel: selectedAiModel, // ★ 選択中モデルを連携
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
@@ -230,6 +226,7 @@ function SettingsPanel({
         }
     };
 
+    // 天気予報画像の自動解析
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -238,52 +235,23 @@ function SettingsPanel({
         setToastMessage('気象予報をAI解析中...');
 
         try {
-            const prompt = `この画像は海の天気・風・波の気象予報スクリーンショットです。
-午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
+            const prompt = `気象予報画像から午前(前半)・午後(後半)の予報を読み取り、JSON形式のみで出力してください。
 
-【天候の判定ルール（雷マークの無視・除外ルール）】
-・画像内に「雷マーク」「稲妻アイコン」「発雷確率」などが表示されていても、それらは一切無視してください。天候に「雷」「雷雨」と出力することは禁止です。
-・雷マークに惑わされず、ベースとなる主たる天候（「晴れ」「曇り」「雨」など、あるいは「晴れ時々曇り」「曇り時々雨」など）のみを正確に読み取って出力してください。
+【抽出ルール】
+・天候: 雷マークや発雷確率は無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
+・風向き: 画面上の矢印先端が向いている方向を選択肢から選んでください：["真下", "左下", "真左", "左上", "真上", "右上", "真右", "右下"]
+・風速: 6時・9時（前半）、12時・15時（後半）の通常風速と最大瞬間風速の最小〜最大幅を出力（例: "2〜7m/s"）。
+・波高: 選択肢 ["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"] から選んでください。
 
-【風速の抽出ルール（ハイブリッド幅表記）】
-時系列表の【風速】と【瞬間最大風速】の数値を参照し、もっとも穏やかな数値から突風のピークまでを「最小値〜最大値m/s」の幅（レンジ）形式で出力してください：
-・windSpeed1（前半）: 【6時】と【9時】の時間帯に含まれる「風速」と「瞬間最大風速」のすべての数値の中から、【最も小さい数値】〜【最も大きい数値】を特定して出力（例: 通常2m/4m、瞬間5m/7m の場合は "2〜7m/s"）
-・windSpeed2（後半）: 【12時】と【15時】の時間帯に含まれる「風速」と「瞬間最大風速」のすべての数値の中から、【最も小さい数値】〜【最も大きい数値】を特定して出力（例: 通常3m/5m、瞬間6m/9m の場合は "3〜9m/s"）
-【風向きアイコンの向きの判定ルール】
-画像のなかにある、風向きアイコンまたは矢印は、画像によって以下のいずれかのデザインになっています。
-まずはどちらの形状かを確認し、その「先端」が画面上のどの方向を指しているかを厳密に判定してください：
-
-● パターンA：太い「家（ホームアイコン）型・五角形」の場合
-  ・平らな四角い土台部分（根本）ではなく、最も突き出た【三角屋根のてっぺん（頂点）】を「先端」とします。
-  ・土台の四隅の角と屋根のてっぺんを取り違えないよう注意してください。
-  ・屋根のてっぺんが画面の「右上」を向いているか、「左上」を向いているか（左右の傾き）を慎重に見極めてください。
-
-● パターンB：通常の「細い線状の矢印（→）」の場合
-  ・線の端にある【三角形の矢じり（尖っている先端）】が指している方向を判定してください。
-  ・【左右・傾きの判定注意】：真下に向かう矢印がわずかでも左側へ傾いている場合は必ず「左下」と判定してください（右下への誤認・左右反転に厳重注意）。
-  ・【前後の流れ参照】：時間帯によって矢印の傾きが分かりづらい場合は、前後の時間（9時や12時など）の明確な矢印の傾き（左下か右下か）を参考にして左右を確定してください。
-
-★風向き思考ステップ（自己検証）：
-windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールドに以下の手順で目視確認した内容を短く言語化してください。
-1. 前半（6時・9時）の矢印：先端とお尻（根元）の位置を比較し、先端が上/下のどちらに向いているか、そして左右（画面の左寄りか右寄りか）どちらに傾いているかを記述する。
-2. 後半（12時・15時）の矢印：同様に先端が指す上下と左右の傾きを記述する。
-※言語化した思考内容と一致する向きを、必ず次の選択肢から選んで windDir1, windDir2 に代入してください。
-
-選択肢：["真下", "左下", "真左", "左上", "真上", "右上", "真右", "右下"]
-※気象学的な解釈（風が吹いてくる方向等）は一切不要です。純粋に画面上で先端が向いている方向を選択肢から選んでください
-
-【波高の判定ルール】
-・waveHeight1, waveHeight2 は以下の選択肢から選んでください：
-["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"]
-
-不明な項目は空文字 "" にしてください。
-{"weather1":"前半天気","weather2":"後半天気","windCheck":"矢印の先端と左右の傾きの目視確認メモ","windDir1":"前半の矢印の向き","windDir2":"後半の矢印の向き","windSpeed1":"前半風速幅(例: 2〜7m)","windSpeed2":"後半風速幅(例: 3〜9m)","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
+不明な項目は空文字 "" にしてください。JSONのみ出力：
+{"weather1":"前半天気","weather2":"後半天気","windDir1":"前半矢印向き","windDir2":"後半矢印向き","windSpeed1":"前半風速幅","windSpeed2":"後半風速幅","waveHeight1":"前半波高","waveHeight2":"後半波高"}`;
             
             const base64Data = await fileToBase64(file);
             const parsed = await window.callAiVision({
                 prompt: prompt,
                 base64Image: base64Data,
                 apiKey: (userApiKey || '').trim(),
+                selectedModel: selectedAiModel, // ★ 選択中モデルを連携
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
@@ -446,7 +414,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden text-gray-800 dark:text-slate-100">
-                {/* ヘッダー */}
                 <div className="px-4 py-3.5 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-900/50 shrink-0">
                     <span className="font-black text-lg flex items-center gap-2">
                         <IconSettings className="w-5 h-5 text-sky-600 dark:text-sky-400" /> 設定・海況管理
@@ -461,7 +428,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     </button>
                 </div>
 
-                {/* 3タブ切り替えバー */}
                 <div className="flex bg-sky-200 dark:bg-slate-950 px-2 pt-0.5 gap-1.5 border-b border-sky-300 dark:border-slate-800 font-black shrink-0 items-end">
                     {[
                         { id: 'basic', label: '基本設定' },
@@ -486,10 +452,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                     })}
                 </div>
 
-                {/* スクロールコンテンツ */}
                 <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 text-sm sm:text-base no-scrollbar bg-white dark:bg-slate-800">
-
-                    {/* タブ 1: 基本設定 */}
                     {activeSettingsTab === 'basic' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
                             <div className="bg-emerald-50/60 dark:bg-slate-900/60 p-3 rounded-xl border border-emerald-200/80 dark:border-slate-500 space-y-2 shadow-2xs">
@@ -542,15 +505,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </datalist>
                                 </div>
 
-                                {/* 上段：ポイント ＆ 水深（確実自動スクロール版） */}
                                 <div className="space-y-1.5" ref={pointRef}>
                                     <div className="flex gap-2">
-                                        {/* 左側：ポイント */}
                                         <div className="flex-1 min-w-0 relative">
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">
-                                                ポイント
-                                            </label>
-
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">ポイント</label>
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="text"
@@ -567,7 +525,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                         setIsTideDropdownOpen(false);
                                                         if (nextState && scrollContainerRef.current && pointRef.current) {
                                                             setTimeout(() => {
-                                                                // 親コンテナ内でポイント欄が上に来るよう確実にスクロール
                                                                 const topPos = pointRef.current.offsetTop - 10;
                                                                 scrollContainerRef.current.scrollTo({ top: topPos, behavior: 'smooth' });
                                                             }, 80);
@@ -580,18 +537,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 </button>
                                             </div>
 
-                                            {/* ドロップダウンメニュー */}
                                             {isPointDropdownOpen && (
                                                 <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
                                                     <div className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100 dark:border-slate-700">
-                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">
-                                                            タップで<br />追加・解除
-                                                        </span>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">タップで<br />追加・解除</span>
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setIsPointDropdownOpen(false)}
                                                             className="px-3 py-1 rounded-lg bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-700 dark:text-slate-100 text-xs sm:text-sm font-black flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 transition-all select-none shrink-0"
-                                                            title="閉じる"
                                                         >
                                                             <span className="text-sm font-black leading-none">✕</span>
                                                             <span className="leading-none tracking-wider">閉じる</span>
@@ -630,7 +583,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：水深 */}
                                         <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">水深 (m)</label>
                                             <input
@@ -644,15 +596,10 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </div>
                                 </div>
 
-                                {/* 下段：潮色 ＆ 海水温（確実自動スクロール版） */}
                                 <div className="space-y-1.5 pt-1" ref={tideRef}>
                                     <div className="flex gap-2">
-                                        {/* 左側：潮色 */}
                                         <div className="flex-1 min-w-0 relative">
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">
-                                                潮色
-                                            </label>
-
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 whitespace-nowrap">潮色</label>
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="text"
@@ -669,7 +616,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                         setIsPointDropdownOpen(false);
                                                         if (nextState && scrollContainerRef.current && tideRef.current) {
                                                             setTimeout(() => {
-                                                                // 潮色メニューが一番下まで全て収まるようにしっかりスクロール
                                                                 const targetScrollTop = tideRef.current.offsetTop + 180;
                                                                 scrollContainerRef.current.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
                                                             }, 80);
@@ -682,18 +628,14 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                                 </button>
                                             </div>
 
-                                            {/* ドロップダウンメニュー */}
                                             {isTideDropdownOpen && (
                                                 <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-800 border-2 border-sky-400 dark:border-slate-600 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease-out]">
                                                     <div className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100 dark:border-slate-700">
-                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">
-                                                            タップで<br />追加・解除
-                                                        </span>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 leading-tight">タップで<br />追加・解除</span>
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setIsTideDropdownOpen(false)}
                                                             className="px-3 py-1 rounded-lg bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-700 dark:text-slate-100 text-xs sm:text-sm font-black flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 transition-all select-none shrink-0"
-                                                            title="閉じる"
                                                         >
                                                             <span className="text-sm font-black leading-none">✕</span>
                                                             <span className="leading-none tracking-wider">閉じる</span>
@@ -732,7 +674,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                             )}
                                         </div>
 
-                                        {/* 右側：海水温 */}
                                         <div className="w-[120px] shrink-0">
                                             <label className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 block mb-1 text-center whitespace-nowrap">海水温 (℃)</label>
                                             <input
@@ -749,7 +690,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* タブ 2: 気象・潮時 */}
                     {activeSettingsTab === 'weather' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-2.5 shadow-2xs">
@@ -927,11 +867,8 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                         </div>
                     )}
 
-                    {/* タブ 3: システム */}
                     {activeSettingsTab === 'system' && (
                         <div className="space-y-4 animate-[fadeIn_0.15s_ease-out]">
-
-                            {/* 画面テーマ切り替え（最上部へ移動） */}
                             <div className="p-3 bg-amber-50/70 dark:bg-slate-900/60 rounded-xl border border-amber-200/80 dark:border-slate-500 shadow-2xs space-y-2">
                                 <div>
                                     <span className="font-black text-sm block text-gray-800 dark:text-slate-100">画面テーマ</span>
@@ -949,25 +886,13 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         }`}
                                     >
                                         {theme !== 'dark' && (
-                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-black shadow-xs">
-                                                ✓
-                                            </span>
+                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-black shadow-xs">✓</span>
                                         )}
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">☀️</span>
-                                        <span className={`text-xs sm:text-sm font-black ${
-                                            theme !== 'dark' ? 'text-sky-950' : 'text-slate-300'
-                                        }`}>
-                                            ライトモード
-                                        </span>
-                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
-                                            theme !== 'dark' ? 'bg-amber-50/80 border-amber-200/80' : 'bg-slate-900 border-slate-750'
-                                        }`}>
+                                        <span className={`text-xs sm:text-sm font-black ${theme !== 'dark' ? 'text-sky-950' : 'text-slate-300'}`}>ライトモード</span>
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${theme !== 'dark' ? 'bg-amber-50/80 border-amber-200/80' : 'bg-slate-900 border-slate-755'}`}>
                                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                            <span className={`text-[10px] font-bold ${
-                                                theme !== 'dark' ? 'text-amber-900' : 'text-slate-400'
-                                            }`}>
-                                                標準・明るい画面
-                                            </span>
+                                            <span className={`text-[10px] font-bold ${theme !== 'dark' ? 'text-amber-900' : 'text-slate-400'}`}>標準・明るい画面</span>
                                         </div>
                                     </button>
 
@@ -981,36 +906,23 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                         }`}
                                     >
                                         {theme === 'dark' && (
-                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black shadow-xs">
-                                                ✓
-                                            </span>
+                                            <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black shadow-xs">✓</span>
                                         )}
                                         <span className="text-2xl sm:text-3xl filter drop-shadow-xs mb-1">🌙</span>
-                                        <span className={`text-xs sm:text-sm font-black ${
-                                            theme === 'dark' ? 'text-indigo-200' : 'text-slate-700'
-                                        }`}>
-                                            ダークモード
-                                        </span>
-                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${
-                                            theme === 'dark' ? 'bg-slate-950 border-slate-700' : 'bg-emerald-50/80 border-emerald-200/80'
-                                        }`}>
+                                        <span className={`text-xs sm:text-sm font-black ${theme === 'dark' ? 'text-indigo-200' : 'text-slate-700'}`}>ダークモード</span>
+                                        <div className={`w-full mt-2 py-0.5 px-1.5 rounded flex items-center justify-center space-x-1 border ${theme === 'dark' ? 'bg-slate-950 border-slate-700' : 'bg-emerald-50/80 border-emerald-200/80'}`}>
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                            <span className={`text-[10px] font-bold ${
-                                                theme === 'dark' ? 'text-slate-300' : 'text-emerald-900'
-                                            }`}>
-                                                バッテリー省電力
-                                            </span>
+                                            <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-emerald-900'}`}>バッテリー省電力</span>
                                         </div>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* 1. Gemini AI設定 */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
                                 <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
                                 <div>
                                     <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
-                                        <span>🤖 使用AIモデル（日報・多角分析用）</span>
+                                        <span>🤖 使用AIモデル（日報・多角分析・画像解析）</span>
                                     </label>
                                     <select
                                         className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
@@ -1056,7 +968,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 2. ☁️ Googleドライブ同期・復元 */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200/80 dark:border-slate-500 space-y-3 shadow-2xs">
                                 <div className="flex justify-between items-center">
                                     <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">☁️ Googleドライブ同期・復元</span>
@@ -1162,9 +1073,7 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
 
                                 <div className="pt-2 border-t border-sky-200/60 dark:border-slate-800">
-                                    <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 block mb-1">
-                                        🔗 GASウェブアプリURL（初回登録用）
-                                    </label>
+                                    <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 block mb-1">🔗 GASウェブアプリURL（初回登録用）</label>
                                     <div className="flex gap-1.5">
                                         <input
                                             type="url"
@@ -1184,7 +1093,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                 </div>
                             </div>
 
-                            {/* 3. データ管理・メンテナンス */}
                             <div className="bg-sky-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-100 dark:border-slate-500 space-y-2.5">
                                 <span className="font-black text-sky-800 dark:text-sky-300 block text-sm">データ管理・メンテナンス</span>
                                 <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
@@ -1226,7 +1134,6 @@ windDir1とwindDir2を決定する直前に、必ず "windCheck" フィールド
                                     </button>
                                 </div>
                             </div>
-
                         </div>
                     )}
                 </div>
