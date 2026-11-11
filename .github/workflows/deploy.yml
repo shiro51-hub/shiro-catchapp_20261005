@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+name: Deploy GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main  # または master（お使いのデフォルトブランチ名）
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,45 +13,31 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 公開ディレクトリを artifact としてアップロード（これが抜けていたか失敗していました）
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'  # ルートディレクトリのファイルを公開する場合
+
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    needs: build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build and Bundle App
-        run: |
-          mkdir -p dist
-          # 静的アセット（画像やアイコン等）をコピー
-          cp -r * dist/ 2>/dev/null || true
-          rm -rf dist/.git dist/.github dist/dist
-
-          # 高速バンドラー esbuild を使って全JSXファイルを1本の純粋なJSに事前変換
-          npx --yes esbuild \
-            ai_service.js api.js counter.js settings.js report.js app.js \
-            --bundle=false \
-            --loader:.js=jsx \
-            --outdir=dist
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
