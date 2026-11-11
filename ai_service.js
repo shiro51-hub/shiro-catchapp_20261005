@@ -65,9 +65,14 @@ async function _executeGeminiRequest({
         const currentModel = models[mIdx];
         const isFirst = (mIdx === 0);
 
-        if (!isFirst && typeof onStatusUpdate === 'function') {
-            onStatusUpdate(`混雑のため【${currentModel}】へ切り替えて再試行中...`);
-            await new Promise(r => setTimeout(r, 1200));
+        // ★修正: 1番手の初回からモデル名を表示（2番手以降への切り替え時は少し待機）
+        if (typeof onStatusUpdate === 'function') {
+            if (isFirst) {
+                onStatusUpdate(`【${currentModel}】で解析中...`);
+            } else {
+                onStatusUpdate(`混雑のため【${currentModel}】へ切り替えて再試行中...`);
+                await new Promise(r => setTimeout(r, 1200));
+            }
         }
 
         for (let attempt = 1; attempt <= AI_MODEL_CONFIG.maxAttemptsPerModel; attempt++) {
@@ -76,7 +81,7 @@ async function _executeGeminiRequest({
 
             try {
                 if (attempt > 1 && typeof onStatusUpdate === 'function') {
-                    onStatusUpdate(`サーバー混雑のため【${currentModel}】で再試行中... (${attempt}/${AI_MODEL_CONFIG.maxAttemptsPerModel})`);
+                    onStatusUpdate(`応答待ちのため【${currentModel}】で再試行中... (${attempt}/${AI_MODEL_CONFIG.maxAttemptsPerModel})`);
                     await new Promise(r => setTimeout(r, attempt * 1200));
                 }
 
