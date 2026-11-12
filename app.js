@@ -1048,7 +1048,24 @@ React.useEffect(() => {
     React.useEffect(() => {
         localStorage.setItem('fishing_moon_age', moonAge || '');
     }, [moonAge]);
-    
+  
+  // 画面復帰・日付変更時に自動で今日の日付へ更新する監視処理
+    React.useEffect(() => {
+        const checkDateChange = () => {
+            const todayStr = getTodayString();
+            const lastDate = localStorage.getItem('fishing_last_active_date');
+            if (lastDate && lastDate !== todayStr) {
+                localStorage.setItem('fishing_last_active_date', todayStr);
+                setDate(todayStr);
+            }
+        };
+        document.addEventListener('visibilitychange', checkDateChange);
+        const timer = setInterval(checkDateChange, 60000);
+        return () => {
+            document.removeEventListener('visibilitychange', checkDateChange);
+            clearInterval(timer);
+        };
+    }, []);
     const [records, setRecords] = React.useState([]);
     const [portSeatCount, setPortSeatCount] = React.useState(() => localStorage.getItem('port_seat_count') || '');
     const [starboardSeatCount, setStarboardSeatCount] = React.useState(() => localStorage.getItem('starboard_seat_count') || '');
@@ -1282,16 +1299,21 @@ React.useEffect(() => {
 
         localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
 
-        // 現在画面に展開されている records の該当レコードも同期
-        setRecords(prev => {
-            const idx = prev.findIndex(r => r.date === date);
-            if (idx >= 0) {
-                const next = [...prev];
-                next[idx] = recData;
-                return next;
-            }
-            return prev;
-        });
+        // 現在画面に展開されている records の該当レコードも同期（新規作成時も即反映）
+      const hasData = (pTotal + sTotal > 0) || targetFish || point || waterTemp || waterDepth || tide || tideState || weather1 || windDir1 || sizeMin || sizeMax;
+      setRecords(prev => {
+          const idx = prev.findIndex(r => r.date === date);
+          if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = recData;
+              return next;
+          } else if (hasData) {
+              const next = [recData, ...prev];
+              next.sort((a, b) => new Date(b.date) - new Date(a.date));
+              return next;
+          }
+          return prev;
+      });
     }, [
         date, targetFish, sizeMin, sizeMax, point, waterTemp, waterDepth, tide, tideState,
         highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
