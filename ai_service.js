@@ -1,5 +1,5 @@
 // ==========================================
-// ai_service.js : AIサービス ＆ 共通ユーティリティ（新モデル通知機能付き）
+// ai_service.js : AIサービス ＆ 共通ユーティリティ（新モデル通知・削除管理機能付き）
 // ==========================================
 
 // --- 1. AIモデル定義 ＆ 設定 ---
@@ -11,27 +11,44 @@ const DEFAULT_AI_MODELS = [
     { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
 ];
 
-// 端末に保存された追加モデルと初期リストを統合して返す
+// 端末に保存された追加モデルと初期リストを統合し、削除済みモデルを除外して返す
 window.getAiModelList = function() {
     let customModels = [];
+    let deletedIds = [];
     try {
-        const saved = localStorage.getItem('fishing_custom_ai_models');
-        if (saved) customModels = JSON.parse(saved);
+        const savedCustom = localStorage.getItem('fishing_custom_ai_models');
+        if (savedCustom) customModels = JSON.parse(savedCustom);
+        const savedDeleted = localStorage.getItem('fishing_deleted_ai_models');
+        if (savedDeleted) deletedIds = JSON.parse(savedDeleted);
     } catch (e) {}
 
-    const merged = [...DEFAULT_AI_MODELS];
+    const deletedSet = new Set(deletedIds.map(id => String(id).toLowerCase()));
+
+    const merged = [];
+    DEFAULT_AI_MODELS.forEach(dm => {
+        if (!deletedSet.has(dm.id.toLowerCase()) && !deletedSet.has(dm.value.toLowerCase())) {
+            merged.push(dm);
+        }
+    });
+
     customModels.forEach(cm => {
-        if (!merged.some(m => m.id.toLowerCase() === cm.id.toLowerCase())) {
+        const cmId = String(cm.id || cm.value).toLowerCase();
+        if (!deletedSet.has(cmId) && !merged.some(m => m.id.toLowerCase() === cmId)) {
             merged.push(cm);
         }
     });
+
+    // 万が一すべて削除された場合は安全のため標準モデル1つを残す
+    if (merged.length === 0) {
+        return [DEFAULT_AI_MODELS[3] || DEFAULT_AI_MODELS[0]];
+    }
     return merged;
 };
 window.AI_MODEL_LIST = window.getAiModelList();
 
 // 選択文字列から正式なモデルIDを確定する
 window.getActualModelName = function(modelValue) {
-    if (!modelValue) return 'gemini-3.5-flash';
+    if (!modelValue) return 'gemini-3.8-flash';
     const clean = String(modelValue).trim().toLowerCase();
     const list = window.getAiModelList();
 
@@ -49,7 +66,7 @@ window.getActualModelName = function(modelValue) {
     if (clean.includes('3.8')) return 'gemini-3.8-flash';
     if (clean.includes('argon') || clean.includes('4')) return 'gemini-4-argon';
 
-    return 'gemini-3.5-flash';
+    return 'gemini-3.8-flash';
 };
 
 // 新着AIモデルの自動チェック（無料枠のRPDを消費しないメタデータ取得）
@@ -61,7 +78,6 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
     const lastCheckDate = localStorage.getItem('fishing_last_model_check_date');
     const cachedNew = localStorage.getItem('fishing_detected_new_models');
 
-    // 強制チェックでなければ1日1回キャッシュを利用
     if (!forceCheck && lastCheckDate === today && cachedNew) {
         try {
             return JSON.parse(cachedNew);
@@ -76,11 +92,12 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
 
         const currentIds = window.getAiModelList().map(m => m.id.toLowerCase());
         let ignoredIds = [];
+        let deletedIds = [];
         try {
             ignoredIds = JSON.parse(localStorage.getItem('fishing_ignored_ai_models') || '[]');
+            deletedIds = JSON.parse(localStorage.getItem('fishing_deleted_ai_models') || '[]');
         } catch (e) {}
 
-        // テキスト・画像生成に対応し、かつ現行リストにない新しいGeminiモデルを抽出
         const newModels = [];
         remoteModels.forEach(rm => {
             const rawName = (rm.name || '').replace('models/', '');
@@ -89,11 +106,10 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
 
             const isGenerative = methods.includes('generateContent');
             const isGemini = lowerId.startsWith('gemini-');
-            // 実験版(exp)や古い1.0/1.5系、音声専用(tts)などを除外して主要モデルのみ抽出
             const isNoise = lowerId.includes('embedding') || lowerId.includes('aqa') || lowerId.includes('tts') || lowerId.includes('1.0') || lowerId.includes('1.5') || lowerId.includes('2.0') || lowerId.includes('2.5');
 
             if (isGenerative && isGemini && !isNoise) {
-                if (!currentIds.includes(lowerId) && !ignoredIds.includes(lowerId)) {
+                if (!currentIds.includes(lowerId) && !ignoredIds.includes(lowerId) && !deletedIds.includes(lowerId)) {
                     newModels.push({
                         id: rawName,
                         displayName: rm.displayName || rawName
@@ -114,27 +130,82 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
 // 新モデルをリストに追加する
 window.addCustomAiModel = function(modelObj) {
     if (!modelObj || !modelObj.id) return;
+    const targetId = modelObj.id.toLowerCase();
+
+    // 削除済みリストに入っていた場合は解除する
+    try {
+        const deleted = JSON.parse(localStorage.getItem('fishing_deleted_ai_models') || '[]');
+        const nextDeleted = deleted.filter(id => String(id).toLowerCase() !== targetId);
+        localStorage.setItem('fishing_deleted_ai_models', JSON.stringify(nextDeleted));
+    } catch (e) {}
+
     let customModels = [];
     try {
         customModels = JSON.parse(localStorage.getItem('fishing_custom_ai_models') || '[]');
     } catch (e) {}
 
-    if (!customModels.some(m => m.id.toLowerCase() === modelObj.id.toLowerCase())) {
+    if (!customModels.some(m => m.id.toLowerCase() === targetId)) {
         customModels.push({
-            label: `${modelObj.displayName}（新着追加）`,
+            label: `${modelObj.displayName}（追加）`,
             value: modelObj.id,
             id: modelObj.id
         });
         localStorage.setItem('fishing_custom_ai_models', JSON.stringify(customModels));
-        window.AI_MODEL_LIST = window.getAiModelList();
     }
 
-    // 検知済みリストから除外
+    window.AI_MODEL_LIST = window.getAiModelList();
+
     try {
         const detected = JSON.parse(localStorage.getItem('fishing_detected_new_models') || '[]');
-        const nextDetected = detected.filter(d => d.id.toLowerCase() !== modelObj.id.toLowerCase());
+        const nextDetected = detected.filter(d => d.id.toLowerCase() !== targetId);
         localStorage.setItem('fishing_detected_new_models', JSON.stringify(nextDetected));
     } catch (e) {}
+};
+
+// 指定したモデルをリストから削除する（追加モデル・初期モデル両対応）
+window.removeAiModelFromList = function(modelValueOrId) {
+    if (!modelValueOrId) return window.getAiModelList();
+    const target = String(modelValueOrId).trim().toLowerCase();
+
+    const currentList = window.getAiModelList();
+    if (currentList.length <= 1) {
+        throw new Error('最低1つのAIモデルを残す必要があります。');
+    }
+
+    const targetObj = currentList.find(m => m.value.toLowerCase() === target || m.id.toLowerCase() === target);
+    const idToRemove = targetObj ? targetObj.id.toLowerCase() : target;
+    const valToRemove = targetObj ? targetObj.value.toLowerCase() : target;
+
+    // 1. カスタム追加リストから除去
+    try {
+        const customModels = JSON.parse(localStorage.getItem('fishing_custom_ai_models') || '[]');
+        const nextCustom = customModels.filter(m => 
+            m.id.toLowerCase() !== idToRemove && m.value.toLowerCase() !== valToRemove
+        );
+        localStorage.setItem('fishing_custom_ai_models', JSON.stringify(nextCustom));
+    } catch (e) {}
+
+    // 2. 削除済みリストに登録（初期モデルや再検知防止用）
+    try {
+        const deleted = JSON.parse(localStorage.getItem('fishing_deleted_ai_models') || '[]');
+        if (!deleted.includes(idToRemove)) deleted.push(idToRemove);
+        if (!deleted.includes(valToRemove)) deleted.push(valToRemove);
+        localStorage.setItem('fishing_deleted_ai_models', JSON.stringify(deleted));
+    } catch (e) {}
+
+    window.AI_MODEL_LIST = window.getAiModelList();
+    return window.AI_MODEL_LIST;
+};
+
+// モデルリストを初期状態（デフォルト5種＋通知リセット）に戻す
+window.resetAiModelListToDefault = function() {
+    localStorage.removeItem('fishing_custom_ai_models');
+    localStorage.removeItem('fishing_deleted_ai_models');
+    localStorage.removeItem('fishing_ignored_ai_models');
+    localStorage.removeItem('fishing_detected_new_models');
+    localStorage.removeItem('fishing_last_model_check_date');
+    window.AI_MODEL_LIST = window.getAiModelList();
+    return window.AI_MODEL_LIST;
 };
 
 // 新モデル通知を非表示にする
@@ -152,7 +223,7 @@ window.ignoreNewAiModel = function(modelId) {
     } catch (e) {}
 };
 
-// 単一モデル専用リクエスト送信（フォールバック一切なし）
+// 単一モデル専用リクエスト送信
 async function _sendSingleGeminiRequest({
     targetModelId,
     apiKey,
@@ -287,13 +358,7 @@ const getDayOfWeek = (dateString) => {
     if (!dateString) return '';
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? '' : `(${days[date.getDay()]})`;
-};
-
-const handleEnterKey = (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const inputs = Array.from(document.querySelectorAll(`input[type="${e.target.type}"]`));
+    return isNaN(date.getTime()) ? '' : `(${days[date.getDay()]})`; };  const handleEnterKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); const inputs = Array.from(document.querySelectorAll(`input[type="${e.target.type}"]`));
         const index = inputs.indexOf(e.target);
         if (index > -1 && index < inputs.length - 1) inputs[index + 1].focus();
     }

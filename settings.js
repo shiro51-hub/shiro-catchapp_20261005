@@ -1,5 +1,5 @@
 // ==========================================
-// settings.js : 設定・海況・システム管理パネル（新モデル通知＆風向2時点厳格判定版）
+// settings.js : 設定・海況・システム管理パネル（モデル追加/削除管理＆風向2時点厳格判定版）
 // ==========================================
 
 const getMoonPhaseIcon = (ageStr) => {
@@ -87,6 +87,45 @@ function SettingsPanel({
         if (typeof window.ignoreNewAiModel === 'function') {
             window.ignoreNewAiModel(modelId);
             setNewDetectedModels(prev => prev.filter(m => m.id !== modelId));
+        }
+    };
+
+    // 現在選択中のモデルをリストから削除する
+    const handleDeleteCurrentModel = () => {
+        const currentList = availableModels.length > 0 ? availableModels : (window.getAiModelList ? window.getAiModelList() : []);
+        if (currentList.length <= 1) {
+            setToastMessage('最低1つのAIモデルを残す必要があるため削除できません。');
+            return;
+        }
+        const targetObj = currentList.find(m => m.value === selectedAiModel) || currentList[0];
+        if (!window.confirm(`「${targetObj.label}」を選択リストから削除しますか？\n（いつでも「初期リストに戻す」から復元できます）`)) {
+            return;
+        }
+        try {
+            const nextList = window.removeAiModelFromList(targetObj.value);
+            setAvailableModels(nextList);
+            const nextSelected = nextList[0].value;
+            setSelectedAiModel(nextSelected);
+            localStorage.setItem('fishing_ai_model', nextSelected);
+            setToastMessage(`「${targetObj.label}」を削除し、\n使用モデルを「${nextList[0].label}」に切り替えました。`);
+        } catch (err) {
+            setToastMessage(err.message || '削除に失敗しました');
+        }
+    };
+
+    // モデルリストを初期状態へ復元する
+    const handleResetModelList = () => {
+        if (!window.confirm('AIモデル選択リストを初期状態（標準の5モデル）に戻しますか？')) return;
+        if (typeof window.resetAiModelListToDefault === 'function') {
+            const defaultList = window.resetAiModelListToDefault();
+            setAvailableModels(defaultList);
+            setNewDetectedModels([]);
+            const preferred = defaultList.find(m => m.id === 'gemini-3.8-flash') || defaultList[0];
+            if (preferred) {
+                setSelectedAiModel(preferred.value);
+                localStorage.setItem('fishing_ai_model', preferred.value);
+            }
+            setToastMessage('AIモデル一覧を初期リストに復元しました。');
         }
     };
 
@@ -188,7 +227,6 @@ function SettingsPanel({
         "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
-    // 高精細（長辺1280px・画質0.85）で画像をBase64変換（風向矢印の潰れを防止）
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -224,7 +262,6 @@ function SettingsPanel({
         });
     };
 
-    // 潮時・月齢画像の自動解析
     const handleTideImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -269,7 +306,6 @@ function SettingsPanel({
         }
     };
 
-    // 天気予報画像の自動解析（6時・9時／12時・15時の2時点変化対応・風向厳格判定版）
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -314,7 +350,6 @@ function SettingsPanel({
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
-            // 単一の方角（例: "北東"）でも変化表記（例: "北→北東"）でも綺麗に整える関数
             const cleanWindDir = (dir) => {
                 if (!dir) return '';
                 const valid = ['北東', '北西', '南東', '南西', '北', '南', '東', '西'];
@@ -993,7 +1028,7 @@ function SettingsPanel({
                                     </button>
                                 </div>
 
-                                {/* 新モデル通知バナー（検知された場合のみ表示） */}
+                                {/* 新モデル通知バナー */}
                                 {newDetectedModels.length > 0 && (
                                     <div className="bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-400 dark:border-amber-600 rounded-xl p-3 space-y-2 animate-[fadeIn_0.2s_ease-out]">
                                         <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-amber-900 dark:text-amber-300">
@@ -1033,8 +1068,8 @@ function SettingsPanel({
                                     </div>
                                 )}
 
-                                <div>
-                                    <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block flex items-center justify-between">
                                         <span>🤖 使用AIモデル（日報・多角分析・画像解析）</span>
                                     </label>
                                     <select
@@ -1048,6 +1083,25 @@ function SettingsPanel({
                                             </option>
                                         ))}
                                     </select>
+
+                                    {/* モデル整理（選択中モデルの削除 ＆ 初期リスト復元）ボタン */}
+                                    <div className="flex items-center justify-between gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteCurrentModel}
+                                            className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/70 text-xs font-bold flex items-center gap-1 active:scale-95 transition-all"
+                                        >
+                                            <span>🗑️</span>
+                                            <span>選択中のモデルをリストから削除</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleResetModelList}
+                                            className="px-2.5 py-1.5 rounded-lg bg-gray-200/80 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-300 dark:border-slate-600 text-xs font-bold active:scale-95 transition-all"
+                                        >
+                                            初期リストに戻す
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
