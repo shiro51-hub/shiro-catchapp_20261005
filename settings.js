@@ -1,5 +1,5 @@
 // ==========================================
-// settings.js : 設定・海況・システム管理パネル（モデル追加/削除管理＆風向2時点厳格判定版）
+// settings.js : 設定・海況・システム管理パネル（AIモデル1画面統合管理 ＆ 風向2時点厳格判定版）
 // ==========================================
 
 const getMoonPhaseIcon = (ageStr) => {
@@ -54,6 +54,7 @@ function SettingsPanel({
         }
     }, [isSettingsOpen, userApiKey]);
 
+    // 手動での新着モデルチェック
     const handleManualModelCheck = async () => {
         const key = (tempKey || userApiKey || '').trim();
         if (!key) {
@@ -65,24 +66,40 @@ function SettingsPanel({
             const found = await window.checkNewGeminiModels(key, true);
             setNewDetectedModels(found || []);
             if (found && found.length > 0) {
-                setToastMessage(`新着モデルを ${found.length} 件検知しました！`);
+                setToastMessage(`新着モデルを ${found.length} 件検知しました！\nリスト下部に表示されています。`);
             } else {
-                setToastMessage('現在利用可能なモデルはすべて登録済みです（新着なし）。');
+                setToastMessage('現在利用可能なモデルはすべて表示済みです（新着なし）。');
             }
         } finally {
             setIsCheckingModels(false);
         }
     };
 
-    const handleAddNewModelToList = (modelObj) => {
+    // モデルの切り替え
+    const handleSelectModel = (val, label) => {
+        setSelectedAiModel(val);
+        localStorage.setItem('fishing_ai_model', val);
+        setToastMessage(`使用モデルを「${label || val}」に切り替えました`);
+    };
+
+    // 新モデルをリストに追加（オプションで即時選択）
+    const handleAddNewModelToList = (modelObj, selectImmediately = false) => {
         if (typeof window.addCustomAiModel === 'function') {
             window.addCustomAiModel(modelObj);
-            setAvailableModels(window.getAiModelList());
+            const updated = window.getAiModelList();
+            setAvailableModels(updated);
             setNewDetectedModels(prev => prev.filter(m => m.id !== modelObj.id));
-            setToastMessage(`「${modelObj.displayName}」を選択リストに追加しました。\n（現在の使用モデルは変更されていません）`);
+            if (selectImmediately) {
+                setSelectedAiModel(modelObj.id);
+                localStorage.setItem('fishing_ai_model', modelObj.id);
+                setToastMessage(`「${modelObj.displayName}」を追加し、使用モデルに設定しました！`);
+            } else {
+                setToastMessage(`「${modelObj.displayName}」をリストに追加しました。`);
+            }
         }
     };
 
+    // 新モデル通知を非表示
     const handleDismissNewModel = (modelId) => {
         if (typeof window.ignoreNewAiModel === 'function') {
             window.ignoreNewAiModel(modelId);
@@ -90,32 +107,34 @@ function SettingsPanel({
         }
     };
 
-    // 現在選択中のモデルをリストから削除する
-    const handleDeleteCurrentModel = () => {
+    // 任意のモデルをリストから直接削除
+    const handleDeleteModelItem = (targetObj, e) => {
+        if (e) e.stopPropagation();
         const currentList = availableModels.length > 0 ? availableModels : (window.getAiModelList ? window.getAiModelList() : []);
         if (currentList.length <= 1) {
             setToastMessage('最低1つのAIモデルを残す必要があるため削除できません。');
             return;
         }
-        const targetObj = currentList.find(m => m.value === selectedAiModel) || currentList[0];
-        if (!window.confirm(`「${targetObj.label}」を選択リストから削除しますか？\n（いつでも「初期リストに戻す」から復元できます）`)) {
+        if (!window.confirm(`「${targetObj.label}」をリストから削除しますか？\n（右上の「初期状態に戻す」からいつでも復元できます）`)) {
             return;
         }
         try {
             const nextList = window.removeAiModelFromList(targetObj.value);
             setAvailableModels(nextList);
-            const nextSelected = nextList[0].value;
-            setSelectedAiModel(nextSelected);
-            localStorage.setItem('fishing_ai_model', nextSelected);
-            setToastMessage(`「${targetObj.label}」を削除し、\n使用モデルを「${nextList[0].label}」に切り替えました。`);
+            if (selectedAiModel === targetObj.value || selectedAiModel === targetObj.id) {
+                const nextSelected = nextList[0].value;
+                setSelectedAiModel(nextSelected);
+                localStorage.setItem('fishing_ai_model', nextSelected);
+            }
+            setToastMessage(`「${targetObj.label}」をリストから削除しました。`);
         } catch (err) {
             setToastMessage(err.message || '削除に失敗しました');
         }
     };
 
-    // モデルリストを初期状態へ復元する
+    // モデルリストを初期状態へ復元
     const handleResetModelList = () => {
-        if (!window.confirm('AIモデル選択リストを初期状態（標準の5モデル）に戻しますか？')) return;
+        if (!window.confirm('AIモデルリストを初期状態（標準の5モデル）に戻しますか？')) return;
         if (typeof window.resetAiModelListToDefault === 'function') {
             const defaultList = window.resetAiModelListToDefault();
             setAvailableModels(defaultList);
@@ -125,7 +144,7 @@ function SettingsPanel({
                 setSelectedAiModel(preferred.value);
                 localStorage.setItem('fishing_ai_model', preferred.value);
             }
-            setToastMessage('AIモデル一覧を初期リストに復元しました。');
+            setToastMessage('AIモデル一覧を初期状態に復元しました。');
         }
     };
 
@@ -498,12 +517,7 @@ function SettingsPanel({
         }
     };
 
-    const handleModelChange = (e) => {
-        const val = e.target.value;
-        setSelectedAiModel(val);
-        localStorage.setItem('fishing_ai_model', val);
-        setToastMessage(`使用モデルを「${val}」に設定しました`);
-    };
+    const modelListToRender = availableModels.length > 0 ? availableModels : (window.AI_MODEL_LIST || []);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 animate-[fadeIn_0.15s_ease-out]">
@@ -1015,93 +1029,126 @@ function SettingsPanel({
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-black text-gray-700 dark:text-slate-200 text-sm">Gemini AI設定</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleManualModelCheck}
-                                        disabled={isCheckingModels}
-                                        className="text-xs font-black px-2.5 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-slate-600 active:scale-95 transition-all"
-                                    >
-                                        {isCheckingModels ? '確認中...' : '🔄 新着モデル確認'}
-                                    </button>
-                                </div>
-
-                                {/* 新モデル通知バナー */}
-                                {newDetectedModels.length > 0 && (
-                                    <div className="bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-400 dark:border-amber-600 rounded-xl p-3 space-y-2 animate-[fadeIn_0.2s_ease-out]">
-                                        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-amber-900 dark:text-amber-300">
-                                            <span>✨</span>
-                                            <span>新しいAIモデルが利用可能です！</span>
-                                        </div>
-                                        <p className="text-[11px] font-bold text-amber-800/80 dark:text-amber-200/80 leading-snug">
-                                            ※現在の使用モデルは自動変更されません。必要な場合のみリストに追加できます。
-                                        </p>
-                                        <div className="space-y-1.5 pt-1">
-                                            {newDetectedModels.map(nm => (
-                                                <div key={nm.id} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-800 px-2.5 py-2 rounded-lg border border-amber-200 dark:border-slate-700">
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-black text-gray-800 dark:text-slate-100 truncate">{nm.displayName}</div>
-                                                        <div className="text-[10px] font-mono text-gray-400 truncate">{nm.id}</div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleAddNewModelToList(nm)}
-                                                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black active:scale-95"
-                                                        >
-                                                            ＋ 追加
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDismissNewModel(nm.id)}
-                                                            className="px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-xs font-bold"
-                                                            title="この通知を非表示"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block flex items-center justify-between">
-                                        <span>🤖 使用AIモデル（日報・多角分析・画像解析）</span>
-                                    </label>
-                                    <select
-                                        className="w-full border-2 border-sky-300 dark:border-slate-600 rounded-xl px-3 py-2.5 font-black text-base sm:text-lg bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer shadow-xs leading-normal"
-                                        value={selectedAiModel}
-                                        onChange={handleModelChange}
-                                    >
-                                        {(availableModels.length > 0 ? availableModels : (window.AI_MODEL_LIST || [])).map((opt) => (
-                                            <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    {/* モデル整理（選択中モデルの削除 ＆ 初期リスト復元）ボタン */}
-                                    <div className="flex items-center justify-between gap-2 pt-1">
+                            {/* 1画面完結型 Gemini AIモデル管理パネル */}
+                            <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-3">
+                                <div className="flex justify-between items-center gap-1">
+                                    <span className="font-black text-gray-800 dark:text-slate-100 text-sm flex items-center gap-1">
+                                        <span>🤖</span>
+                                        <span>AIモデル選択・管理</span>
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
                                         <button
                                             type="button"
-                                            onClick={handleDeleteCurrentModel}
-                                            className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/70 text-xs font-bold flex items-center gap-1 active:scale-95 transition-all"
+                                            onClick={handleManualModelCheck}
+                                            disabled={isCheckingModels}
+                                            className="text-xs font-black px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-2xs active:scale-95 transition-all"
                                         >
-                                            <span>🗑️</span>
-                                            <span>選択中のモデルをリストから削除</span>
+                                            {isCheckingModels ? '確認中...' : '🔄 新着確認'}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={handleResetModelList}
-                                            className="px-2.5 py-1.5 rounded-lg bg-gray-200/80 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-300 dark:border-slate-600 text-xs font-bold active:scale-95 transition-all"
+                                            className="text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 active:scale-95 transition-all"
+                                            title="初期の5モデルに戻す"
                                         >
-                                            初期リストに戻す
+                                            初期に戻す
                                         </button>
                                     </div>
+                                </div>
+
+                                <p className="text-[11px] font-bold text-gray-500 dark:text-slate-400 leading-tight">
+                                    タップで使用モデルを切り替え、「✕」で不要なモデルを削除できます。
+                                </p>
+
+                                {/* 統合モデルリスト（現在利用可能 ＋ 新着検知分を1つの枠内に表示） */}
+                                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5 no-scrollbar">
+                                    {modelListToRender.map((opt) => {
+                                        const isSelected = selectedAiModel === opt.value || selectedAiModel === opt.id;
+                                        return (
+                                            <div
+                                                key={opt.id || opt.value}
+                                                onClick={() => handleSelectModel(opt.value, opt.label)}
+                                                className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer transition-all select-none ${
+                                                    isSelected
+                                                        ? 'border-sky-500 bg-sky-50/90 dark:bg-sky-950/60 dark:border-sky-400 shadow-xs'
+                                                        : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-sky-200'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                        isSelected
+                                                            ? 'bg-sky-600 text-white'
+                                                            : 'border-2 border-gray-300 dark:border-slate-600 text-transparent'
+                                                    }`}>
+                                                        ✓
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className={`text-xs sm:text-sm truncate ${isSelected ? 'font-black text-sky-950 dark:text-white' : 'font-bold text-gray-700 dark:text-slate-200'}`}>
+                                                            {opt.label}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {isSelected ? (
+                                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-sky-600 text-white">
+                                                            使用中
+                                                        </span>
+                                                    ) : (
+                                                        modelListToRender.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleDeleteModelItem(opt, e)}
+                                                                className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-rose-100 dark:bg-slate-700 dark:hover:bg-rose-950/70 text-gray-500 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 flex items-center justify-center text-xs font-black active:scale-90 transition-all"
+                                                                title="このモデルをリストから削除"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* 新着モデルがある場合は同じリストの下部にそのまま並べる */}
+                                    {newDetectedModels.map(nm => (
+                                        <div
+                                            key={`new-${nm.id}`}
+                                            className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/30 animate-[fadeIn_0.2s_ease-out]"
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white shrink-0">
+                                                        ✨ 新着
+                                                    </span>
+                                                    <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 truncate">
+                                                        {nm.displayName}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] font-mono text-amber-800/70 dark:text-amber-300/70 truncate mt-0.5">
+                                                    {nm.id}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddNewModelToList(nm, true)}
+                                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-2xs active:scale-95"
+                                                >
+                                                    ＋ 使う
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDismissNewModel(nm.id)}
+                                                    className="w-7 h-7 rounded-lg bg-amber-200/70 hover:bg-amber-300 dark:bg-slate-700 text-amber-900 dark:text-slate-300 flex items-center justify-center text-xs font-black active:scale-90"
+                                                    title="新着通知を消す"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">
