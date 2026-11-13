@@ -1,5 +1,5 @@
 // ==========================================
-// settings.js : 設定・海況・システム管理パネル
+// settings.js : 設定・海況・システム管理パネル（新モデル通知＆風向厳格判定版）
 // ==========================================
 
 const getMoonPhaseIcon = (ageStr) => {
@@ -40,12 +40,55 @@ function SettingsPanel({
     const [isTideDropdownOpen, setIsTideDropdownOpen] = React.useState(false);
 
     const [availableModels, setAvailableModels] = React.useState([]);
+    const [newDetectedModels, setNewDetectedModels] = React.useState([]);
+    const [isCheckingModels, setIsCheckingModels] = React.useState(false);
 
     React.useEffect(() => {
         if (isSettingsOpen) {
-            setAvailableModels(window.AI_MODEL_LIST || []);
+            setAvailableModels(window.getAiModelList ? window.getAiModelList() : (window.AI_MODEL_LIST || []));
+            if (userApiKey && typeof window.checkNewGeminiModels === 'function') {
+                window.checkNewGeminiModels(userApiKey, false).then(found => {
+                    setNewDetectedModels(found || []);
+                });
+            }
         }
-    }, [isSettingsOpen]);
+    }, [isSettingsOpen, userApiKey]);
+
+    const handleManualModelCheck = async () => {
+        const key = (tempKey || userApiKey || '').trim();
+        if (!key) {
+            setToastMessage('APIキーを入力してから確認してください。');
+            return;
+        }
+        setIsCheckingModels(true);
+        try {
+            const found = await window.checkNewGeminiModels(key, true);
+            setNewDetectedModels(found || []);
+            if (found && found.length > 0) {
+                setToastMessage(`新着モデルを ${found.length} 件検知しました！`);
+            } else {
+                setToastMessage('現在利用可能なモデルはすべて登録済みです（新着なし）。');
+            }
+        } finally {
+            setIsCheckingModels(false);
+        }
+    };
+
+    const handleAddNewModelToList = (modelObj) => {
+        if (typeof window.addCustomAiModel === 'function') {
+            window.addCustomAiModel(modelObj);
+            setAvailableModels(window.getAiModelList());
+            setNewDetectedModels(prev => prev.filter(m => m.id !== modelObj.id));
+            setToastMessage(`「${modelObj.displayName}」を選択リストに追加しました。\n（現在の使用モデルは変更されていません）`);
+        }
+    };
+
+    const handleDismissNewModel = (modelId) => {
+        if (typeof window.ignoreNewAiModel === 'function') {
+            window.ignoreNewAiModel(modelId);
+            setNewDetectedModels(prev => prev.filter(m => m.id !== modelId));
+        }
+    };
 
     const pointRef = React.useRef(null);
     const tideRef = React.useRef(null);
@@ -225,7 +268,7 @@ function SettingsPanel({
         }
     };
 
-    // 天気予報画像の自動解析（構文修復版）
+    // 天気予報画像の自動解析（風向厳格判定・時間帯固定版）
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -240,12 +283,12 @@ function SettingsPanel({
         setIsAnalyzingWeather(true);
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
-     try {
+        try {
             const prompt = `気象予報画像から【日中の実釣時間帯（朝〜昼）】の予報を抽出し、JSON形式のみで出力してください。
 ※深夜（0時・3時）や夜間（18時以降）の数値は無視してください。
 
 【抽出ルール】
-・天候: 「晴れ」「曇り」「雨」などの主たる天候のみを出力。「雷」の表示は拾わないこと。
+・天候: 雷や落雷マークは無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
 ・風向（最重要厳格ルール）:
   表の深夜0時・3時は見ず、【6時・9時（前半）】および【12時・15時（後半）】の列にある矢印を見て、風が吹いてくる方角（風向）を判定してください。
   【四方位（北・南・東・西）の判定条件】:
@@ -258,7 +301,7 @@ function SettingsPanel({
   - 矢印が少しでも斜め右下（南東方向）を向いている ➔ 必ず「北西」
   - 矢印が少しでも斜め左上（北西方向）を向いている ➔ 必ず「南東」
   - 矢印が少しでも斜め右上（北東方向）を向いている ➔ 必ず「南西」
-  ※「真北」「真西」等の完全な垂直水平でない限り、絶対に「北」「南」「東」「西」と出力しないでください。
+  ※完全な垂直・水平でない限り、絶対に「北」「南」「東」「西」と出力しないでください。
 ・風速: 6時・9時（前半）、12時・15時（後半）の通常風速と最大瞬間風速の最小〜最大幅を出力（例: "3〜7m/s"）。
 ・波高: 選択肢 ["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"] から選んでください。
 
@@ -274,7 +317,6 @@ function SettingsPanel({
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
-            // 2文字方角（北東など）を優先抽出して誤判定を防ぐ
             const cleanWindDir = (dir) => {
                 if (!dir) return '';
                 const d = dir.trim();
@@ -411,6 +453,9 @@ function SettingsPanel({
         setUserApiKey(cleaned);
         localStorage.setItem('fishing_api_key', cleaned);
         setToastMessage('Gemini APIキーを保存しました');
+        if (cleaned && typeof window.checkNewGeminiModels === 'function') {
+            window.checkNewGeminiModels(cleaned, true).then(found => setNewDetectedModels(found || []));
+        }
     };
 
     const handleModelChange = (e) => {
@@ -441,7 +486,7 @@ function SettingsPanel({
                     {[
                         { id: 'basic', label: '基本設定' },
                         { id: 'weather', label: '気象・潮時' },
-                        { id: 'system', label: 'システム' }
+                        { id: 'system', label: 'システム', hasBadge: newDetectedModels.length > 0 }
                     ].map(tab => {
                         const isActive = activeSettingsTab === tab.id;
                         return (
@@ -449,13 +494,16 @@ function SettingsPanel({
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveSettingsTab(tab.id)}
-                                className={`flex-1 py-2.5 px-2 rounded-t-xl text-sm font-black transition-all relative select-none ${
+                                className={`flex-1 py-2.5 px-2 rounded-t-xl text-sm font-black transition-all relative select-none flex items-center justify-center gap-1 ${
                                     isActive
                                         ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border-t-2 border-x border-t-sky-600 dark:border-t-sky-400 border-x-sky-300 dark:border-x-slate-800 -mb-px z-10 shadow-sm'
                                         : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900 hover:dark:bg-slate-855 text-sky-800 dark:text-slate-400 border-t border-x border-sky-200/60 dark:border-slate-800/80 hover:dark:text-white active:scale-[0.98]'
                                 }`}
                             >
-                                {tab.label}
+                                <span>{tab.label}</span>
+                                {tab.hasBadge && (
+                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" title="新着AIモデルあり"></span>
+                                )}
                             </button>
                         );
                     })}
@@ -928,7 +976,58 @@ function SettingsPanel({
                             </div>
 
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-4">
-                                <span className="font-black text-gray-700 dark:text-slate-200 block text-sm">Gemini AI設定</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-black text-gray-700 dark:text-slate-200 text-sm">Gemini AI設定</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleManualModelCheck}
+                                        disabled={isCheckingModels}
+                                        className="text-xs font-black px-2.5 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-slate-600 active:scale-95 transition-all"
+                                    >
+                                        {isCheckingModels ? '確認中...' : '🔄 新着モデル確認'}
+                                    </button>
+                                </div>
+
+                                {/* 新モデル通知バナー（検知された場合のみ表示） */}
+                                {newDetectedModels.length > 0 && (
+                                    <div className="bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-400 dark:border-amber-600 rounded-xl p-3 space-y-2 animate-[fadeIn_0.2s_ease-out]">
+                                        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-amber-900 dark:text-amber-300">
+                                            <span>✨</span>
+                                            <span>新しいAIモデルが利用可能です！</span>
+                                        </div>
+                                        <p className="text-[11px] font-bold text-amber-800/80 dark:text-amber-200/80 leading-snug">
+                                            ※現在の使用モデルは自動変更されません。必要な場合のみリストに追加できます。
+                                        </p>
+                                        <div className="space-y-1.5 pt-1">
+                                            {newDetectedModels.map(nm => (
+                                                <div key={nm.id} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-800 px-2.5 py-2 rounded-lg border border-amber-200 dark:border-slate-700">
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-black text-gray-800 dark:text-slate-100 truncate">{nm.displayName}</div>
+                                                        <div className="text-[10px] font-mono text-gray-400 truncate">{nm.id}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAddNewModelToList(nm)}
+                                                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black active:scale-95"
+                                                        >
+                                                            ＋ 追加
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDismissNewModel(nm.id)}
+                                                            className="px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-xs font-bold"
+                                                            title="この通知を非表示"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="text-xs sm:text-sm font-black text-sky-700 dark:text-sky-300 block mb-1.5 flex items-center justify-between">
                                         <span>🤖 使用AIモデル（日報・多角分析・画像解析）</span>
@@ -938,10 +1037,7 @@ function SettingsPanel({
                                         value={selectedAiModel}
                                         onChange={handleModelChange}
                                     >
-                                        {(typeof window.getAiModelList === 'function' 
-                                            ? window.getAiModelList() 
-                                            : (window.AI_MODEL_LIST || [])
-                                        ).map((opt) => (
+                                        {(availableModels.length > 0 ? availableModels : (window.AI_MODEL_LIST || [])).map((opt) => (
                                             <option key={opt.value} value={opt.value} className="text-sm sm:text-base font-bold text-gray-800 dark:text-slate-100">
                                                 {opt.label}
                                             </option>

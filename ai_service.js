@@ -1,35 +1,48 @@
 // ==========================================
-// ai_service.js : AIサービス ＆ 共通ユーティリティ（完全1本化）
+// ai_service.js : AIサービス ＆ 共通ユーティリティ（新モデル通知機能付き）
 // ==========================================
 
 // --- 1. AIモデル定義 ＆ 設定 ---
-const AI_MODEL_CONFIG = {
-    textModels: [
-        { label: "Gemini 3.5 Flash（標準）",       value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
-        { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
-        { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
-        { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
-        { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
-    ]
-};
+const DEFAULT_AI_MODELS = [
+    { label: "Gemini 3.5 Flash（標準）",       value: "Gemini 3.5 Flash", id: "gemini-3.5-flash" },
+    { label: "Gemini 3.6 Flash（高精度）",     value: "Gemini 3.6 Flash", id: "gemini-3.6-flash" },
+    { label: "Gemini 3.7 Flash（高速・安定）", value: "Gemini 3.7 Flash", id: "gemini-3.7-flash" },
+    { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
+    { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
+];
 
+// 端末に保存された追加モデルと初期リストを統合して返す
 window.getAiModelList = function() {
-    return AI_MODEL_CONFIG.textModels;
+    let customModels = [];
+    try {
+        const saved = localStorage.getItem('fishing_custom_ai_models');
+        if (saved) customModels = JSON.parse(saved);
+    } catch (e) {}
+
+    const merged = [...DEFAULT_AI_MODELS];
+    customModels.forEach(cm => {
+        if (!merged.some(m => m.id.toLowerCase() === cm.id.toLowerCase())) {
+            merged.push(cm);
+        }
+    });
+    return merged;
 };
-window.AI_MODEL_LIST = AI_MODEL_CONFIG.textModels;
+window.AI_MODEL_LIST = window.getAiModelList();
 
 // 選択文字列から正式なモデルIDを確定する
 window.getActualModelName = function(modelValue) {
     if (!modelValue) return 'gemini-3.5-flash';
     const clean = String(modelValue).trim().toLowerCase();
+    const list = window.getAiModelList();
 
-    const found = AI_MODEL_CONFIG.textModels.find(m => 
+    const found = list.find(m => 
         m.value.toLowerCase() === clean || 
         m.id.toLowerCase() === clean ||
         m.label.toLowerCase().includes(clean)
     );
     if (found) return found.id;
 
+    if (clean.startsWith('gemini-')) return clean;
     if (clean.includes('3.5')) return 'gemini-3.5-flash';
     if (clean.includes('3.6')) return 'gemini-3.6-flash';
     if (clean.includes('3.7')) return 'gemini-3.7-flash';
@@ -37,6 +50,106 @@ window.getActualModelName = function(modelValue) {
     if (clean.includes('argon') || clean.includes('4')) return 'gemini-4-argon';
 
     return 'gemini-3.5-flash';
+};
+
+// 新着AIモデルの自動チェック（無料枠のRPDを消費しないメタデータ取得）
+window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
+    const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
+    if (!cleanKey) return [];
+
+    const today = getTodayString();
+    const lastCheckDate = localStorage.getItem('fishing_last_model_check_date');
+    const cachedNew = localStorage.getItem('fishing_detected_new_models');
+
+    // 強制チェックでなければ1日1回キャッシュを利用
+    if (!forceCheck && lastCheckDate === today && cachedNew) {
+        try {
+            return JSON.parse(cachedNew);
+        } catch (e) {}
+    }
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        const remoteModels = data.models || [];
+
+        const currentIds = window.getAiModelList().map(m => m.id.toLowerCase());
+        let ignoredIds = [];
+        try {
+            ignoredIds = JSON.parse(localStorage.getItem('fishing_ignored_ai_models') || '[]');
+        } catch (e) {}
+
+        // テキスト・画像生成に対応し、かつ現行リストにない新しいGeminiモデルを抽出
+        const newModels = [];
+        remoteModels.forEach(rm => {
+            const rawName = (rm.name || '').replace('models/', '');
+            const lowerId = rawName.toLowerCase();
+            const methods = rm.supportedGenerationMethods || [];
+
+            const isGenerative = methods.includes('generateContent');
+            const isGemini = lowerId.startsWith('gemini-');
+            // 実験版(exp)や古い1.0/1.5系、音声専用(tts)などを除外して主要モデルのみ抽出
+            const isNoise = lowerId.includes('embedding') || lowerId.includes('aqa') || lowerId.includes('tts') || lowerId.includes('1.0') || lowerId.includes('1.5') || lowerId.includes('2.0') || lowerId.includes('2.5');
+
+            if (isGenerative && isGemini && !isNoise) {
+                if (!currentIds.includes(lowerId) && !ignoredIds.includes(lowerId)) {
+                    newModels.push({
+                        id: rawName,
+                        displayName: rm.displayName || rawName
+                    });
+                }
+            }
+        });
+
+        localStorage.setItem('fishing_last_model_check_date', today);
+        localStorage.setItem('fishing_detected_new_models', JSON.stringify(newModels));
+        return newModels;
+    } catch (e) {
+        console.warn('Model check skipped:', e);
+        return [];
+    }
+};
+
+// 新モデルをリストに追加する
+window.addCustomAiModel = function(modelObj) {
+    if (!modelObj || !modelObj.id) return;
+    let customModels = [];
+    try {
+        customModels = JSON.parse(localStorage.getItem('fishing_custom_ai_models') || '[]');
+    } catch (e) {}
+
+    if (!customModels.some(m => m.id.toLowerCase() === modelObj.id.toLowerCase())) {
+        customModels.push({
+            label: `${modelObj.displayName}（新着追加）`,
+            value: modelObj.id,
+            id: modelObj.id
+        });
+        localStorage.setItem('fishing_custom_ai_models', JSON.stringify(customModels));
+        window.AI_MODEL_LIST = window.getAiModelList();
+    }
+
+    // 検知済みリストから除外
+    try {
+        const detected = JSON.parse(localStorage.getItem('fishing_detected_new_models') || '[]');
+        const nextDetected = detected.filter(d => d.id.toLowerCase() !== modelObj.id.toLowerCase());
+        localStorage.setItem('fishing_detected_new_models', JSON.stringify(nextDetected));
+    } catch (e) {}
+};
+
+// 新モデル通知を非表示にする
+window.ignoreNewAiModel = function(modelId) {
+    if (!modelId) return;
+    try {
+        const ignored = JSON.parse(localStorage.getItem('fishing_ignored_ai_models') || '[]');
+        if (!ignored.includes(modelId.toLowerCase())) {
+            ignored.push(modelId.toLowerCase());
+            localStorage.setItem('fishing_ignored_ai_models', JSON.stringify(ignored));
+        }
+        const detected = JSON.parse(localStorage.getItem('fishing_detected_new_models') || '[]');
+        const nextDetected = detected.filter(d => d.id.toLowerCase() !== modelId.toLowerCase());
+        localStorage.setItem('fishing_detected_new_models', JSON.stringify(nextDetected));
+    } catch (e) {}
 };
 
 // 単一モデル専用リクエスト送信（フォールバック一切なし）
@@ -153,7 +266,7 @@ window.callAiVision = async function({ prompt, base64Image, apiKey, selectedMode
     return JSON.parse(clean);
 };
 
-// --- 2. 共通ユーティリティ（旧 api.js より合体） ---
+// --- 2. 共通ユーティリティ ---
 const getUnit = (fishName) => {
     if (!fishName || typeof fishName !== 'string') return '匹';
     const name = fishName.toLowerCase();
@@ -209,7 +322,7 @@ const getTopAnglerDetails = (portSeats = [], starboardSeats = []) => {
     };
 };
 
-// --- 3. 共通アイコン定義（旧 api.js より合体） ---
+// --- 3. 共通アイコン定義 ---
 const IconCalendar = ({ className = "w-4 h-4" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" /></svg>);
 const IconTrophy = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none">
