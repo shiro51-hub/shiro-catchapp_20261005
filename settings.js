@@ -1,5 +1,5 @@
 // ==========================================
-// settings.js : 設定・海況・システム管理パネル（新モデル通知＆風向厳格判定版）
+// settings.js : 設定・海況・システム管理パネル（新モデル通知＆風向2時点厳格判定版）
 // ==========================================
 
 const getMoonPhaseIcon = (ageStr) => {
@@ -188,6 +188,7 @@ function SettingsPanel({
         "穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"
     ];
 
+    // 高精細（長辺1280px・画質0.85）で画像をBase64変換（風向矢印の潰れを防止）
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -195,7 +196,7 @@ function SettingsPanel({
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const maxDim = 720;
+                    const maxDim = 1280;
                     let width = img.width;
                     let height = img.height;
 
@@ -212,7 +213,7 @@ function SettingsPanel({
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                     resolve(dataUrl.split(',')[1]);
                 };
                 img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
@@ -268,7 +269,7 @@ function SettingsPanel({
         }
     };
 
-    // 天気予報画像の自動解析（風向厳格判定・時間帯固定版）
+    // 天気予報画像の自動解析（6時・9時／12時・15時の2時点変化対応・風向厳格判定版）
     const handleWeatherImageAnalysis = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -284,25 +285,21 @@ function SettingsPanel({
         const currentSelected = selectedAiModel || localStorage.getItem('fishing_ai_model');
 
         try {
-            const prompt = `気象予報画像から【日中の実釣時間帯（朝〜昼）】の予報を抽出し、JSON形式のみで出力してください。
-※深夜（0時・3時）や夜間（18時以降）の数値は無視してください。
+            const prompt = `気象予報画像から【日中の実釣時間帯】の予報を抽出し、JSON形式のみで出力してください。
+※深夜（0時・3時）や夜間（18時・21時）の列は絶対に無視してください。
 
 【抽出ルール】
-・天候: 雷や落雷マークは無視し、「晴れ」「曇り」「雨」などの主たる天候のみを出力。
-・風向（最重要厳格ルール）:
-  表の深夜0時・3時は見ず、【6時・9時（前半）】および【12時・15時（後半）】の列にある矢印を見て、風が吹いてくる方角（風向）を判定してください。
-  【四方位（北・南・東・西）の判定条件】:
-  - 矢印が完全な真下を向いている時のみ ➔ 「北」
-  - 矢印が完全な真上を向いている時のみ ➔ 「南」
-  - 矢印が完全な真左を向いている時のみ ➔ 「東」
-  - 矢印が完全な真右を向いている時のみ ➔ 「西」
-  【傾きがある場合の判定条件（少しでも傾いていれば四隅の方角にする）】:
-  - 矢印が少しでも斜め左下（南西方向）を向いている（少し右や左にズレている場合も含む） ➔ 必ず「北東」
-  - 矢印が少しでも斜め右下（南東方向）を向いている ➔ 必ず「北西」
-  - 矢印が少しでも斜め左上（北西方向）を向いている ➔ 必ず「南東」
-  - 矢印が少しでも斜め右上（北東方向）を向いている ➔ 必ず「南西」
-  ※完全な垂直・水平でない限り、絶対に「北」「南」「東」「西」と出力しないでください。
-・風速: 6時・9時（前半）、12時・15時（後半）の通常風速と最大瞬間風速の最小〜最大幅を出力（例: "3〜7m/s"）。
+・対象時間帯:
+  - 前半 ＝ 「6時」と「9時」の2列
+  - 後半 ＝ 「12時」と「15時」の2列
+・天候: 雷マークは無視し、前半（6時・9時）、後半（12時・15時）の天候アイコンから「晴れ」「曇り」「雨」を出力（途中で変わる場合は "曇り→晴れ" のように表記）。
+・風向（最重要・2時点判定ルール）:
+  矢印が指す方向（風下）ではなく、【風が吹いてくる方角（風向）】を判定してください。
+  1. 四方位（北・南・東・西）は、矢印が完全な垂直・水平（真下＝北、真上＝南、真左＝東、真右＝西）を向いている時のみ使用してください。
+  2. 少しでも斜めに傾いている場合は、必ず四隅の方角（左下向き＝「北東」、右下向き＝「北西」、左上向き＝「南東」、右上向き＝「南西」）と判定してください。
+  3. 前半の「6時」と「9時」の風向が同じなら1つだけ出力（例: "北東"）、異なる場合は迷わず「→」で繋いで2つ出力してください（例: "北→北東"）。
+  4. 後半の「12時」と「15時」も同様に、同じなら1つ（例: "北東"）、異なる場合は「→」で繋いで2つ出力してください（例: "北東→東"）。
+・風速: 前半（6時・9時）、後半（12時・15時）の通常風速と最大瞬間風速の最小〜最大幅を出力（例: "3〜7m/s"）。
 ・波高: 選択肢 ["穏やか", "穏やかな方", "多少波がある", "波がやや高い", "波が高い", "しける", "大しけ"] から選んでください。
 
 不明な項目は空文字 "" にしてください。JSONのみ出力：
@@ -317,12 +314,20 @@ function SettingsPanel({
                 onStatusUpdate: (msg) => setToastMessage(msg)
             });
 
+            // 単一の方角（例: "北東"）でも変化表記（例: "北→北東"）でも綺麗に整える関数
             const cleanWindDir = (dir) => {
                 if (!dir) return '';
-                const d = dir.trim();
                 const valid = ['北東', '北西', '南東', '南西', '北', '南', '東', '西'];
-                const found = valid.find(v => d.includes(v));
-                return found || d;
+                const parts = String(dir).split(/[→➔➡~〜・/\s]+/).map(p => {
+                    const trimmed = p.trim();
+                    return valid.find(v => trimmed.includes(v)) || '';
+                }).filter(Boolean);
+
+                if (parts.length === 0) return dir.trim();
+                if (parts.length >= 2 && parts[0] !== parts[parts.length - 1]) {
+                    return `${parts[0]}→${parts[parts.length - 1]}`;
+                }
+                return parts[0];
             };
 
             let count = 0;
@@ -877,20 +882,20 @@ function SettingsPanel({
                                         <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={weather2} onChange={(e) => setWeather2(e.target.value)} placeholder="例: 曇り" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風向 (前半)</label>
-                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windDir1} onChange={(e) => setWindDir1(e.target.value)} placeholder="例: 北東" />
+                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風向 (前半:6〜9時)</label>
+                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windDir1} onChange={(e) => setWindDir1(e.target.value)} placeholder="例: 北東 / 北→北東" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風向 (後半)</label>
-                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windDir2} onChange={(e) => setWindDir2(e.target.value)} placeholder="例: 南西" />
+                                        <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風向 (後半:12〜15時)</label>
+                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windDir2} onChange={(e) => setWindDir2(e.target.value)} placeholder="例: 南西 / 東→南東" />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風速 (前半)</label>
-                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windSpeed1} onChange={(e) => setWindSpeed1(e.target.value)} placeholder="例: 3m" />
+                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windSpeed1} onChange={(e) => setWindSpeed1(e.target.value)} placeholder="例: 3〜7m/s" />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">風速 (後半)</label>
-                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windSpeed2} onChange={(e) => setWindSpeed2(e.target.value)} placeholder="例: 6m" />
+                                        <input type="text" className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-2.5 py-2 font-bold text-sm bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400" value={windSpeed2} onChange={(e) => setWindSpeed2(e.target.value)} placeholder="例: 2〜5m/s" />
                                     </div>
 
                                     <div>
