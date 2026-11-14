@@ -1598,23 +1598,72 @@ function App() {
     };
 
     // ==========================================
-    // 簡易版（スタッフ報告用・縦並び）テキスト生成
+    // 簡易版（スタッフ報告用・別船合算トータル・縦並び）テキスト生成
     // ==========================================
     const generateSimpleShareText = (record) => {
         if (!record) return '';
         const unit = getUnit(record.targetFish);
-        const minVal = (record.min === '' || record.min === undefined || record.min === null) ? 0 : record.min;
-        const maxVal = (record.max === '' || record.max === undefined || record.max === null) ? 0 : record.max;
+
+        // 自船の座席から有効な釣果数を取得
+        const visibleCounts = [...(record.port || []), ...(record.starboard || [])]
+            .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count, 10)))
+            .map(s => parseInt(s.count, 10));
+
+        let overallMin = visibleCounts.length > 0
+            ? Math.min(...visibleCounts)
+            : ((record.min === '' || record.min === undefined || record.min === null) ? 0 : parseInt(record.min, 10));
+        let overallMax = visibleCounts.length > 0
+            ? Math.max(...visibleCounts)
+            : ((record.max === '' || record.max === undefined || record.max === null) ? 0 : parseInt(record.max, 10));
+        let overallTopName = (record.topAnglerName || '').trim();
+        let hasOtherBoats = false;
+
+        // 船長メモ内の【別船1】【別船2】の釣果・竿頭を自動合算
+        const memoText = record.detailedMemo || '';
+        [1, 2].forEach(num => {
+            const regex = new RegExp(`【別船${num}】\\s*釣果:\\s*(\\d*)\\s*〜\\s*(\\d*)[^\\n]*?(?:竿頭:\\s*([^\\n]*?)(?:さん|様)?)?(?:\\n|$)`);
+            const match = memoText.match(regex);
+            if (match) {
+                const bMin = match[1] !== '' ? parseInt(match[1], 10) : NaN;
+                const bMax = match[2] !== '' ? parseInt(match[2], 10) : NaN;
+                const bName = (match[3] || '').trim();
+
+                if (!isNaN(bMin) || !isNaN(bMax)) {
+                    hasOtherBoats = true;
+                }
+
+                if (!isNaN(bMin)) {
+                    overallMin = Math.min(overallMin, bMin);
+                }
+                if (!isNaN(bMax)) {
+                    if (bMax > overallMax) {
+                        overallMax = bMax;
+                        overallTopName = bName;
+                    } else if (bMax === overallMax && bMax > 0 && bName) {
+                        if (!overallTopName) {
+                            overallTopName = bName;
+                        } else if (!overallTopName.includes(bName)) {
+                            overallTopName = `${overallTopName}・${bName}`;
+                        }
+                    }
+                }
+            }
+        });
+
+        const sizeStr = (record.sizeMin || record.sizeMax)
+            ? `${record.sizeMin || '?'}〜${record.sizeMax || '?'}cm`
+            : '-';
 
         let lines = [];
-        lines.push(`【${(record.date || '').replace(/-/g, '/')}${getDayOfWeek(record.date)} 】`);
+        lines.push(`日付：${(record.date || '').replace(/-/g, '/')}${getDayOfWeek(record.date)}`);
         lines.push(`釣り物：${record.targetFish || '未設定'}`);
         lines.push(`ポイント：${record.point || '-'}`);
         lines.push(`水深：${record.waterDepth ? `${record.waterDepth}m` : '-'}`);
         lines.push(`水温：${record.waterTemp ? `${record.waterTemp}℃` : '-'}`);
         lines.push(`潮色：${record.tide || '-'}`);
-        lines.push(`釣果：${minVal}〜${maxVal}${unit}`);
-        lines.push(`竿頭：${record.topAnglerName ? `${record.topAnglerName}様` : '-'}`);
+        lines.push(`釣果：${overallMin}〜${overallMax}${unit}${hasOtherBoats ? '（合算釣果）' : ''}`);
+        lines.push(`型：${sizeStr}`);
+        lines.push(`竿頭：${overallTopName ? `${overallTopName}様` : '-'}`);
 
         return lines.join('\n');
     };
