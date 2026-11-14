@@ -1014,6 +1014,8 @@ function App() {
     // 共有ポップアップ（モーダル）用のステート
     const [shareTargetRecord, setShareTargetRecord] = React.useState(null);
     const [shareFormatMode, setShareFormatMode] = React.useState('simple'); // 'simple'（簡易版） or 'detail'（詳細版）
+    const [isEditingShareText, setIsEditingShareText] = React.useState(false);
+    const [editedShareText, setEditedShareText] = React.useState('');）
 
     const [recordToDelete, setRecordToDelete] = React.useState(null);
     const [shareImageRecord, setShareImageRecord] = React.useState(null);
@@ -1725,23 +1727,30 @@ function App() {
         return mode === 'simple' ? generateSimpleShareText(record) : generateShareText(record);
     };
 
+    // 編集中の場合は編集後テキスト、通常時は自動生成テキストを返す
+    const getFinalShareText = (record, mode) => {
+        if (isEditingShareText) return editedShareText;
+        return getActiveShareText(record, mode);
+    };
+
     const shareToLine = (record, mode = 'detail') => {
-        const text = getActiveShareText(record, mode);
+        const text = getFinalShareText(record, mode);
         window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
         setShareTargetRecord(null);
+        setIsEditingShareText(false);
     };
 
     const shareToEmail = (record, mode = 'detail') => {
-        const text = getActiveShareText(record, mode);
+        const text = getFinalShareText(record, mode);
         const subject = `【山下丸 釣果記録】${(record.date || '').replace(/-/g, '/')}`;
         window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
         setShareTargetRecord(null);
+        setIsEditingShareText(false);
     };
 
     const handleCopyShareText = (record, mode = 'detail') => {
-        const text = getActiveShareText(record, mode);
+        const text = getFinalShareText(record, mode);
         handleCopyPattern(text);
-        setShareTargetRecord(null);
     };
 
     // ==========================================
@@ -2065,11 +2074,14 @@ function App() {
                 </div>
             )}
 
-            {/* 共有選択ポップアップモーダル（簡易版 / 詳細版 切り替え ＆ プレビュー付き） */}
+            {/* 共有選択ポップアップモーダル（簡易版 / 詳細版 切り替え ＆ プレビュー・直接編集対応） */}
             {shareTargetRecord && (
                 <div 
                     className="fixed inset-0 z-[140] flex items-center justify-center bg-black/65 backdrop-blur-sm p-3 animate-[fadeIn_0.15s_ease-out]" 
-                    onClick={() => setShareTargetRecord(null)}
+                    onClick={() => {
+                        setShareTargetRecord(null);
+                        setIsEditingShareText(false);
+                    }}
                 >
                     <div 
                         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-sky-400 dark:border-slate-600 w-full max-w-sm flex flex-col max-h-[88dvh] overflow-hidden" 
@@ -2085,7 +2097,10 @@ function App() {
                             </div>
                             <button 
                                 type="button"
-                                onClick={() => setShareTargetRecord(null)} 
+                                onClick={() => {
+                                    setShareTargetRecord(null);
+                                    setIsEditingShareText(false);
+                                }} 
                                 className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-800 dark:text-white font-black text-sm flex items-center justify-center active:scale-90 transition-all select-none"
                                 aria-label="閉じる"
                             >
@@ -2098,7 +2113,10 @@ function App() {
                             <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-200/80 dark:bg-slate-950 rounded-xl">
                                 <button
                                     type="button"
-                                    onClick={() => setShareFormatMode('simple')}
+                                    onClick={() => {
+                                        setShareFormatMode('simple');
+                                        setIsEditingShareText(false);
+                                    }}
                                     className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-black transition-all flex flex-col items-center justify-center leading-tight select-none ${
                                         shareFormatMode === 'simple'
                                             ? 'bg-sky-600 text-white shadow-sm'
@@ -2112,7 +2130,10 @@ function App() {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setShareFormatMode('detail')}
+                                    onClick={() => {
+                                        setShareFormatMode('detail');
+                                        setIsEditingShareText(false);
+                                    }}
                                     className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-black transition-all flex flex-col items-center justify-center leading-tight select-none ${
                                         shareFormatMode === 'detail'
                                             ? 'bg-sky-600 text-white shadow-sm'
@@ -2127,19 +2148,60 @@ function App() {
                             </div>
                         </div>
 
-                        {/* 送信内容プレビュー */}
-                        <div className="p-3 flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800">
-                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-400 mb-1 flex justify-between items-center">
-                                <span>送信内容プレビュー</span>
-                                <span>{shareFormatMode === 'simple' ? '縦並び速報形式' : '全項目詳細形式'}</span>
+                        {/* 送信内容プレビュー（見出し横にコピーボタン・編集ボタン配置） */}
+                        <div className="p-3 flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800 flex flex-col">
+                            <div className="flex justify-between items-center mb-1.5 gap-2 shrink-0">
+                                <span className="text-xs font-black text-slate-500 dark:text-slate-400">
+                                    送信内容プレビュー
+                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopyShareText(shareTargetRecord, shareFormatMode)}
+                                        className="px-2.5 py-1 rounded-lg text-xs font-black bg-sky-100 hover:bg-sky-200 dark:bg-sky-950/80 dark:hover:bg-sky-900 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700 flex items-center gap-1 active:scale-95 transition-all select-none shadow-2xs"
+                                    >
+                                        <span>📋</span>
+                                        <span>コピー</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (isEditingShareText) {
+                                                setIsEditingShareText(false);
+                                            } else {
+                                                setEditedShareText(getActiveShareText(shareTargetRecord, shareFormatMode));
+                                                setIsEditingShareText(true);
+                                            }
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-black border flex items-center gap-1 active:scale-95 transition-all select-none shadow-2xs ${
+                                            isEditingShareText
+                                                ? 'bg-amber-500 text-white border-amber-600'
+                                                : 'bg-amber-50 hover:bg-amber-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-slate-500'
+                                        }`}
+                                    >
+                                        <span>{isEditingShareText ? '↺' : '✏️'}</span>
+                                        <span>{isEditingShareText ? '元に戻す' : '編集'}</span>
+                                    </button>
+                                </div>
                             </div>
-                            <pre className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed select-all">
-                                {getActiveShareText(shareTargetRecord, shareFormatMode)}
-                            </pre>
+
+                            {isEditingShareText ? (
+                                <textarea
+                                    value={editedShareText}
+                                    onChange={(e) => setEditedShareText(e.target.value)}
+                                    rows={9}
+                                    className="w-full flex-1 min-h-[190px] p-3 rounded-xl bg-amber-50/40 dark:bg-slate-900 border-2 border-amber-400 dark:border-amber-600 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-sans leading-relaxed focus:outline-none resize-none"
+                                    autoFocus
+                                />
+                            ) : (
+                                <pre className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed select-all">
+                                    {getActiveShareText(shareTargetRecord, shareFormatMode)}
+                                </pre>
+                            )}
                         </div>
 
-                        {/* 送信・コピーアクションボタン */}
-                        <div className="p-3 bg-gray-50 dark:bg-slate-900/70 border-t border-gray-200 dark:border-slate-700 space-y-2 shrink-0">
+                        {/* 送信アクションボタン */}
+                        <div className="p-3 bg-gray-50 dark:bg-slate-900/70 border-t border-gray-200 dark:border-slate-700 shrink-0">
                             <div className="grid grid-cols-2 gap-2">
                                 <button 
                                     type="button"
@@ -2156,14 +2218,6 @@ function App() {
                                     <IconMail /> メールで送る
                                 </button>
                             </div>
-                            <button 
-                                type="button"
-                                onClick={() => handleCopyShareText(shareTargetRecord, shareFormatMode)} 
-                                className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-all select-none"
-                            >
-                                <span>📋</span>
-                                <span>テキストをコピー（＋メッセージ等へ貼付）</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -3355,6 +3409,7 @@ function App() {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setShareFormatMode('simple');
+                                                    setIsEditingShareText(false);
                                                     setShareTargetRecord(r);
                                                 }}
                                                 className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
