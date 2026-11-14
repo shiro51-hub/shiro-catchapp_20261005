@@ -1015,7 +1015,7 @@ function App() {
     const [shareTargetRecord, setShareTargetRecord] = React.useState(null);
     const [shareFormatMode, setShareFormatMode] = React.useState('simple'); // 'simple'（簡易版） or 'detail'（詳細版）
     const [isEditingShareText, setIsEditingShareText] = React.useState(false);
-    const [editedShareText, setEditedShareText] = React.useState('');）
+    const [editedShareText, setEditedShareText] = React.useState('');
 
     const [recordToDelete, setRecordToDelete] = React.useState(null);
     const [shareImageRecord, setShareImageRecord] = React.useState(null);
