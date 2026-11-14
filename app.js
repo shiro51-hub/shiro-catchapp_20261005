@@ -20,12 +20,12 @@ const loadHtml2Canvas = () => {
 const IconCamera = ({ className = "w-4 h-4 mr-1 shrink-0" }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 );
+
 // 検索ワードを安全に分割し、一致した部分のみ色付けする軽量パーツ（「〇〇さん」入力対応版）
 const HighlightText = ({ text = '', query = '' }) => {
     if (!query || !query.trim() || !text) return <>{text}</>;
 
     let raw = query.trim();
-    // 「〇〇さん」と入力された場合は「さん」を取り除いた名前本体をハイライト対象にする
     if (raw.endsWith('さん') && raw.length > 2) {
         raw = raw.slice(0, -2).trim();
     }
@@ -51,7 +51,9 @@ const HighlightText = ({ text = '', query = '' }) => {
             )}
         </>
     );
-};// デジタル釣果ボードモーダル
+};
+
+// デジタル釣果ボードモーダル
 function ShareImageModal({ record, onClose, setToastMessage }) {
     const [isAnonymous, setIsAnonymous] = React.useState(false);
     const [isGenerating, setIsGenerating] = React.useState(false);
@@ -346,7 +348,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const [previewImageUrl, setPreviewImageUrl] = React.useState(null);
     const [isOtherBoatsOpen, setIsOtherBoatsOpen] = React.useState(false);
 
-    // メモから別船情報をパース
     const parseOtherBoats = (text) => {
         const res = { b1Min: '', b1Max: '', b1Top: '', b2Min: '', b2Max: '', b2Top: '' };
         if (!text) return res;
@@ -365,7 +366,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         return res;
     };
 
-    // メモからポイント流し順（非公開記録）をパース
     const parsePointLog = (text) => {
         if (!text) return '';
         const m = text.match(/【ポイント履歴】\s*([^\n]+)/);
@@ -389,7 +389,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
     };
 
-    // 別船・ポイント履歴の変更をメモ本文へ安全に同期
     const syncSpecialFieldsToMemo = (newBoatState, newPointLog) => {
         let baseText = (tempMemo || '')
             .replace(/【別船1】[^\n]*\n?/g, '')
@@ -538,58 +537,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         updateTextAndSave(filteredLines.join('\n').trim());
     };
 
-    const insertCurrentTime = () => {
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        const stamp = `【${hh}:${mm}】 `;
-
-        const currentText = tempMemo || '';
-        let nextText = '';
-        if (!currentText.trim()) {
-            nextText = stamp;
-        } else if (currentText.endsWith('\n')) {
-            nextText = `${currentText}${stamp}`;
-        } else {
-            nextText = `${currentText}\n${stamp}`;
-        }
-
-        updateTextAndSave(nextText);
-
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(20);
-        }
-
-        setTimeout(() => {
-            if (textareaRef.current) {
-                textareaRef.current.focus();
-                textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-            }
-        }, 50);
-    };
-
-    const handleUndo = () => {
-        if (history.length > 1) {
-            const nextHistory = [...history];
-            nextHistory.pop();
-            const prevText = nextHistory[nextHistory.length - 1];
-            setHistory(nextHistory);
-            updateTextAndSave(prevText, false);
-            setBoatState(parseOtherBoats(prevText));
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(10);
-            }
-        }
-    };
-
-    const handleClearAll = () => {
-        if (!tempMemo || !tempMemo.trim()) return;
-        if (window.confirm('メモの内容をすべて消去しますか？\n（直後なら「戻す」で復元できます）')) {
-            updateTextAndSave('');
-            setBoatState({ b1Min: '', b1Max: '', b1Top: '', b2Min: '', b2Max: '', b2Top: '' });
-        }
-    };
-
     const handleClose = () => {
         if (typeof onAutoSave === 'function') {
             onAutoSave(tempMemo);
@@ -602,7 +549,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-lg flex flex-col h-[90dvh] max-h-[760px] overflow-hidden">
-                {/* ヘッダー */}
                 <div className="p-3 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/80 dark:bg-slate-900/50 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="text-xl leading-none">📝</span>
@@ -618,7 +564,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </button>
                 </div>
 
-                {/* 隠しファイル入力（写真枠内のボタンから起動） */}
                 <input
                     type="file"
                     accept="image/*"
@@ -628,10 +573,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     className="hidden"
                 />
 
-                {/* 📷 写真管理枠（追加ボタン統合型） */}
                 <div className="p-2.5 mx-3 mt-2 rounded-xl border border-sky-200 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-900/40 shrink-0">
                     {imageUrls.length === 0 ? (
-                        /* 写真がまだない時：すっきりした横並び追加ボタン */
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                 <span>📷</span>
@@ -652,7 +595,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             </button>
                         </div>
                     ) : (
-                        /* 写真がある時：先頭に「＋ 追加」タイル ＋ サムネイル横スクロール */
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center px-0.5">
                                 <span className="text-[11px] font-bold text-sky-800 dark:text-sky-300">
@@ -663,7 +605,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                 </span>
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-1 items-center no-scrollbar">
-                                {/* 先頭の追加タイル */}
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
@@ -674,7 +615,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                     <span className="text-[9px] font-black">{isUploading ? '読込' : '追加'}</span>
                                 </button>
 
-                                {/* 写真サムネイル一覧 */}
                                 {imageUrls.map((url, idx) => (
                                     <div key={idx} className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 shadow-2xs bg-black group">
                                         <img 
@@ -701,14 +641,12 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                {/* エラー表示 */}
                 {uploadError && (
                     <div className="mx-3 mt-2 p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 shrink-0">
                         ⚠️ {uploadError}
                     </div>
                 )}
 
-                {/* 🚢 別船の釣果（複数出船時） */}
                 <div className="mx-3 mt-2 rounded-xl border border-sky-300 dark:border-slate-700 bg-sky-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
                     <button
                         type="button"
@@ -719,8 +657,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             <span className="text-base shrink-0">🚢</span>
                             <span className="whitespace-nowrap shrink-0">別船の釣果</span>
                             <span className="text-[11px] sm:text-xs font-bold text-sky-900 dark:text-sky-300 whitespace-nowrap">
-    （複数出船時）
-</span>
+                                （複数出船時）
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0 ml-1">
@@ -737,7 +675,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                     {isOtherBoatsOpen && (
                         <div className="p-3 border-t border-sky-200 dark:border-slate-700 space-y-2.5 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
-                            {/* 別船 1 */}
                             <div className="flex items-center gap-2 text-xs">
                                 <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船1】</span>
                                 <div className="flex items-center gap-1 flex-1">
@@ -770,7 +707,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                 </div>
                             </div>
 
-                            {/* 別船 2 */}
                             <div className="flex items-center gap-2 text-xs">
                                 <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船2】</span>
                                 <div className="flex items-center gap-1 flex-1">
@@ -810,7 +746,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                {/* 📍 実釣ポイント・航海メモ（表記簡潔化・フォント拡大版） */}
                 <div className="mx-3 mt-2 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
                     <button
                         type="button"
@@ -847,7 +782,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
                 
-                {/* メモ本文入力（文字数を手元右下に配置） */}
                 <div className="p-3 flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-800">
                     <textarea
                         ref={textareaRef}
@@ -858,7 +792,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         autoFocus
                     />
                     
-                    {/* 入力欄の真下：音声案内 ＆ 右下文字数カウント */}
                     <div className="flex justify-between items-center text-xs text-slate-400 dark:text-slate-500 mt-2 px-1 shrink-0 font-bold select-none">
                         <span>🎙️ 音声入力はキーボードのマイクをご利用ください</span>
                         <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-[11px] text-slate-600 dark:text-slate-300">
@@ -867,7 +800,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 </div>
 
-                {/* 写真タップ時の全画面拡大プレビュー */}
                 {previewImageUrl && (
                     <div 
                         className="fixed inset-0 z-[140] bg-black/90 flex flex-col justify-center items-center p-4 animate-[fadeIn_0.15s_ease-out]"
@@ -911,9 +843,9 @@ function App() {
     });
 
     const [counterMode, setCounterMode] = React.useState(() => localStorage.getItem('fishing_counter_mode') || 'tap');
-   const [isEditingSeats, setIsEditingSeats] = React.useState(false);
+    const [isEditingSeats, setIsEditingSeats] = React.useState(false);
     
-React.useEffect(() => {
+    React.useEffect(() => {
         localStorage.setItem('fishing_last_tab', activeTab);
     }, [activeTab]);
 
@@ -928,7 +860,6 @@ React.useEffect(() => {
         return saved === 'dark' ? 'dark' : 'light';
     });
 
-    // 押した瞬間にノータイムで<html>を書き換える即時反映関数
     const handleSetTheme = React.useCallback((nextTheme) => {
         const root = document.documentElement;
         if (nextTheme === 'dark') {
@@ -940,7 +871,6 @@ React.useEffect(() => {
         setTheme(nextTheme);
     }, []);
 
-    // 起動時の初期テーマ同期
     React.useEffect(() => {
         const root = document.documentElement;
         const saved = localStorage.getItem('theme');
@@ -953,18 +883,16 @@ React.useEffect(() => {
 
     const [userApiKey, setUserApiKey] = React.useState(() => localStorage.getItem('fishing_api_key') || '');
     const [selectedAiModel, setSelectedAiModel] = React.useState(() => {
-    const saved = localStorage.getItem('fishing_ai_model');
-    if (saved) return saved;
-    const list = window.getAiModelList ? window.getAiModelList() : [];
-    return list.length > 0 ? list[0].value : '';
-});
+        const saved = localStorage.getItem('fishing_ai_model');
+        if (saved) return saved;
+        const list = window.getAiModelList ? window.getAiModelList() : [];
+        return list.length > 0 ? list[0].value : '';
+    });
     const [toastMessage, setToastMessage] = React.useState('');
 
-    // Googleドライブ上書き保存用のステート
     const [gasBackupUrl, setGasBackupUrl] = React.useState(() => localStorage.getItem('fishing_gas_backup_url') || '');
     const [cloudSavingId, setCloudSavingId] = React.useState(null);
 
-    // 全レコードを取得する補助関数（メモリに常駐させずストレージから直接安全に取得）
     const getAllStoredRecords = () => {
         try {
             const saved = localStorage.getItem('fishing_records');
@@ -1003,11 +931,9 @@ React.useEffect(() => {
             const now = new Date();
             const timeStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-            // ストレージ本体を更新
             const updatedAll = allRecords.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item);
             localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
 
-            // 表示中の records も同期
             setRecords(prev => prev.map(item => item.id === record.id ? { ...item, cloudSavedAt: timeStr } : item));
 
             setToastMessage('Googleドライブに最新データを上書き保存しました！');
@@ -1049,7 +975,6 @@ React.useEffect(() => {
         localStorage.setItem('fishing_moon_age', moonAge || '');
     }, [moonAge]);
   
-  // 画面復帰・日付変更時に自動で今日の日付へ更新する監視処理
     React.useEffect(() => {
         const checkDateChange = () => {
             const todayStr = getTodayString();
@@ -1066,6 +991,7 @@ React.useEffect(() => {
             clearInterval(timer);
         };
     }, []);
+
     const [records, setRecords] = React.useState([]);
     const [portSeatCount, setPortSeatCount] = React.useState(() => localStorage.getItem('port_seat_count') || '');
     const [starboardSeatCount, setStarboardSeatCount] = React.useState(() => localStorage.getItem('starboard_seat_count') || '');
@@ -1078,16 +1004,18 @@ React.useEffect(() => {
     const [portSeats, setPortSeats] = React.useState(() => getInitialSeats(portSeatCount));
     const [starboardSeats, setStarboardSeats] = React.useState(() => getInitialSeats(starboardSeatCount));
 
-    // 表示期間のState（初期値: '3m' 過去3ヶ月、複数選択用配列、モーダル開閉フラグ）
     const [historyPeriod, setHistoryPeriod] = React.useState('3m');
     const [selectedPeriods, setSelectedPeriods] = React.useState(['3m']);
     const [isPeriodModalOpen, setIsPeriodModalOpen] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [sortOrder, setSortOrder] = React.useState('date_desc');
     const [expandedRecordId, setExpandedRecordId] = React.useState(null);
-    const [sharedRecordId, setSharedRecordId] = React.useState(null);
+
+    // 共有ポップアップ（モーダル）用のステート
+    const [shareTargetRecord, setShareTargetRecord] = React.useState(null);
+    const [shareFormatMode, setShareFormatMode] = React.useState('simple'); // 'simple'（簡易版） or 'detail'（詳細版）
+
     const [recordToDelete, setRecordToDelete] = React.useState(null);
-    
     const [shareImageRecord, setShareImageRecord] = React.useState(null);
 
     const [showMemoModal, setShowMemoModal] = React.useState(false);
@@ -1167,7 +1095,6 @@ React.useEffect(() => {
         ]}
     ];
 
-    // 指定期間のレコードのみをストレージから取り出してメモリ（records）に展開する処理
     const loadRecordsForPeriod = React.useCallback((periods) => {
         const all = getAllStoredRecords();
         if (periods.includes('all')) {
@@ -1178,7 +1105,6 @@ React.useEffect(() => {
         const now = new Date();
         const parseDate = (dStr) => new Date((dStr || '').replace(/-/g, '/'));
 
-        // 指定された期間（過去3ヶ月、複数月、複数年）に一致するものだけを抽出
         const matched = all.filter(r => {
             return periods.some(p => {
                 if (p === '3m') {
@@ -1202,12 +1128,10 @@ React.useEffect(() => {
         setRecords(matched);
     }, []);
 
-    // 選択された表示期間が変わった時だけ、対象データをストレージから読み直す
     React.useEffect(() => {
         loadRecordsForPeriod(selectedPeriods);
     }, [selectedPeriods, loadRecordsForPeriod]);
 
-    // 日付切り替え時の座席・設定フォーム初期化
     React.useEffect(() => {
         const all = getAllStoredRecords();
         const todayRec = all.find(r => r.date === date);
@@ -1252,7 +1176,6 @@ React.useEffect(() => {
         }
     }, [date]);
 
-    // 当日入力データの自動保存（ストレージ本体を直接安全に更新し、現在の表示にも反映）
     React.useEffect(() => {
         const pTotal = portSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
         const sTotal = starboardSeats.reduce((sum, s) => sum + (s.isVisible !== false ? (parseInt(s.count) || 0) : 0), 0);
@@ -1299,21 +1222,20 @@ React.useEffect(() => {
 
         localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
 
-        // 現在画面に展開されている records の該当レコードも同期（新規作成時も即反映）
-      const hasData = (pTotal + sTotal > 0) || targetFish || point || waterTemp || waterDepth || tide || tideState || weather1 || windDir1 || sizeMin || sizeMax;
-      setRecords(prev => {
-          const idx = prev.findIndex(r => r.date === date);
-          if (idx >= 0) {
-              const next = [...prev];
-              next[idx] = recData;
-              return next;
-          } else if (hasData) {
-              const next = [recData, ...prev];
-              next.sort((a, b) => new Date(b.date) - new Date(a.date));
-              return next;
-          }
-          return prev;
-      });
+        const hasData = (pTotal + sTotal > 0) || targetFish || point || waterTemp || waterDepth || tide || tideState || weather1 || windDir1 || sizeMin || sizeMax;
+        setRecords(prev => {
+            const idx = prev.findIndex(r => r.date === date);
+            if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = recData;
+                return next;
+            } else if (hasData) {
+                const next = [recData, ...prev];
+                next.sort((a, b) => new Date(b.date) - new Date(a.date));
+                return next;
+            }
+            return prev;
+        });
     }, [
         date, targetFish, sizeMin, sizeMax, point, waterTemp, waterDepth, tide, tideState,
         highTide1, highTide2, lowTide1, lowTide2, weather1, weather2, windDir1, windDir2,
@@ -1397,11 +1319,9 @@ React.useEffect(() => {
             setDetailedMemo('');
         }
 
-        // ストレージ本体から削除
         const updatedAll = all.filter(r => r.id !== recordId);
         localStorage.setItem('fishing_records', JSON.stringify(updatedAll));
 
-        // 現在表示中のレコード一覧からも削除
         setRecords(prev => prev.filter(r => r.id !== recordId));
         setToastMessage('釣果記録を削除しました（画面表示もリセットされました）');
     };
@@ -1462,9 +1382,6 @@ React.useEffect(() => {
         return prompts[id];
     };
 
-   // ==========================================
-    // 日報作成処理（風速自動変換・シンプルなトップ＆二番手表記版）
-    // ==========================================
     const handleAiGenerate = async (record, conditionInfo, sceneryInfo, tideInfo, activityInfo, episodeInfo, sizeInfo, topAnglerInfo, selectedPatterns, customKey) => {
         setGeneratingAiId(record.id);
         const activeApiKey = (customKey || userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1519,7 +1436,6 @@ React.useEffect(() => {
 
         const unit = getUnit(record.targetFish);
 
-        // 全釣果の集約
         let allCounts = [...(record.port || []), ...(record.starboard || [])]
             .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count)))
             .map(s => parseInt(s.count, 10));
@@ -1528,7 +1444,6 @@ React.useEffect(() => {
         let overallTopName = record.topAnglerName || '';
         let overallMin = allCounts.length > 0 ? Math.min(...allCounts) : (record.min !== '' && record.min !== undefined ? parseInt(record.min, 10) : 0);
 
-        // 別船の集約
         const memoText = record.detailedMemo || '';
         const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
         if (b1Match) {
@@ -1570,7 +1485,6 @@ React.useEffect(() => {
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
         const secondMaxStr = secondMax !== null ? `${secondMax} ${unit}` : 'なし';
 
-        // 風速数値を感覚言葉へ自動変換（数値漏れを完全遮断）
         const convertWindToText = (dir, spd) => {
             if (!dir && !spd) return '-';
             const d = dir || '';
@@ -1601,7 +1515,6 @@ React.useEffect(() => {
 
         let extraInfo = "";
         if (record.detailedMemo && record.detailedMemo.trim() !== '') {
-            // 【ポイント履歴】は船長専用のためAI送信から完全に除去
             const sanitizedMemo = record.detailedMemo
                 .replace(/【ポイント履歴】[^\n]*\n?/g, '')
                 .trim();
@@ -1620,7 +1533,7 @@ React.useEffect(() => {
 
         const userQuery = `以下の釣果データと船長からの追加情報をもとに、指示されたルールの通り（時系列の出来事を主軸に描写・大げさな全体表現は使わずシンプルにトップと二番手を紹介・オデコがいる場合は全員安打禁止）に指定パターンの文章を作成してください。\n\n【釣果データ】\n${inputData}\n\n【船長からの追加情報】${extraInfo ? extraInfo : '\n(特になし)'}`;
 
-       try {
+        try {
             const text = await window.callAiText({
                 prompt: `${systemPrompt}\n\n${userQuery}`,
                 selectedModel: selectedAiModel,
@@ -1684,7 +1597,33 @@ React.useEffect(() => {
         document.body.removeChild(ta);
     };
 
+    // ==========================================
+    // 簡易版（スタッフ報告用・縦並び）テキスト生成
+    // ==========================================
+    const generateSimpleShareText = (record) => {
+        if (!record) return '';
+        const unit = getUnit(record.targetFish);
+        const minVal = (record.min === '' || record.min === undefined || record.min === null) ? 0 : record.min;
+        const maxVal = (record.max === '' || record.max === undefined || record.max === null) ? 0 : record.max;
+
+        let lines = [];
+        lines.push(`【${(record.date || '').replace(/-/g, '/')}${getDayOfWeek(record.date)} 】`);
+        lines.push(`釣り物：${record.targetFish || '未設定'}`);
+        lines.push(`ポイント：${record.point || '-'}`);
+        lines.push(`水深：${record.waterDepth ? `${record.waterDepth}m` : '-'}`);
+        lines.push(`水温：${record.waterTemp ? `${record.waterTemp}℃` : '-'}`);
+        lines.push(`潮色：${record.tide || '-'}`);
+        lines.push(`釣果：${minVal}〜${maxVal}${unit}`);
+        lines.push(`竿頭：${record.topAnglerName ? `${record.topAnglerName}様` : '-'}`);
+
+        return lines.join('\n');
+    };
+
+    // ==========================================
+    // 詳細版（全データ・座席別釣果）テキスト生成
+    // ==========================================
     const generateShareText = (record) => {
+        if (!record) return '';
         const unit = getUnit(record.targetFish);
         let text = `【山下丸 釣果記録】\n`;
         text += `日付: ${(record.date || '').replace(/-/g, '/')}${getDayOfWeek(record.date)}\n`;
@@ -1732,22 +1671,32 @@ React.useEffect(() => {
         return text.trim();
     };
 
-    const shareToLine = (record) => {
-        const text = generateShareText(record);
-        window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
-        setSharedRecordId(null);
+    // 選択中のモードに応じた共有テキストを取得
+    const getActiveShareText = (record, mode) => {
+        return mode === 'simple' ? generateSimpleShareText(record) : generateShareText(record);
     };
 
-    const shareToEmail = (record) => {
-        const text = generateShareText(record);
+    const shareToLine = (record, mode = 'detail') => {
+        const text = getActiveShareText(record, mode);
+        window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
+        setShareTargetRecord(null);
+    };
+
+    const shareToEmail = (record, mode = 'detail') => {
+        const text = getActiveShareText(record, mode);
         const subject = `【山下丸 釣果記録】${(record.date || '').replace(/-/g, '/')}`;
         window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-        setSharedRecordId(null);
+        setShareTargetRecord(null);
+    };
+
+    const handleCopyShareText = (record, mode = 'detail') => {
+        const text = getActiveShareText(record, mode);
+        handleCopyPattern(text);
+        setShareTargetRecord(null);
     };
 
     // ==========================================
-    // ==========================================
-    // AI多角分析処理（余白・空行排除＆単一改行許容版）
+    // AI多角分析処理
     // ==========================================
     const handleRunAiAnalysis = async (record) => {
         const activeApiKey = (userApiKey || '').replace(/[\s\r\n ]/g, '');
@@ -1756,7 +1705,7 @@ React.useEffect(() => {
             return;
         }
         setAnalyzingRecordId(record.id);
-        setToastMessage(`AI (Gemini 3.8 Flash) が釣況・釣り座を多角分析中...`);
+        setToastMessage(`AI (${selectedAiModel || 'Gemini'}) が釣況・釣り座を多角分析中...`);
 
         const unit = getUnit(record.targetFish);
         const pSeats = (record.port || []).filter(s => s && s.isVisible !== false);
@@ -1811,7 +1760,6 @@ React.useEffect(() => {
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
         const secondMaxStr = secondMax !== null ? `${secondMax} ${unit}` : 'なし';
 
-        // 風速数値を感覚言葉へ自動変換（数値漏れを完全遮断）
         const convertWindToText = (dir, spd) => {
             if (!dir && !spd) return '-';
             const d = dir || '';
@@ -1903,12 +1851,11 @@ React.useEffect(() => {
 
             const analysisData = JSON.parse(cleanJson);
 
-            // 空行（余白・段落分け）を強制排除し、単一改行のみにクリーンアップ
             if (analysisData && analysisData.totalSummaryReport) {
                 analysisData.totalSummaryReport = analysisData.totalSummaryReport
-                    .replace(/\r\n/g, '\n')      // 改行コード統一
-                    .replace(/\n\s*\n+/g, '\n')  // 連続する空行を1つの改行に圧縮（余白を排除）
-                    .replace(/^[ \t]+/gm, '')    // 行頭の不要なインデント余白を除去
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\n\s*\n+/g, '\n')
+                    .replace(/^[ \t]+/gm, '')
                     .trim();
             }
 
@@ -1965,7 +1912,6 @@ React.useEffect(() => {
         document.body.removeChild(ta);
     };
 
-  // 過去12ヶ月分の月（YYYY-MM）リストを生成
     const past12MonthsList = React.useMemo(() => {
         const list = [];
         const now = new Date();
@@ -1978,7 +1924,6 @@ React.useEffect(() => {
         return list;
     }, []);
 
-    // 今年を含めた過去10年分の西暦リストを生成
     const past10YearsList = React.useMemo(() => {
         const list = [];
         const currentYear = new Date().getFullYear();
@@ -1989,7 +1934,6 @@ React.useEffect(() => {
         return list;
     }, []);
 
-    // 展開されている期間データ（records）の中から、検索キーワードで絞り込み・ソート
     const filteredRecords = React.useMemo(() => {
         if (!searchQuery) {
             return [...records].sort((a, b) => {
@@ -1999,19 +1943,16 @@ React.useEffect(() => {
             });
         }
 
-       const rawQ = searchQuery.trim();
-        // 万が一「〇〇さん」と入力されても末尾の「さん」を自動除去
+        const rawQ = searchQuery.trim();
         const cleanQ = rawQ.endsWith('さん') && rawQ.length > 2 ? rawQ.slice(0, -2).trim() : rawQ;
         const q = cleanQ.toLowerCase();
 
         return records.filter(r => {
-            // 座席の名前一覧
             const seatNames = [
                 ...(r.port || []).map(s => (s.name || '').trim()),
                 ...(r.starboard || []).map(s => (s.name || '').trim())
             ].filter(Boolean);
 
-            // 竿頭の名前一覧（複数名対応）
             const topNames = (r.topAnglerName || '')
                 .split(/[・,\s]+/)
                 .map(n => n.trim())
@@ -2019,22 +1960,17 @@ React.useEffect(() => {
 
             const allNames = [...seatNames, ...topNames];
 
-            // 1. 名前欄の自動判定（名字のみ完全一致、またはスペース区切りフルネームの名字一致）
             const isNameMatched = allNames.some(name => {
                 const lowerName = name.toLowerCase();
-                // 「原」など名字そのまま一致
                 if (lowerName === q) return true;
-                // 「原 司郎」などスペース区切りの名字一致
                 const parts = lowerName.split(/[\s ]+/);
                 if (parts[0] === q) return true;
-                // 2文字以上の入力なら、くっついたフルネームの先頭一致も拾う（例:「原司」で「原司郎」）
                 if (q.length >= 2 && lowerName.startsWith(q)) return true;
                 return false;
             });
 
             if (isNameMatched) return true;
 
-            // 2. 日付・魚種・ポイント・天候・メモ欄の全体検索（部分一致）
             const portMemos = (r.port || []).map(s => s.memo || '').join(' ');
             const starboardMemos = (r.starboard || []).map(s => s.memo || '').join(' ');
 
@@ -2076,6 +2012,110 @@ React.useEffect(() => {
                         >
                             OK
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 共有選択ポップアップモーダル（簡易版 / 詳細版 切り替え ＆ プレビュー付き） */}
+            {shareTargetRecord && (
+                <div 
+                    className="fixed inset-0 z-[140] flex items-center justify-center bg-black/65 backdrop-blur-sm p-3 animate-[fadeIn_0.15s_ease-out]" 
+                    onClick={() => setShareTargetRecord(null)}
+                >
+                    <div 
+                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-sky-400 dark:border-slate-600 w-full max-w-sm flex flex-col max-h-[88dvh] overflow-hidden" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* ヘッダー */}
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-sky-50 dark:bg-slate-900/70 shrink-0">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-lg">📤</span>
+                                <h3 className="font-black text-slate-800 dark:text-slate-100 text-base">
+                                    共有形式の選択
+                                </h3>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setShareTargetRecord(null)} 
+                                className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 text-slate-800 dark:text-white font-black text-sm flex items-center justify-center active:scale-90 transition-all select-none"
+                                aria-label="閉じる"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* 簡易版 / 詳細版 切り替えタブ */}
+                        <div className="p-3 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700 shrink-0">
+                            <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-200/80 dark:bg-slate-950 rounded-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => setShareFormatMode('simple')}
+                                    className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-black transition-all flex flex-col items-center justify-center leading-tight select-none ${
+                                        shareFormatMode === 'simple'
+                                            ? 'bg-sky-600 text-white shadow-sm'
+                                            : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <span>⚡ 簡易版</span>
+                                    <span className={`text-[10px] font-bold mt-0.5 ${shareFormatMode === 'simple' ? 'text-sky-100' : 'opacity-70'}`}>
+                                        スタッフ報告用
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShareFormatMode('detail')}
+                                    className={`py-2.5 px-2 rounded-lg text-xs sm:text-sm font-black transition-all flex flex-col items-center justify-center leading-tight select-none ${
+                                        shareFormatMode === 'detail'
+                                            ? 'bg-sky-600 text-white shadow-sm'
+                                            : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <span>📋 詳細版</span>
+                                    <span className={`text-[10px] font-bold mt-0.5 ${shareFormatMode === 'detail' ? 'text-sky-100' : 'opacity-70'}`}>
+                                        全座席・詳細記録
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 送信内容プレビュー */}
+                        <div className="p-3 flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800">
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-400 mb-1 flex justify-between items-center">
+                                <span>送信内容プレビュー</span>
+                                <span>{shareFormatMode === 'simple' ? '縦並び速報形式' : '全項目詳細形式'}</span>
+                            </div>
+                            <pre className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed select-all">
+                                {getActiveShareText(shareTargetRecord, shareFormatMode)}
+                            </pre>
+                        </div>
+
+                        {/* 送信・コピーアクションボタン */}
+                        <div className="p-3 bg-gray-50 dark:bg-slate-900/70 border-t border-gray-200 dark:border-slate-700 space-y-2 shrink-0">
+                            <div className="grid grid-cols-2 gap-2">
+                                <button 
+                                    type="button"
+                                    onClick={() => shareToLine(shareTargetRecord, shareFormatMode)} 
+                                    className="bg-[#06C755] hover:bg-[#05b34c] text-white py-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
+                                >
+                                    <IconLine /> LINEで送る
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={() => shareToEmail(shareTargetRecord, shareFormatMode)} 
+                                    className="bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
+                                >
+                                    <IconMail /> メールで送る
+                                </button>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => handleCopyShareText(shareTargetRecord, shareFormatMode)} 
+                                className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-all select-none"
+                            >
+                                <span>📋</span>
+                                <span>テキストをコピー（＋メッセージ等へ貼付）</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -2314,7 +2354,6 @@ React.useEffect(() => {
                             )}
                         </div>
 
-                        {/* 左右舷切り替えバー ＆ 座席編集ボタン */}
                         <div className="space-y-2 mb-2 select-none">
                             <div className="flex items-center justify-between gap-1.5">
                                 <button
@@ -2360,7 +2399,6 @@ React.useEffect(() => {
                                 </button>
                             </div>
 
-                            {/* 座席編集スイッチ：通常時は右端に大きめボタン、編集中は警告バーに切り替え */}
                             {(portSeats.length > 0 || starboardSeats.length > 0) && (
                                 isEditingSeats ? (
                                     <div className="flex items-center justify-between px-3 py-2 rounded-xl border bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-slate-700 shadow-xs animate-[fadeIn_0.15s_ease-out]">
@@ -2391,7 +2429,6 @@ React.useEffect(() => {
                             )}
                         </div>
 
-                        {/* 座席の描画エリア */}
                         {portSeats.length === 0 && starboardSeats.length === 0 ? (
                             <div className="my-6 p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-sky-300 dark:border-slate-600 shadow-sm text-center flex flex-col items-center justify-center space-y-4 animate-[fadeIn_0.2s_ease-out]">
                                 <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-3xl shadow-inner">
@@ -2418,9 +2455,7 @@ React.useEffect(() => {
                                 </span>
                             </div>
                         ) : (
-                            /* 座席リストの表示（左右共通のグレー・白ベース・削除のみ赤文字） */
                             <div className={inputSide === 'both' ? "grid grid-cols-2 gap-2" : "space-y-2"}>
-                                {/* 左舷側の描画 */}
                                 {(inputSide === 'both' || inputSide === 'port') && (
                                     <div className="space-y-2">
                                         {portSeats.map((s, i) => (
@@ -2471,7 +2506,6 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 左舷大ドモ追加ボタン */}
                                         {isEditingSeats && portSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -2491,7 +2525,6 @@ React.useEffect(() => {
                                     </div>
                                 )}
 
-                                {/* 右舷側の描画 */}
                                 {(inputSide === 'both' || inputSide === 'starboard') && (
                                     <div className="space-y-2">
                                         {starboardSeats.map((s, i) => (
@@ -2542,7 +2575,6 @@ React.useEffect(() => {
                                             </div>
                                         ))}
 
-                                        {/* 右舷大ドモ追加ボタン */}
                                         {isEditingSeats && starboardSeats.length < 15 && (
                                             <button
                                                 type="button"
@@ -2646,7 +2678,6 @@ React.useEffect(() => {
                             lowTide2={lowTide2}
                         />
 
-                        {/* カウンターカード描画エリア（未設定時は待機＆設定誘導カードを表示） */}
                         {portSeats.length === 0 && starboardSeats.length === 0 ? (
                             <div className="my-4 p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-sky-300 dark:border-slate-600 shadow-sm text-center flex flex-col items-center justify-center space-y-4 animate-[fadeIn_0.2s_ease-out] flex-1">
                                 <div className="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-3xl shadow-inner">
@@ -2693,9 +2724,7 @@ React.useEffect(() => {
                             </div>
                         )}
 
-                       {/* 魚のサイズ（w-2/3） ＆ 船長メモ（w-1/3：釣果リセットと全く同じ幅に拡大） */}
                         <div className="flex space-x-2 items-stretch shrink-0">
-                            {/* 左側：魚のサイズ（縮小：下のモード切替と同じ w-2/3） */}
                             <div className="w-2/3 min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 px-2.5 py-1.5 flex flex-col justify-between">
                                 <div className="text-[11px] font-black text-gray-500 dark:text-slate-400 mb-0.5 flex items-center">
                                     <IconRuler className="w-3.5 h-3.5 mr-1 text-sky-500 dark:text-sky-400 shrink-0" /> 
@@ -2726,7 +2755,6 @@ React.useEffect(() => {
                                 </div>
                             </div>
 
-                            {/* 右側：船長メモ（下の釣果リセットと同一の w-1/3 に横幅を拡大） */}
                             <button
                                 type="button"
                                 onClick={() => openMemoModal(null)}
@@ -2746,19 +2774,16 @@ React.useEffect(() => {
                             </button>
                         </div>
 
-                        {/* 下段：ResetButtonコンポーネントを標準呼び出し */}
                         <ResetButton onReset={resetOnlyCounts} counterMode={counterMode} setCounterMode={setCounterMode} />
 
                         <div className="h-16 shrink-0 pointer-events-none"></div>
                     </div>
                 )}
 
-               {activeTab === 'history' && (
+                {activeTab === 'history' && (
                     <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
-                            {/* 検索バー ＆ 期間選択ポップアップ起動ボタン */}
                             <div className="flex items-center gap-2">
-                                {/* 検索入力欄（枠線太め、上下ゆったり、文字切れ防止） */}
                                 <div className="relative flex-1 min-w-0">
                                     <input 
                                         type="search" 
@@ -2770,7 +2795,6 @@ React.useEffect(() => {
                                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 text-base pointer-events-none font-bold">🔍</span>
                                 </div>
 
-                                {/* 期間選択ボタン（タップでポップアップ起動） */}
                                 <button
                                     type="button"
                                     onClick={() => setIsPeriodModalOpen(true)}
@@ -2788,11 +2812,9 @@ React.useEffect(() => {
                                 </button>
                             </div>
 
-                            {/* 案C：複数月・年が選べる期間選択モーダル */}
                             {isPeriodModalOpen && (
                                 <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 animate-[fadeIn_0.15s_ease-out]" onClick={() => setIsPeriodModalOpen(false)}>
                                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-sky-400 dark:border-slate-600 w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                        {/* モーダルヘッダー */}
                                         <div className="p-3.5 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-sky-50/80 dark:bg-slate-900/60 shrink-0">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-lg">📅</span>
@@ -2806,7 +2828,6 @@ React.useEffect(() => {
                                             </button>
                                         </div>
 
-                                        {/* クイック切替バー */}
                                         <div className="p-2.5 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700 flex gap-1.5 shrink-0">
                                             <button
                                                 type="button"
@@ -2839,9 +2860,7 @@ React.useEffect(() => {
                                             </button>
                                         </div>
 
-                                        {/* 選択ボタンリスト（スクロール領域） */}
                                         <div className="p-3 overflow-y-auto space-y-4 no-scrollbar">
-                                            {/* 月で選択（過去12ヶ月） */}
                                             <div>
                                                 <span className="text-xs font-black text-slate-500 dark:text-slate-400 mb-2 block">
                                                     🌙 月で指定（過去12ヶ月）
@@ -2878,7 +2897,6 @@ React.useEffect(() => {
                                                 </div>
                                             </div>
 
-                                            {/* 年で選択（過去10年） */}
                                             <div>
                                                 <span className="text-xs font-black text-slate-500 dark:text-slate-400 mb-2 block">
                                                     ⚓ 年で指定（過去10年）
@@ -2916,7 +2934,6 @@ React.useEffect(() => {
                                             </div>
                                         </div>
 
-                                        {/* モーダル下部決定ボタン */}
                                         <div className="p-3 bg-gray-50 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-700 shrink-0">
                                             <button
                                                 type="button"
@@ -2930,8 +2947,6 @@ React.useEffect(() => {
                                 </div>
                             )}
 
-                           
-                            {/* 並び順切り替えバー */}
                             <div className="flex bg-gray-200 dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-black shadow-inner">
                                 <button 
                                     onClick={() => setSortOrder('date_desc')} 
@@ -2953,6 +2968,7 @@ React.useEffect(() => {
                                 </button>
                             </div>
                         </div>
+
                         {filteredRecords.map(r => {
                             const isExpanded = expandedRecordId === r.id;
                             const unit = getUnit(r.targetFish);
@@ -2963,7 +2979,6 @@ React.useEffect(() => {
                                         onClick={() => setExpandedRecordId(isExpanded ? null : r.id)}
                                     >
                                         <div className="flex justify-between items-center mb-2.5">
-                                            {/* 左側：日付 ＆ 釣り物を横並びに集約 */}
                                             <div className="flex items-center flex-wrap gap-2 min-w-0 pr-2">
                                                 <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100 whitespace-nowrap">
                                                     <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
@@ -2979,7 +2994,6 @@ React.useEffect(() => {
                                                 )}
                                             </div>
 
-                                            {/* 右側：右上端の角寄せ特大スイッチ（パターン2：マリンブルー調和型） */}
                                             <div className="shrink-0 -mr-1 -mt-1">
                                                 <span 
                                                     className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all select-none shadow-xs border-2 ${
@@ -3144,23 +3158,19 @@ React.useEffect(() => {
                                         </div>
                                     )}
 
-                                    {/* 船長メモのプレビュー（メモ検索ヒット時のみ表示 ＆ タップでメモ画面起動） */}
                                     {(() => {
                                         if (!r.detailedMemo || !r.detailedMemo.trim()) return null;
                                         const rawQ = (searchQuery || '').trim();
-                                        if (!rawQ) return null; // 検索していない時は一切表示しない
+                                        if (!rawQ) return null;
 
-                                        // 「〇〇さん」の入力時は「さん」を除いた名前本体で判定
                                         const cleanQ = rawQ.endsWith('さん') && rawQ.length > 2 ? rawQ.slice(0, -2).trim() : rawQ;
                                         const q = cleanQ.toLowerCase();
 
                                         const lowerMemo = r.detailedMemo.toLowerCase();
                                         const matchIdx = lowerMemo.indexOf(q);
 
-                                        // メモの中に検索ワードが含まれていない場合は表示しない
                                         if (matchIdx === -1) return null;
 
-                                        // ヒットした単語の前後を抽出（前20文字・後30文字）
                                         const start = Math.max(0, matchIdx - 20);
                                         const end = Math.min(r.detailedMemo.length, matchIdx + q.length + 30);
                                         const displayText = (start > 0 ? '…' : '') + r.detailedMemo.substring(start, end) + (end < r.detailedMemo.length ? '…' : '');
@@ -3190,7 +3200,6 @@ React.useEffect(() => {
                                         );
                                     })()}
 
-                                   
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             <button
@@ -3294,7 +3303,11 @@ React.useEffect(() => {
                                         <div className="grid grid-cols-3 gap-2 w-full pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
                                             <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); setSharedRecordId(sharedRecordId === r.id ? null : r.id); }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShareFormatMode('simple');
+                                                    setShareTargetRecord(r);
+                                                }}
                                                 className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                             >
                                                 <IconShare className="w-3.5 h-3.5 shrink-0" />
@@ -3354,48 +3367,6 @@ React.useEffect(() => {
                                             </button>
                                         </div>
                                     </div>
-        
-        {/* 共有パネル：共有ボタンの真下に展開する独立枠エリア */}
-                                        {sharedRecordId === r.id && (
-                                            <div className="mt-2.5 p-3 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-sky-50/70 dark:bg-slate-900/90 shadow-sm space-y-2.5 animate-[fadeIn_0.15s_ease-out]">
-                                                {/* パネル上段：タイトル ＆ 角丸四角の濃色✕ボタン */}
-                                                <div className="flex justify-between items-center px-0.5">
-                                                    <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                                        <span>📤</span>
-                                                        <span>共有先を選択</span>
-                                                    </span>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={(e) => { 
-                                                            e.stopPropagation(); 
-                                                            setSharedRecordId(null); 
-                                                        }} 
-                                                        className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-700 dark:hover:bg-rose-600 dark:hover:text-white text-slate-900 dark:text-white border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center font-black text-sm active:scale-90 transition-all select-none shadow-xs"
-                                                        title="閉じる"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-
-                                                {/* LINE / メール 共有ボタン（1つの内枠プレート内に集約） */}
-                                                <div className="grid grid-cols-2 gap-2 p-1.5 bg-white dark:bg-slate-800 rounded-xl border border-sky-200 dark:border-slate-700 shadow-2xs">
-                                                    <button 
-                                                        type="button"
-                                                        onClick={(e) => { e.stopPropagation(); shareToLine(r); }} 
-                                                        className="bg-[#06C755] hover:bg-[#05b34c] text-white py-2.5 rounded-lg text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
-                                                    >
-                                                        <IconLine /> LINEで共有
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={(e) => { e.stopPropagation(); shareToEmail(r); }} 
-                                                        className="bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all select-none"
-                                                    >
-                                                        <IconMail /> メールで共有
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
                                 </div>
                             );
                         })}
@@ -3404,7 +3375,7 @@ React.useEffect(() => {
                 )}
             </div>
 
-            {/* 下部ナビゲーションバー（座席表への変更 ＆ フォントサイズアップ版） */}
+            {/* 下部ナビゲーションバー */}
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
@@ -3412,7 +3383,6 @@ React.useEffect(() => {
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
-                {/* 1. 座席表 */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'input' 
@@ -3435,7 +3405,6 @@ React.useEffect(() => {
                     </span>
                 </button>
 
-                {/* 2. カウンター */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all relative ${
                         activeTab === 'counter' 
@@ -3465,7 +3434,6 @@ React.useEffect(() => {
                     </span>
                 </button>
 
-                {/* 3. 釣果・履歴 */}
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
@@ -3488,7 +3456,6 @@ React.useEffect(() => {
                     </span>
                 </button>
 
-                {/* ナビバー収納ボタン */}
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
