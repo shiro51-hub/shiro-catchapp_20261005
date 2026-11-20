@@ -1,5 +1,5 @@
 // ==========================================
-// settings.js : 設定・海況・システム管理パネル（AIモデル1画面統合管理 ＆ 風向2時点厳格判定版）
+// settings.js : 設定・海況・システム管理パネル（利用可能AIモデル取得・特徴＆1日目安料金表示対応）
 // ==========================================
 
 const getMoonPhaseIcon = (ageStr) => {
@@ -54,7 +54,7 @@ function SettingsPanel({
         }
     }, [isSettingsOpen, userApiKey]);
 
-    // 手動での新着モデルチェック
+    // 利用可能なAIモデル一覧を取得
     const handleManualModelCheck = async () => {
         const key = (tempKey || userApiKey || '').trim();
         if (!key) {
@@ -63,12 +63,12 @@ function SettingsPanel({
         }
         setIsCheckingModels(true);
         try {
-            const found = await window.checkNewGeminiModels(key, true);
+            const found = await window.checkNewGeminiModels(key, true, true);
             setNewDetectedModels(found || []);
             if (found && found.length > 0) {
-                setToastMessage(`新着モデルを ${found.length} 件検知しました！\nリスト下部に表示されています。`);
+                setToastMessage(`利用可能なAIモデルが ${found.length} 件見つかりました！\nリスト下部の候補から追加できます。`);
             } else {
-                setToastMessage('現在利用可能なモデルはすべて表示済みです（新着なし）。');
+                setToastMessage('現在利用可能なAIモデルはすべてリストに表示済みです。');
             }
         } finally {
             setIsCheckingModels(false);
@@ -115,7 +115,8 @@ function SettingsPanel({
             setToastMessage('最低1つのAIモデルを残す必要があるため削除できません。');
             return;
         }
-        if (!window.confirm(`「${targetObj.label}」をリストから削除しますか？\n（右上の「初期状態に戻す」からいつでも復元できます）`)) {
+        const cleanName = String(targetObj.label || targetObj.value).replace(/（追加）/g, '');
+        if (!window.confirm(`「${cleanName}」をリストから削除しますか？\n（「利用可能AIモデル」ボタンからいつでも再取得できます）`)) {
             return;
         }
         try {
@@ -126,25 +127,9 @@ function SettingsPanel({
                 setSelectedAiModel(nextSelected);
                 localStorage.setItem('fishing_ai_model', nextSelected);
             }
-            setToastMessage(`「${targetObj.label}」をリストから削除しました。`);
+            setToastMessage(`「${cleanName}」をリストから削除しました。`);
         } catch (err) {
             setToastMessage(err.message || '削除に失敗しました');
-        }
-    };
-
-    // モデルリストを初期状態へ復元
-    const handleResetModelList = () => {
-        if (!window.confirm('AIモデルリストを初期状態（標準の5モデル）に戻しますか？')) return;
-        if (typeof window.resetAiModelListToDefault === 'function') {
-            const defaultList = window.resetAiModelListToDefault();
-            setAvailableModels(defaultList);
-            setNewDetectedModels([]);
-            const preferred = defaultList.find(m => m.id === 'gemini-3.8-flash') || defaultList[0];
-            if (preferred) {
-                setSelectedAiModel(preferred.value);
-                localStorage.setItem('fishing_ai_model', preferred.value);
-            }
-            setToastMessage('AIモデル一覧を初期状態に復元しました。');
         }
     };
 
@@ -513,7 +498,7 @@ function SettingsPanel({
         localStorage.setItem('fishing_api_key', cleaned);
         setToastMessage('Gemini APIキーを保存しました');
         if (cleaned && typeof window.checkNewGeminiModels === 'function') {
-            window.checkNewGeminiModels(cleaned, true).then(found => setNewDetectedModels(found || []));
+            window.checkNewGeminiModels(cleaned, true, true).then(found => setNewDetectedModels(found || []));
         }
     };
 
@@ -556,7 +541,7 @@ function SettingsPanel({
                             >
                                 <span>{tab.label}</span>
                                 {tab.hasBadge && (
-                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" title="新着AIモデルあり"></span>
+                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" title="利用可能AIモデルあり"></span>
                                 )}
                             </button>
                         );
@@ -1031,65 +1016,73 @@ function SettingsPanel({
 
                             {/* 1画面完結型 Gemini AIモデル管理パネル */}
                             <div className="bg-gray-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-slate-500 space-y-3">
-                                <div className="flex justify-between items-center gap-1">
+                                <div className="flex justify-between items-center gap-2">
                                     <span className="font-black text-gray-800 dark:text-slate-100 text-sm flex items-center gap-1">
                                         <span>🤖</span>
                                         <span>AIモデル選択・管理</span>
                                     </span>
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={handleManualModelCheck}
-                                            disabled={isCheckingModels}
-                                            className="text-xs font-black px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-2xs active:scale-95 transition-all"
-                                        >
-                                            {isCheckingModels ? '確認中...' : '🔄 新着確認'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleResetModelList}
-                                            className="text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 active:scale-95 transition-all"
-                                            title="初期の5モデルに戻す"
-                                        >
-                                            初期に戻す
-                                        </button>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleManualModelCheck}
+                                        disabled={isCheckingModels}
+                                        className="text-xs font-black px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-2xs active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                                    >
+                                        <span>{isCheckingModels ? '⏳' : '🔍'}</span>
+                                        <span>{isCheckingModels ? '取得中...' : '利用可能AIモデル'}</span>
+                                    </button>
                                 </div>
 
                                 <p className="text-[11px] font-bold text-gray-500 dark:text-slate-400 leading-tight">
-                                    タップで使用モデルを切り替え、「✕」で不要なモデルを削除できます。
+                                    「利用可能AIモデル」で現在使える最新モデルを取得できます。目安料金は「画像解析2回＋日報・分析」を1日行った場合の概算です。
                                 </p>
 
-                                {/* 統合モデルリスト（現在利用可能 ＋ 新着検知分を1つの枠内に表示） */}
-                                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5 no-scrollbar">
+                                {/* 統合モデルリスト（特徴・1日目安料金付き） */}
+                                <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5 no-scrollbar">
                                     {modelListToRender.map((opt) => {
                                         const isSelected = selectedAiModel === opt.value || selectedAiModel === opt.id;
+                                        const meta = window.getAiModelMeta ? window.getAiModelMeta(opt.id || opt.value) : null;
+                                        const cleanTitle = String(opt.label || opt.value).replace(/（追加）/g, '');
                                         return (
                                             <div
                                                 key={opt.id || opt.value}
-                                                onClick={() => handleSelectModel(opt.value, opt.label)}
-                                                className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer transition-all select-none ${
+                                                onClick={() => handleSelectModel(opt.value, cleanTitle)}
+                                                className={`flex items-start justify-between gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer transition-all select-none ${
                                                     isSelected
                                                         ? 'border-sky-500 bg-sky-50/90 dark:bg-sky-950/60 dark:border-sky-400 shadow-xs'
                                                         : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-sky-200'
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                                    <span className={`w-4 h-4 mt-0.5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
                                                         isSelected
                                                             ? 'bg-sky-600 text-white'
                                                             : 'border-2 border-gray-300 dark:border-slate-600 text-transparent'
                                                     }`}>
                                                         ✓
                                                     </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className={`text-xs sm:text-sm truncate ${isSelected ? 'font-black text-sky-950 dark:text-white' : 'font-bold text-gray-700 dark:text-slate-200'}`}>
-                                                            {opt.label}
+                                                    <div className="min-w-0 flex-1 space-y-1">
+                                                        <div className={`text-xs sm:text-sm truncate ${isSelected ? 'font-black text-sky-950 dark:text-white' : 'font-bold text-gray-800 dark:text-slate-100'}`}>
+                                                            {cleanTitle}
                                                         </div>
+                                                        {meta && (
+                                                            <>
+                                                                <div className="flex flex-wrap items-center gap-1">
+                                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900/70 text-sky-800 dark:text-sky-200">
+                                                                        {meta.badge}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100/80 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+                                                                        💰 {meta.dailyCost}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-[11px] font-bold text-gray-500 dark:text-slate-400 leading-snug">
+                                                                    {meta.desc}
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                                                     {isSelected ? (
                                                         <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-sky-600 text-white">
                                                             使用中
@@ -1111,44 +1104,62 @@ function SettingsPanel({
                                         );
                                     })}
 
-                                    {/* 新着モデルがある場合は同じリストの下部にそのまま並べる */}
-                                    {newDetectedModels.map(nm => (
-                                        <div
-                                            key={`new-${nm.id}`}
-                                            className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/30 animate-[fadeIn_0.2s_ease-out]"
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white shrink-0">
-                                                        ✨ 新着
-                                                    </span>
-                                                    <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 truncate">
-                                                        {nm.displayName}
-                                                    </span>
+                                    {/* 利用可能AIモデル取得で見つかった未登録モデル */}
+                                    {newDetectedModels.map(nm => {
+                                        const meta = window.getAiModelMeta ? window.getAiModelMeta(nm.id) : null;
+                                        return (
+                                            <div
+                                                key={`new-${nm.id}`}
+                                                className="flex items-start justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-500/80 bg-amber-50/70 dark:bg-amber-950/30 animate-[fadeIn_0.2s_ease-out]"
+                                            >
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white shrink-0">
+                                                            利用可能
+                                                        </span>
+                                                        <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 truncate">
+                                                            {nm.displayName}
+                                                        </span>
+                                                    </div>
+                                                    {meta && (
+                                                        <>
+                                                            <div className="flex flex-wrap items-center gap-1">
+                                                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-800 text-amber-900 dark:text-amber-200">
+                                                                    {meta.badge}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                                                                    💰 {meta.dailyCost}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-[11px] font-bold text-amber-900/80 dark:text-amber-200/80 leading-snug">
+                                                                {meta.desc}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                    <div className="text-[10px] font-mono text-amber-800/60 dark:text-amber-300/60 truncate">
+                                                        {nm.id}
+                                                    </div>
                                                 </div>
-                                                <div className="text-[10px] font-mono text-amber-800/70 dark:text-amber-300/70 truncate mt-0.5">
-                                                    {nm.id}
+                                                <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAddNewModelToList(nm, true)}
+                                                        className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-2xs active:scale-95"
+                                                    >
+                                                        ＋ 使う
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDismissNewModel(nm.id)}
+                                                        className="w-7 h-7 rounded-lg bg-amber-200/70 hover:bg-amber-300 dark:bg-slate-700 text-amber-900 dark:text-slate-300 flex items-center justify-center text-xs font-black active:scale-90"
+                                                        title="候補から隠す"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleAddNewModelToList(nm, true)}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-2xs active:scale-95"
-                                                >
-                                                    ＋ 使う
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDismissNewModel(nm.id)}
-                                                    className="w-7 h-7 rounded-lg bg-amber-200/70 hover:bg-amber-300 dark:bg-slate-700 text-amber-900 dark:text-slate-300 flex items-center justify-center text-xs font-black active:scale-90"
-                                                    title="新着通知を消す"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700">

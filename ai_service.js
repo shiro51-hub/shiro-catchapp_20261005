@@ -1,5 +1,5 @@
 // ==========================================
-// ai_service.js : AIサービス ＆ 共通ユーティリティ（新モデル通知・削除管理機能付き）
+// ai_service.js : AIサービス ＆ 共通ユーティリティ（特徴・料金目安自動判定・利用可能モデル取得対応）
 // ==========================================
 
 // --- 1. AIモデル定義 ＆ 設定 ---
@@ -10,6 +10,60 @@ const DEFAULT_AI_MODELS = [
     { label: "Gemini 3.8 Flash（最新）",       value: "Gemini 3.8 Flash", id: "gemini-3.8-flash" },
     { label: "Gemini 4 Argon（次世代）",       value: "Gemini 4 Argon",   id: "gemini-4-argon" }
 ];
+
+// モデルID・名前から「特徴・おすすめ度」と「1日の目安料金（画像2枚＋日報等）」を自動判定する
+window.getAiModelMeta = function(modelIdOrName) {
+    const s = String(modelIdOrName || '').toLowerCase();
+
+    if (s.includes('lite')) {
+        return {
+            badge: '⚡ 超高速・節約型',
+            desc: '通信が弱い海上やサクッと動かしたい時に便利',
+            dailyCost: '約 0.1〜0.5円 / 日'
+        };
+    }
+    if (s.includes('hydrogen')) {
+        return {
+            badge: '⭐ 一番おすすめ・次世代高速',
+            desc: 'ルール遵守・速度・画像解析すべて最高バランス',
+            dailyCost: '約 1〜3円 / 日'
+        };
+    }
+    if (s.includes('argon') || s.includes('carbon') || s.includes('pro') || s.includes('ultra')) {
+        return {
+            badge: '🧠 超高性能・じっくり型',
+            desc: '文章力・多角分析は最高峰（応答に少し時間）',
+            dailyCost: '約 5〜15円 / 日'
+        };
+    }
+    if (s.includes('preview') || s.includes('exp')) {
+        return {
+            badge: '🧪 最新テスト版',
+            desc: '最新機能をいち早く体験（混雑時は制限あり）',
+            dailyCost: '無料枠対象（有料時 約1〜10円 / 日）'
+        };
+    }
+    if (s.includes('3.8') && s.includes('flash')) {
+        return {
+            badge: '⭐ おすすめ・安定高速',
+            desc: '日報作成・天気/潮時画像の読み取りに最適',
+            dailyCost: '約 0.5〜2円 / 日'
+        };
+    }
+    if (s.includes('flash')) {
+        return {
+            badge: '✨ 標準高速モデル',
+            desc: '日常の日報作成・画像解析に安定して使えます',
+            dailyCost: '約 0.5〜2円 / 日'
+        };
+    }
+
+    return {
+        badge: '✨ 利用可能モデル',
+        desc: 'テキスト生成・画像解析に対応',
+        dailyCost: '約 1〜5円 / 日'
+    };
+};
 
 // 端末に保存された追加モデルと初期リストを統合し、削除済みモデルを除外して返す
 window.getAiModelList = function() {
@@ -60,6 +114,7 @@ window.getActualModelName = function(modelValue) {
     if (found) return found.id;
 
     if (clean.startsWith('gemini-')) return clean;
+    if (clean.includes('hydrogen')) return 'gemini-4-hydrogen';
     if (clean.includes('3.5')) return 'gemini-3.5-flash';
     if (clean.includes('3.6')) return 'gemini-3.6-flash';
     if (clean.includes('3.7')) return 'gemini-3.7-flash';
@@ -69,8 +124,8 @@ window.getActualModelName = function(modelValue) {
     return 'gemini-3.8-flash';
 };
 
-// 新着AIモデルの自動チェック（無料枠のRPDを消費しないメタデータ取得）
-window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
+// 利用可能AIモデルの自動・手動チェック（無料枠のRPDを消費しないメタデータ取得）
+window.checkNewGeminiModels = async function(apiKey, forceCheck = false, includeIgnored = false) {
     const cleanKey = (apiKey || '').replace(/[\s\r\n ]/g, '');
     if (!cleanKey) return [];
 
@@ -92,10 +147,8 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
 
         const currentIds = window.getAiModelList().map(m => m.id.toLowerCase());
         let ignoredIds = [];
-        let deletedIds = [];
         try {
             ignoredIds = JSON.parse(localStorage.getItem('fishing_ignored_ai_models') || '[]');
-            deletedIds = JSON.parse(localStorage.getItem('fishing_deleted_ai_models') || '[]');
         } catch (e) {}
 
         const newModels = [];
@@ -107,9 +160,10 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
             const isGenerative = methods.includes('generateContent');
             const isGemini = lowerId.startsWith('gemini-');
             const isNoise = lowerId.includes('embedding') || lowerId.includes('aqa') || lowerId.includes('tts') || lowerId.includes('1.0') || lowerId.includes('1.5') || lowerId.includes('2.0') || lowerId.includes('2.5');
+            const isIgnored = !includeIgnored && ignoredIds.includes(lowerId);
 
-            if (isGenerative && isGemini && !isNoise) {
-                if (!currentIds.includes(lowerId) && !ignoredIds.includes(lowerId) && !deletedIds.includes(lowerId)) {
+            if (isGenerative && isGemini && !isNoise && !isIgnored) {
+                if (!currentIds.includes(lowerId)) {
                     newModels.push({
                         id: rawName,
                         displayName: rm.displayName || rawName
@@ -127,7 +181,7 @@ window.checkNewGeminiModels = async function(apiKey, forceCheck = false) {
     }
 };
 
-// 新モデルをリストに追加する
+// 新モデルをリストに追加する（「（追加）」ラベルなし）
 window.addCustomAiModel = function(modelObj) {
     if (!modelObj || !modelObj.id) return;
     const targetId = modelObj.id.toLowerCase();
@@ -146,7 +200,7 @@ window.addCustomAiModel = function(modelObj) {
 
     if (!customModels.some(m => m.id.toLowerCase() === targetId)) {
         customModels.push({
-            label: `${modelObj.displayName}（追加）`,
+            label: modelObj.displayName,
             value: modelObj.id,
             id: modelObj.id
         });
@@ -193,17 +247,6 @@ window.removeAiModelFromList = function(modelValueOrId) {
         localStorage.setItem('fishing_deleted_ai_models', JSON.stringify(deleted));
     } catch (e) {}
 
-    window.AI_MODEL_LIST = window.getAiModelList();
-    return window.AI_MODEL_LIST;
-};
-
-// モデルリストを初期状態（デフォルト5種＋通知リセット）に戻す
-window.resetAiModelListToDefault = function() {
-    localStorage.removeItem('fishing_custom_ai_models');
-    localStorage.removeItem('fishing_deleted_ai_models');
-    localStorage.removeItem('fishing_ignored_ai_models');
-    localStorage.removeItem('fishing_detected_new_models');
-    localStorage.removeItem('fishing_last_model_check_date');
     window.AI_MODEL_LIST = window.getAiModelList();
     return window.AI_MODEL_LIST;
 };
@@ -358,7 +401,13 @@ const getDayOfWeek = (dateString) => {
     if (!dateString) return '';
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? '' : `(${days[date.getDay()]})`; };  const handleEnterKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); const inputs = Array.from(document.querySelectorAll(`input[type="${e.target.type}"]`));
+    return isNaN(date.getTime()) ? '' : `(${days[date.getDay()]})`;
+};
+
+const handleEnterKey = (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const inputs = Array.from(document.querySelectorAll(`input[type="${e.target.type}"]`));
         const index = inputs.indexOf(e.target);
         if (index > -1 && index < inputs.length - 1) inputs[index + 1].focus();
     }
