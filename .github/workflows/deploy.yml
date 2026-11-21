@@ -28,14 +28,16 @@ jobs:
       - name: Precompile JSX with esbuild
         run: |
           set -e
-          mkdir -p _site
-          cp -r * _site/
+          rm -rf /tmp/_site
+          mkdir -p /tmp/_site
+          cp -r * /tmp/_site/
           for file in ai_service.js counter.js settings.js report.js app.js; do
-            if [ -f "_site/$file" ]; then
-              npx -y esbuild "_site/$file" --outfile="_site/${file}.compiled" --loader:.js=jsx --minify
-              mv "_site/${file}.compiled" "_site/$file"
+            if [ -f "/tmp/_site/$file" ]; then
+              npx -y esbuild "/tmp/_site/$file" --outfile="/tmp/_site/${file}.compiled" --loader:.js=jsx --minify
+              mv "/tmp/_site/${file}.compiled" "/tmp/_site/$file"
             fi
           done
+          mv /tmp/_site ./_site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
