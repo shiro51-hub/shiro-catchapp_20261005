@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算・メモUI統一版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算・メモUI改善版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -452,7 +452,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（31・27・25・智丸選択対応 ＆ スレートグレー統一デザイン版）
+// 船長メモモーダル（31・27・25・智丸選択対応 ＆ 記録あり左寄せ・開閉ボタン拡大版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave, targetFish }) {
     if (!showMemoModal) return null;
 
@@ -765,28 +765,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 )}
 
-                {/* 1. 別船の釣果アコーディオン（案1：スレートグレー統一デザイン） */}
+                {/* 1. 別船の釣果アコーディオン（タイトル横に記録あり配置・右端開閉ボタン拡大） */}
                 <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsOtherBoatsOpen(prev => !prev)}
-                        className="w-full px-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
+                        className="w-full pl-3 pr-2 py-2 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
                     >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-base shrink-0">🚢</span>
-                            <span className="whitespace-nowrap">別船の釣果</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-base">🚢</span>
+                                <span className="whitespace-nowrap">別船の釣果</span>
+                            </div>
                             {hasOtherBoatData && (
                                 <span className="text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-black whitespace-nowrap">
                                     ✓ 記録あり
                                 </span>
                             )}
-                            <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-bold whitespace-nowrap">
-                                {isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力'}
-                            </span>
                         </div>
+
+                        <span className="px-3.5 py-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm sm:text-base font-black whitespace-nowrap shrink-0 ml-2 shadow-2xs active:scale-95 transition-transform">
+                            {isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力'}
+                        </span>
                     </button>
 
                     {isOtherBoatsOpen && (
@@ -882,28 +882,28 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                {/* 2. 実釣ポイントアコーディオン（案1：スレートグレー統一デザイン・同フォントサイズ） */}
+                {/* 2. 実釣ポイントアコーディオン（タイトル横に記録あり配置・右端開閉ボタン拡大） */}
                 <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsPointLogOpen(prev => !prev)}
-                        className="w-full px-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
+                        className="w-full pl-3 pr-2 py-2 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
                     >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-base shrink-0">📍</span>
-                            <span className="whitespace-nowrap">実釣ポイント</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-base">📍</span>
+                                <span className="whitespace-nowrap">実釣ポイント</span>
+                            </div>
                             {pointLogText && pointLogText.trim() !== '' && (
                                 <span className="text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-black whitespace-nowrap">
                                     ✓ 記録あり
                                 </span>
                             )}
-                            <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-bold whitespace-nowrap">
-                                {isPointLogOpen ? '▲ 閉じる' : '▼ 入力'}
-                            </span>
                         </div>
+
+                        <span className="px-3.5 py-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm sm:text-base font-black whitespace-nowrap shrink-0 ml-2 shadow-2xs active:scale-95 transition-transform">
+                            {isPointLogOpen ? '▲ 閉じる' : '▼ 入力'}
+                        </span>
                     </button>
 
                     {isPointLogOpen && (
