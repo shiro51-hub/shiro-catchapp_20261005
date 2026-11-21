@@ -28,12 +28,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # ai_service.js を含む全ファイルを確実にコンパイル
       - name: Precompile JSX with esbuild
         run: |
+          set -e
           for file in ai_service.js counter.js settings.js report.js app.js; do
             if [ -f "$file" ]; then
-              npx -y esbuild "$file" --outfile="${file}.compiled" --loader:.js=jsx
+              npx -y esbuild "$file" --outfile="${file}.compiled" --loader:.js=jsx --minify
               mv "${file}.compiled" "$file"
             fi
           done
