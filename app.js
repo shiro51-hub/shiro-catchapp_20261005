@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算2段折り返し表示版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算・メモUI統一版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -452,7 +452,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（31・27・25・智丸選択対応 ＆ 自動入力防止 ＆ 複数写真対応版）
+// 船長メモモーダル（31・27・25・智丸選択対応 ＆ スレートグレー統一デザイン版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave, targetFish }) {
     if (!showMemoModal) return null;
 
@@ -765,34 +765,32 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 )}
 
-                <div className="mx-3 mt-2 rounded-xl border border-sky-300 dark:border-slate-700 bg-sky-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
+                {/* 1. 別船の釣果アコーディオン（案1：スレートグレー統一デザイン） */}
+                <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsOtherBoatsOpen(prev => !prev)}
-                        className="w-full pl-2.5 pr-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-sky-900 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full px-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
                     >
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-base shrink-0">🚢</span>
-                            <span className="whitespace-nowrap shrink-0">別船の釣果</span>
-                            <span className="text-[11px] sm:text-xs font-bold text-sky-900 dark:text-sky-300 whitespace-nowrap">
-                                （最大3隻まで）
-                            </span>
+                            <span className="whitespace-nowrap">別船の釣果</span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
                             {hasOtherBoatData && (
-                                <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md whitespace-nowrap">
-                                    ● 記録あり
+                                <span className="text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-black whitespace-nowrap">
+                                    ✓ 記録あり
                                 </span>
                             )}
-                            <span className="text-sky-600 dark:text-sky-400 text-xs sm:text-sm font-bold whitespace-nowrap">
-                                {isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力する'}
+                            <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-bold whitespace-nowrap">
+                                {isOtherBoatsOpen ? '▲ 閉じる' : '▼ 入力'}
                             </span>
                         </div>
                     </button>
 
                     {isOtherBoatsOpen && (
-                        <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="p-2.5 sm:p-3 border-t border-sky-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
+                        <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="p-2.5 sm:p-3 border-t border-slate-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
                             <datalist id="companion-boat-numbers">
                                 <option value="31" />
                                 <option value="27" />
@@ -815,7 +813,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                                 placeholder="船"
                                                 value={b.boatNo}
                                                 onChange={(e) => handleBoatFieldChange(idx, 'boatNo', e.target.value)}
-                                                className="w-12 px-1 py-1 text-center font-black border border-sky-300 dark:border-slate-600 rounded-lg bg-sky-50/70 dark:bg-slate-900 text-sky-900 dark:text-sky-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                                className="w-12 px-1 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400"
                                             />
                                             {isNumericBoat && (
                                                 <span className="font-black text-slate-700 dark:text-slate-200 shrink-0">号船</span>
@@ -871,7 +869,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                 <button
                                     type="button"
                                     onClick={() => setShowBoat3(true)}
-                                    className="w-full py-1.5 rounded-lg border border-dashed border-sky-300 dark:border-slate-600 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-slate-900/50 dark:hover:bg-slate-900 text-sky-700 dark:text-sky-300 text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all select-none"
+                                    className="w-full py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all select-none"
                                 >
                                     <span>＋ 3隻目を追加（4隻出船時）</span>
                                 </button>
@@ -884,35 +882,39 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                <div className="mx-3 mt-2 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/60 dark:bg-slate-900/50 shrink-0 overflow-hidden">
+                {/* 2. 実釣ポイントアコーディオン（案1：スレートグレー統一デザイン・同フォントサイズ） */}
+                <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
                         onClick={() => setIsPointLogOpen(prev => !prev)}
-                        className="w-full pl-2.5 pr-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-amber-950 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-slate-800 transition-colors select-none"
+                        className="w-full px-3 py-2.5 flex justify-between items-center text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors select-none"
                     >
-                        <span className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-base shrink-0">📍</span>
-                            <span className="whitespace-nowrap shrink-0">実釣ポイント・航海メモ</span>
+                            <span className="whitespace-nowrap">実釣ポイント</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
                             {pointLogText && pointLogText.trim() !== '' && (
-                                <span className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-black bg-emerald-100 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap">
-                                    ● 記録あり
+                                <span className="text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-black whitespace-nowrap">
+                                    ✓ 記録あり
                                 </span>
                             )}
-                        </span>
-                        <span className="text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-bold shrink-0 ml-1 whitespace-nowrap">
-                            {isPointLogOpen ? '▲ 閉じる' : '▼ 入力する'}
-                        </span>
+                            <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-bold whitespace-nowrap">
+                                {isPointLogOpen ? '▲ 閉じる' : '▼ 入力'}
+                            </span>
+                        </div>
                     </button>
 
                     {isPointLogOpen && (
-                        <div className="p-3 border-t border-amber-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
+                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
                             <input
                                 type="text"
                                 autoComplete="off"
                                 placeholder="例：久里浜40m ➔ アシカ島25m ➔ 鴨居沖根周り など"
                                 value={pointLogText}
                                 onChange={(e) => handlePointLogChange(e.target.value)}
-                                className="w-full px-3.5 py-2.5 text-sm sm:text-base font-bold border-2 border-amber-300 dark:border-slate-600 rounded-xl bg-amber-50/30 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                className="w-full px-3.5 py-2.5 text-sm sm:text-base font-bold border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400"
                             />
                             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
                                 🔒 ここに入力したポイント履歴はAI（日報・カルテ）に送信されず、文章には絶対に出ません（自分だけの航海記録として保存されます）。
