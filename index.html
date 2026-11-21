@@ -5,18 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex">
     <title>山下丸 釣果記録</title>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Yuji+Boku&family=Permanent+Marker&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Yuji+Boku&family=Permanent+Marker&display=swap" rel="stylesheet">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -37,16 +34,12 @@
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-900 dark:text-slate-100 transition-colors duration-300">
-    <div id="root">
-        <div style="display:flex;justify-content:center;align-items:center;height:100vh;color:#0284c7;font-weight:bold;font-family:sans-serif;">
-            読み込み中...
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <script type="text/babel" src="ai_service.js?v=52"></script>
-    <script type="text/babel" src="counter.js?v=52"></script>
-    <script type="text/babel" src="settings.js?v=52"></script>
-    <script type="text/babel" src="report.js?v=52"></script>
-    <script type="text/babel" src="app.js?v=52"></script>
+    <script src="ai_service.js?v=54"></script>
+    <script src="counter.js?v=54"></script>
+    <script src="settings.js?v=54"></script>
+    <script src="report.js?v=54"></script>
+    <script src="app.js?v=54"></script>
 </body>
 </html>
