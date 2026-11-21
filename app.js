@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算表示版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算2段折り返し表示版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -3198,24 +3198,24 @@ function App() {
                                                 </div>
                                             </div>
 
-                                            {/* 別船の入力がある日だけ自動表示される合算釣果・全体竿頭 */}
+                                            {/* 別船の入力がある日だけ自動表示される合算釣果・竿頭（2段折り返し対応・落ち着いたラベル色） */}
                                             {combined.hasOtherBoats && (
-                                                <div className="pt-2 border-t border-sky-200/80 dark:border-slate-700/80 flex flex-wrap justify-between items-center gap-x-3 gap-y-1">
-                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200">
-                                                        <span className="text-xs font-black text-sky-700 dark:text-sky-400 mr-1.5 flex items-center gap-0.5">
-                                                            <span>🚢</span>
-                                                            <span>合算釣果:</span>
+                                                <div className="pt-2 border-t border-sky-200/80 dark:border-slate-700/80 flex flex-wrap justify-between items-baseline gap-x-3 gap-y-1">
+                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200 shrink-0">
+                                                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">
+                                                            合算釣果:
                                                         </span>
                                                         <span className="text-base sm:text-lg font-black">
                                                             {combined.overallMin}〜{combined.overallMax}
                                                         </span>
                                                         <span className="text-xs font-bold ml-0.5">{unit}</span>
                                                     </div>
-                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200 shrink-0">
-                                                        <span className="text-xs font-black text-amber-700 dark:text-amber-400 mr-1">
-                                                            👑 全体竿頭:
+                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200">
+                                                        <IconTrophy className="w-4 h-4 mr-0.5 text-amber-500 self-center shrink-0" />
+                                                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5 shrink-0">
+                                                            竿頭:
                                                         </span>
-                                                        <span className="text-sm sm:text-base font-black">
+                                                        <span className="text-sm sm:text-base font-black break-all">
                                                             {combined.overallTopNameWithBoat ? (
                                                                 <HighlightText text={combined.overallTopNameWithBoat} query={searchQuery} />
                                                             ) : '-'}
