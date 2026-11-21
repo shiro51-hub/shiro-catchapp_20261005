@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算・メモUI改善版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（32号船表記 ＆ 別船4隻入力対応版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -61,10 +61,10 @@ const formatBoatDisplayLabel = (boatVal, fallbackIdx = 0) => {
     return cleaned;
 };
 
-// メモテキストから別船データを抽出する共通パーサー（【31号船】【智丸】【別船1】すべて対応）
+// メモテキストから別船データを抽出する共通パーサー（【31号船】【智丸】【別船1】すべて対応・最大4隻分）
 const parseOtherBoatsFromMemo = (text) => {
     const emptySlot = () => ({ boatNo: '', min: '', max: '', top: '' });
-    if (!text) return [emptySlot(), emptySlot(), emptySlot()];
+    if (!text) return [emptySlot(), emptySlot(), emptySlot(), emptySlot()];
 
     const lines = text.split('\n');
     const extracted = [];
@@ -93,13 +93,13 @@ const parseOtherBoatsFromMemo = (text) => {
         }
     });
 
-    while (extracted.length < 3) {
+    while (extracted.length < 4) {
         extracted.push(emptySlot());
     }
-    return extracted.slice(0, 3);
+    return extracted.slice(0, 4);
 };
 
-// 共通ヘルパー：自船＋別船（最大3隻）の合算釣果（最小〜最大）と全体竿頭を算出する
+// 共通ヘルパー：自船（32号船）＋別船（最大4隻）の合算釣果（最小〜最大）と全体竿頭を算出する
 const computeCombinedCatchStats = (record) => {
     const visibleCounts = [...(record.port || []), ...(record.starboard || [])]
         .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count, 10)))
@@ -116,7 +116,7 @@ const computeCombinedCatchStats = (record) => {
     let overallMin = ownMin;
     let overallMax = ownMax;
     let overallTopNameForAi = ownTopName;
-    let overallTopNameWithBoat = ownTopName;
+    let overallTopNameWithBoat = ownTopName ? `${ownTopName}（32号船）` : (ownMax > 0 ? '32号船' : '');
     let hasOtherBoats = false;
     const allCounts = [...visibleCounts];
 
@@ -452,7 +452,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（31・27・25・智丸選択対応 ＆ 記録あり左寄せ・開閉ボタン拡大版）
+// 船長メモモーダル（31・27・25・智丸 4隻入力対応 ＆ 記録あり左寄せ・開閉ボタン拡大版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave, targetFish }) {
     if (!showMemoModal) return null;
 
@@ -477,7 +477,14 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const [showBoat3, setShowBoat3] = React.useState(() => {
         const parsed = parseOtherBoatsFromMemo(tempMemo);
         const b3 = parsed[2] || {};
-        return b3.boatNo !== '' || b3.min !== '' || b3.max !== '' || b3.top !== '';
+        const b4 = parsed[3] || {};
+        return (b3.boatNo !== '' || b3.min !== '' || b3.max !== '' || b3.top !== '') ||
+               (b4.boatNo !== '' || b4.min !== '' || b4.max !== '' || b4.top !== '');
+    });
+    const [showBoat4, setShowBoat4] = React.useState(() => {
+        const parsed = parseOtherBoatsFromMemo(tempMemo);
+        const b4 = parsed[3] || {};
+        return b4.boatNo !== '' || b4.min !== '' || b4.max !== '' || b4.top !== '';
     });
     const [pointLogText, setPointLogText] = React.useState(() => parsePointLog(tempMemo));
     const [isPointLogOpen, setIsPointLogOpen] = React.useState(false);
@@ -662,7 +669,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     };
 
     const hasOtherBoatData = boatsList.some(b => b.boatNo !== '' || b.min !== '' || b.max !== '' || b.top !== '');
-    const visibleIndices = showBoat3 ? [0, 1, 2] : [0, 1];
+    const visibleIndices = showBoat4 ? [0, 1, 2, 3] : showBoat3 ? [0, 1, 2] : [0, 1];
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
@@ -765,7 +772,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     </div>
                 )}
 
-                {/* 1. 別船の釣果アコーディオン（タイトル横に記録あり配置・右端開閉ボタン拡大） */}
+                {/* 1. 別船の釣果アコーディオン（タイトル横に記録あり配置・右端開閉ボタン拡大・最大4隻対応） */}
                 <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
@@ -872,6 +879,16 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                     className="w-full py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all select-none"
                                 >
                                     <span>＋ 3隻目を追加（4隻出船時）</span>
+                                </button>
+                            )}
+
+                            {showBoat3 && !showBoat4 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBoat4(true)}
+                                    className="w-full py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all select-none"
+                                >
+                                    <span>＋ 4隻目を追加（5隻出船時）</span>
                                 </button>
                             )}
 
@@ -1547,7 +1564,7 @@ function App() {
 ■ 絶対厳守のルール
 ・文体：「です・ます調」で統一する。簡潔な「〜です」「〜でした」という表現にする（「〜ですね」「〜ですよ」などの甘い語尾、丁寧すぎる表現禁止、「だぜ」「だな」などの友達や後輩にしゃべるような表現は禁止）。
 ・個別船の言及・比較の禁止：
-  複数隻が出船している場合でも「当船では」「別船では」「31号船では」「智丸では」といった船ごとの比較・号船番号・船名・内訳描写は一切不要です。
+  複数隻が出船している場合でも「当船では」「別船では」「32号船では」「31号船では」「智丸では」といった船ごとの比較・号船番号・船名・内訳描写は一切不要です。
   また、「山下丸全体で」「全隻を通じて」といった大げさな前置き表現も使用禁止とします。単に「本日のトップは〇枚」「竿頭は〇〇さん」と簡潔に記載してください。
 ・敬称のルール：竿頭などお客様のお名前を紹介する際は、かしこまりすぎた「様」ではなく、必ず「さん」付けに統一すること（例: 〇〇さん）。
 ・釣果表記のルール（最重要）：釣果を紹介する際は、「〇〜〇尾」「〇〜〇匹」といった範囲（スソからトップまで）の表記や「平均〇尾」は一切使用禁止とします。必ず本日の「トップ（上限釣果）」の数字のみを記載してください。
@@ -3200,7 +3217,7 @@ function App() {
                                                 </div>
                                             </div>
 
-                                            {/* 別船の入力がある日だけ自動表示される合算釣果・竿頭（2段折り返し対応・落ち着いたラベル色） */}
+                                            {/* 別船の入力がある日だけ自動表示される合算釣果・竿頭（自船32号船・他船号船名つき） */}
                                             {combined.hasOtherBoats && (
                                                 <div className="pt-2 border-t border-sky-200/80 dark:border-slate-700/80 flex flex-wrap justify-between items-baseline gap-x-3 gap-y-1">
                                                     <div className="flex items-baseline text-sky-900 dark:text-sky-200 shrink-0">
