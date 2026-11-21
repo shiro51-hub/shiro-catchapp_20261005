@@ -105,7 +105,7 @@ const CounterCardTap = ({ side, seat, index, onCountDelta, onClear, totalSeats }
         : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-slate-500 text-emerald-700 dark:text-emerald-300';
 
     const nameColor = isPort
-        ? 'text-red-300/80 dark:text-red-300/40'
+        ? 'text-red-300/80 dark:text-red-300/45'
         : 'text-emerald-400/80 dark:text-emerald-400/55';
 
     // ＋1 カウント
@@ -226,7 +226,7 @@ const CounterCardSlide = ({ side, seat, index, onCountDelta, totalSeats }) => {
         : 'bg-emerald-50 dark:bg-[#0d1c16] text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-slate-500';
 
     const nameColor = isPort
-        ? 'text-red-300/80 dark:text-red-300/40'
+        ? 'text-red-300/80 dark:text-red-300/45'
         : 'text-emerald-400/80 dark:text-emerald-400/55';
 
     const flashClass = flashType === 'plus'
@@ -295,7 +295,7 @@ const CounterKeypadCard = ({ side, seat, index, onSeatChange, totalSeats }) => {
         : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-slate-500';
 
     const nameColor = isPort
-        ? 'text-red-300/80 dark:text-red-300/40'
+        ? 'text-red-300/80 dark:text-red-300/45'
         : 'text-emerald-400/80 dark:text-emerald-400/55';
 
     return (
