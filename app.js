@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング
+// app.js : メイン司令塔・画面遷移・全体レンダリング（別船3隻対応 ＆ 履歴合算表示版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -51,6 +51,73 @@ const HighlightText = ({ text = '', query = '' }) => {
             )}
         </>
     );
+};
+
+// 共通ヘルパー：自船＋別船1〜3の合算釣果（最小〜最大）と全体竿頭を算出する
+const computeCombinedCatchStats = (record) => {
+    const visibleCounts = [...(record.port || []), ...(record.starboard || [])]
+        .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count, 10)))
+        .map(s => parseInt(s.count, 10));
+
+    const ownMin = visibleCounts.length > 0
+        ? Math.min(...visibleCounts)
+        : ((record.min === '' || record.min === undefined || record.min === null) ? 0 : parseInt(record.min, 10));
+    const ownMax = visibleCounts.length > 0
+        ? Math.max(...visibleCounts)
+        : ((record.max === '' || record.max === undefined || record.max === null) ? 0 : parseInt(record.max, 10));
+    const ownTopName = (record.topAnglerName || '').trim();
+
+    let overallMin = ownMin;
+    let overallMax = ownMax;
+    let overallTopName = ownTopName;
+    let hasOtherBoats = false;
+    let otherBoatTopWinner = false;
+    const allCounts = [...visibleCounts];
+
+    const memoText = record.detailedMemo || '';
+    [1, 2, 3].forEach(num => {
+        const regex = new RegExp(`【別船${num}】\\s*釣果:\\s*(\\d*)\\s*〜\\s*(\\d*)[^\\n]*?(?:竿頭:\\s*([^\\n]*?)(?:さん|様)?)?(?:\\n|$)`);
+        const match = memoText.match(regex);
+        if (match) {
+            const bMin = match[1] !== '' ? parseInt(match[1], 10) : NaN;
+            const bMax = match[2] !== '' ? parseInt(match[2], 10) : NaN;
+            const bName = (match[3] || '').trim();
+
+            if (!isNaN(bMin) || !isNaN(bMax)) {
+                hasOtherBoats = true;
+            }
+            if (!isNaN(bMin)) {
+                overallMin = Math.min(overallMin, bMin);
+            }
+            if (!isNaN(bMax)) {
+                allCounts.push(bMax);
+                if (bMax > overallMax) {
+                    overallMax = bMax;
+                    overallTopName = bName || `別船${num}`;
+                    otherBoatTopWinner = true;
+                } else if (bMax === overallMax && bMax > 0 && bName) {
+                    otherBoatTopWinner = true;
+                    if (!overallTopName) {
+                        overallTopName = bName;
+                    } else if (!overallTopName.includes(bName)) {
+                        overallTopName = `${overallTopName}・${bName}`;
+                    }
+                }
+            }
+        }
+    });
+
+    return {
+        ownMin,
+        ownMax,
+        ownTopName,
+        overallMin,
+        overallMax,
+        overallTopName,
+        hasOtherBoats,
+        otherBoatTopWinner,
+        allCounts
+    };
 };
 
 // デジタル釣果ボードモーダル
@@ -335,7 +402,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（別船1・別船2入力欄 ＆ 複数写真対応版）
+// 船長メモモーダル（別船1〜3入力欄 ＆ 複数写真対応版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave }) {
     if (!showMemoModal) return null;
 
@@ -349,20 +416,21 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const [isOtherBoatsOpen, setIsOtherBoatsOpen] = React.useState(false);
 
     const parseOtherBoats = (text) => {
-        const res = { b1Min: '', b1Max: '', b1Top: '', b2Min: '', b2Max: '', b2Top: '' };
+        const res = {
+            b1Min: '', b1Max: '', b1Top: '',
+            b2Min: '', b2Max: '', b2Top: '',
+            b3Min: '', b3Max: '', b3Top: ''
+        };
         if (!text) return res;
-        const m1 = text.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (m1) {
-            res.b1Min = m1[1] || '';
-            res.b1Max = m1[2] || '';
-            res.b1Top = (m1[3] || '').trim();
-        }
-        const m2 = text.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (m2) {
-            res.b2Min = m2[1] || '';
-            res.b2Max = m2[2] || '';
-            res.b2Top = (m2[3] || '').trim();
-        }
+        [1, 2, 3].forEach(num => {
+            const regex = new RegExp(`【別船${num}】\\s*釣果:\\s*(\\d*)\\s*〜\\s*(\\d*)[^\\n]*?(?:竿頭:\\s*([^\\n]*?)(?:さん|様)?)?(?:\\n|$)`);
+            const m = text.match(regex);
+            if (m) {
+                res[`b${num}Min`] = m[1] || '';
+                res[`b${num}Max`] = m[2] || '';
+                res[`b${num}Top`] = (m[3] || '').trim();
+            }
+        });
         return res;
     };
 
@@ -373,6 +441,10 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     };
 
     const [boatState, setBoatState] = React.useState(() => parseOtherBoats(tempMemo));
+    const [showBoat3, setShowBoat3] = React.useState(() => {
+        const parsed = parseOtherBoats(tempMemo);
+        return parsed.b3Min !== '' || parsed.b3Max !== '' || parsed.b3Top !== '';
+    });
     const [pointLogText, setPointLogText] = React.useState(() => parsePointLog(tempMemo));
     const [isPointLogOpen, setIsPointLogOpen] = React.useState(false);
 
@@ -393,6 +465,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         let baseText = (tempMemo || '')
             .replace(/【別船1】[^\n]*\n?/g, '')
             .replace(/【別船2】[^\n]*\n?/g, '')
+            .replace(/【別船3】[^\n]*\n?/g, '')
             .replace(/【ポイント履歴】[^\n]*\n?/g, '')
             .trim();
 
@@ -402,6 +475,9 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         }
         if (newBoatState.b2Min !== '' || newBoatState.b2Max !== '' || newBoatState.b2Top !== '') {
             headerLines.push(`【別船2】 釣果: ${newBoatState.b2Min}〜${newBoatState.b2Max} 竿頭: ${newBoatState.b2Top}`);
+        }
+        if (newBoatState.b3Min !== '' || newBoatState.b3Max !== '' || newBoatState.b3Top !== '') {
+            headerLines.push(`【別船3】 釣果: ${newBoatState.b3Min}〜${newBoatState.b3Max} 竿頭: ${newBoatState.b3Top}`);
         }
         if (newPointLog && newPointLog.trim() !== '') {
             headerLines.push(`【ポイント履歴】 ${newPointLog.trim()}`);
@@ -544,7 +620,8 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         setShowMemoModal(false);
     };
 
-    const hasOtherBoatData = boatState.b1Max !== '' || boatState.b2Max !== '';
+    const hasOtherBoatData = boatState.b1Max !== '' || boatState.b2Max !== '' || boatState.b3Max !== '' || boatState.b1Min !== '' || boatState.b2Min !== '' || boatState.b3Min !== '';
+    const visibleBoatNums = showBoat3 ? [1, 2, 3] : [1, 2];
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-[fadeIn_0.15s_ease-out]">
@@ -657,7 +734,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                             <span className="text-base shrink-0">🚢</span>
                             <span className="whitespace-nowrap shrink-0">別船の釣果</span>
                             <span className="text-[11px] sm:text-xs font-bold text-sky-900 dark:text-sky-300 whitespace-nowrap">
-                                （複数出船時）
+                                （最大3隻まで）
                             </span>
                         </div>
 
@@ -675,72 +752,52 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
 
                     {isOtherBoatsOpen && (
                         <div className="p-3 border-t border-sky-200 dark:border-slate-700 space-y-2.5 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
-                            <div className="flex items-center gap-2 text-xs">
-                                <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船1】</span>
-                                <div className="flex items-center gap-1 flex-1">
-                                    <input 
-                                        type="number" 
-                                        placeholder="スソ"
-                                        value={boatState.b1Min}
-                                        onChange={(e) => handleBoatFieldChange('b1Min', e.target.value)}
-                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                    <span className="text-slate-400 font-bold">〜</span>
-                                    <input 
-                                        type="number" 
-                                        placeholder="トップ"
-                                        value={boatState.b1Max}
-                                        onChange={(e) => handleBoatFieldChange('b1Max', e.target.value)}
-                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                    <span className="text-slate-400 font-bold shrink-0">本/枚</span>
+                            {visibleBoatNums.map(num => (
+                                <div key={`boat-row-${num}`} className="flex items-center gap-2 text-xs">
+                                    <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船{num}】</span>
+                                    <div className="flex items-center gap-1 flex-1">
+                                        <input 
+                                            type="number" 
+                                            placeholder="スソ"
+                                            value={boatState[`b${num}Min`]}
+                                            onChange={(e) => handleBoatFieldChange(`b${num}Min`, e.target.value)}
+                                            className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                        />
+                                        <span className="text-slate-400 font-bold">〜</span>
+                                        <input 
+                                            type="number" 
+                                            placeholder="トップ"
+                                            value={boatState[`b${num}Max`]}
+                                            onChange={(e) => handleBoatFieldChange(`b${num}Max`, e.target.value)}
+                                            className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                        />
+                                        <span className="text-slate-400 font-bold shrink-0">本/枚</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-1">
+                                        <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
+                                        <input 
+                                            type="text" 
+                                            placeholder="お名前"
+                                            value={boatState[`b${num}Top`]}
+                                            onChange={(e) => handleBoatFieldChange(`b${num}Top`, e.target.value)}
+                                            className="w-full px-2 py-1 font-bold border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1 flex-1">
-                                    <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="お名前"
-                                        value={boatState.b1Top}
-                                        onChange={(e) => handleBoatFieldChange('b1Top', e.target.value)}
-                                        className="w-full px-2 py-1 font-bold border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                </div>
-                            </div>
+                            ))}
 
-                            <div className="flex items-center gap-2 text-xs">
-                                <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 w-12">【別船2】</span>
-                                <div className="flex items-center gap-1 flex-1">
-                                    <input 
-                                        type="number" 
-                                        placeholder="スソ"
-                                        value={boatState.b2Min}
-                                        onChange={(e) => handleBoatFieldChange('b2Min', e.target.value)}
-                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                    <span className="text-slate-400 font-bold">〜</span>
-                                    <input 
-                                        type="number" 
-                                        placeholder="トップ"
-                                        value={boatState.b2Max}
-                                        onChange={(e) => handleBoatFieldChange('b2Max', e.target.value)}
-                                        className="w-14 px-1.5 py-1 text-center font-black border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                    <span className="text-slate-400 font-bold shrink-0">本/枚</span>
-                                </div>
-                                <div className="flex items-center gap-1 flex-1">
-                                    <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="お名前"
-                                        value={boatState.b2Top}
-                                        onChange={(e) => handleBoatFieldChange('b2Top', e.target.value)}
-                                        className="w-full px-2 py-1 font-bold border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                                    />
-                                </div>
-                            </div>
+                            {!showBoat3 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBoat3(true)}
+                                    className="w-full py-1.5 rounded-lg border border-dashed border-sky-300 dark:border-slate-600 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-slate-900/50 dark:hover:bg-slate-900 text-sky-700 dark:text-sky-300 text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all select-none"
+                                >
+                                    <span>＋ 別船3を追加（4隻出船時）</span>
+                                </button>
+                            )}
 
                             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                                ※入力した別船の釣果はAI日報とAI分析に自動集約され、全体のトップ・竿頭として総括されます（各船の内訳は文章に出ません）。
+                                ※入力した別船の釣果は履歴の合算表示およびAI日報・分析に自動反映されます。
                             </div>
                         </div>
                     )}
@@ -1437,51 +1494,11 @@ function App() {
 必ず以下の■■■タイトル■■■という区切り文字で区切って、それぞれ明確に切り口やトーンを変えた指定パターンの文章を出力してください。余計な挨拶やコードブロック記号は含めないでください。${formatPrompt}`;
 
         const unit = getUnit(record.targetFish);
-
-        let allCounts = [...(record.port || []), ...(record.starboard || [])]
-            .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count)))
-            .map(s => parseInt(s.count, 10));
-
-        let overallMax = record.max || 0;
-        let overallTopName = record.topAnglerName || '';
-        let overallMin = allCounts.length > 0 ? Math.min(...allCounts) : (record.min !== '' && record.min !== undefined ? parseInt(record.min, 10) : 0);
-
-        const memoText = record.detailedMemo || '';
-        const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (b1Match) {
-            const b1Min = b1Match[1] !== '' ? parseInt(b1Match[1], 10) : NaN;
-            const b1Max = b1Match[2] !== '' ? parseInt(b1Match[2], 10) : NaN;
-            const b1Name = (b1Match[3] || '').trim();
-
-            if (!isNaN(b1Min)) overallMin = Math.min(overallMin, b1Min);
-            if (!isNaN(b1Max)) {
-                allCounts.push(b1Max);
-                if (b1Max > overallMax) {
-                    overallMax = b1Max;
-                    overallTopName = b1Name;
-                } else if (b1Max === overallMax && b1Name && overallTopName && !overallTopName.includes(b1Name)) {
-                    overallTopName = `${overallTopName}・${b1Name}`;
-                }
-            }
-        }
-
-        const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (b2Match) {
-            const b2Min = b2Match[1] !== '' ? parseInt(b2Match[1], 10) : NaN;
-            const b2Max = b2Match[2] !== '' ? parseInt(b2Match[2], 10) : NaN;
-            const b2Name = (b2Match[3] || '').trim();
-
-            if (!isNaN(b2Min)) overallMin = Math.min(overallMin, b2Min);
-            if (!isNaN(b2Max)) {
-                allCounts.push(b2Max);
-                if (b2Max > overallMax) {
-                    overallMax = b2Max;
-                    overallTopName = b2Name;
-                } else if (b2Max === overallMax && b2Name && overallTopName && !overallTopName.includes(b2Name)) {
-                    overallTopName = `${overallTopName}・${b2Name}`;
-                }
-            }
-        }
+        const combined = computeCombinedCatchStats(record);
+        const overallMax = combined.overallMax;
+        const overallTopName = combined.overallTopName;
+        const overallMin = combined.overallMin;
+        const allCounts = combined.allCounts;
 
         const secondCounts = allCounts.filter(c => c < overallMax);
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
@@ -1600,57 +1617,12 @@ function App() {
     };
 
     // ==========================================
-    // 簡易版（スタッフ報告用・別船合算トータル・縦並び）テキスト生成
+    // 簡易版（スタッフ報告用・別船1〜3合算トータル・縦並び）テキスト生成
     // ==========================================
     const generateSimpleShareText = (record) => {
         if (!record) return '';
         const unit = getUnit(record.targetFish);
-
-        // 自船の座席から有効な釣果数を取得
-        const visibleCounts = [...(record.port || []), ...(record.starboard || [])]
-            .filter(s => s && s.isVisible !== false && s.count !== '' && !isNaN(parseInt(s.count, 10)))
-            .map(s => parseInt(s.count, 10));
-
-        let overallMin = visibleCounts.length > 0
-            ? Math.min(...visibleCounts)
-            : ((record.min === '' || record.min === undefined || record.min === null) ? 0 : parseInt(record.min, 10));
-        let overallMax = visibleCounts.length > 0
-            ? Math.max(...visibleCounts)
-            : ((record.max === '' || record.max === undefined || record.max === null) ? 0 : parseInt(record.max, 10));
-        let overallTopName = (record.topAnglerName || '').trim();
-        let hasOtherBoats = false;
-
-        // 船長メモ内の【別船1】【別船2】の釣果・竿頭を自動合算
-        const memoText = record.detailedMemo || '';
-        [1, 2].forEach(num => {
-            const regex = new RegExp(`【別船${num}】\\s*釣果:\\s*(\\d*)\\s*〜\\s*(\\d*)[^\\n]*?(?:竿頭:\\s*([^\\n]*?)(?:さん|様)?)?(?:\\n|$)`);
-            const match = memoText.match(regex);
-            if (match) {
-                const bMin = match[1] !== '' ? parseInt(match[1], 10) : NaN;
-                const bMax = match[2] !== '' ? parseInt(match[2], 10) : NaN;
-                const bName = (match[3] || '').trim();
-
-                if (!isNaN(bMin) || !isNaN(bMax)) {
-                    hasOtherBoats = true;
-                }
-
-                if (!isNaN(bMin)) {
-                    overallMin = Math.min(overallMin, bMin);
-                }
-                if (!isNaN(bMax)) {
-                    if (bMax > overallMax) {
-                        overallMax = bMax;
-                        overallTopName = bName;
-                    } else if (bMax === overallMax && bMax > 0 && bName) {
-                        if (!overallTopName) {
-                            overallTopName = bName;
-                        } else if (!overallTopName.includes(bName)) {
-                            overallTopName = `${overallTopName}・${bName}`;
-                        }
-                    }
-                }
-            }
-        });
+        const combined = computeCombinedCatchStats(record);
 
         const sizeStr = (record.sizeMin || record.sizeMax)
             ? `${record.sizeMin || '?'}〜${record.sizeMax || '?'}cm`
@@ -1663,9 +1635,9 @@ function App() {
         lines.push(`水深：${record.waterDepth ? `${record.waterDepth}m` : '-'}`);
         lines.push(`水温：${record.waterTemp ? `${record.waterTemp}℃` : '-'}`);
         lines.push(`潮色：${record.tide || '-'}`);
-        lines.push(`釣果：${overallMin}〜${overallMax}${unit}${hasOtherBoats ? '（合算釣果）' : ''}`);
+        lines.push(`釣果：${combined.overallMin}〜${combined.overallMax}${unit}${combined.hasOtherBoats ? '（合算釣果）' : ''}`);
         lines.push(`型：${sizeStr}`);
-        lines.push(`竿頭：${overallTopName ? `${overallTopName}様` : '-'}`);
+        lines.push(`竿頭：${combined.overallTopName ? `${combined.overallTopName}様` : '-'}`);
 
         return lines.join('\n');
     };
@@ -1722,12 +1694,10 @@ function App() {
         return text.trim();
     };
 
-    // 選択中のモードに応じた共有テキストを取得
     const getActiveShareText = (record, mode) => {
         return mode === 'simple' ? generateSimpleShareText(record) : generateShareText(record);
     };
 
-    // 編集中の場合は編集後テキスト、通常時は自動生成テキストを返す
     const getFinalShareText = (record, mode) => {
         if (isEditingShareText) return editedShareText;
         return getActiveShareText(record, mode);
@@ -1776,43 +1746,11 @@ function App() {
         const portAvg = portAnglers > 0 ? (portTotal / portAnglers).toFixed(1) : '0.0';
         const starboardAvg = starboardAnglers > 0 ? (starboardTotal / starboardAnglers).toFixed(1) : '0.0';
 
-        const allCounts = [...pSeats, ...sSeats]
-            .filter(s => s.count !== '' && !isNaN(parseInt(s.count)))
-            .map(s => parseInt(s.count, 10));
-
-        let overallMax = record.max || 0;
-        let overallTopName = record.topAnglerName || '';
-        let overallMin = allCounts.length > 0 ? Math.min(...allCounts) : (record.min !== '' && record.min !== undefined ? parseInt(record.min, 10) : 0);
-
-        const memoText = record.detailedMemo || '';
-        const b1Match = memoText.match(/【別船1】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (b1Match) {
-            const b1Min = b1Match[1] !== '' ? parseInt(b1Match[1], 10) : NaN;
-            const b1Max = b1Match[2] !== '' ? parseInt(b1Match[2], 10) : NaN;
-            const b1Name = (b1Match[3] || '').trim();
-            if (!isNaN(b1Min)) overallMin = Math.min(overallMin, b1Min);
-            if (!isNaN(b1Max)) {
-                allCounts.push(b1Max);
-                if (b1Max > overallMax) {
-                    overallMax = b1Max;
-                    overallTopName = b1Name;
-                }
-            }
-        }
-        const b2Match = memoText.match(/【別船2】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん)?)?(?:\n|$)/);
-        if (b2Match) {
-            const b2Min = b2Match[1] !== '' ? parseInt(b2Match[1], 10) : NaN;
-            const b2Max = b2Match[2] !== '' ? parseInt(b2Match[2], 10) : NaN;
-            const b2Name = (b2Match[3] || '').trim();
-            if (!isNaN(b2Min)) overallMin = Math.min(overallMin, b2Min);
-            if (!isNaN(b2Max)) {
-                allCounts.push(b2Max);
-                if (b2Max > overallMax) {
-                    overallMax = b2Max;
-                    overallTopName = b2Name;
-                }
-            }
-        }
+        const combined = computeCombinedCatchStats(record);
+        const overallMax = combined.overallMax;
+        const overallTopName = combined.overallTopName;
+        const overallMin = combined.overallMin;
+        const allCounts = combined.allCounts;
 
         const secondCounts = allCounts.filter(c => c < overallMax);
         const secondMax = secondCounts.length > 0 ? Math.max(...secondCounts) : null;
@@ -2148,7 +2086,7 @@ function App() {
                             </div>
                         </div>
 
-                        {/* 送信内容プレビュー（見出し横にコピーボタン・編集ボタン配置） */}
+                        {/* 送信内容プレビュー */}
                         <div className="p-3 flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800 flex flex-col">
                             <div className="flex justify-between items-center mb-1.5 gap-2 shrink-0">
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-400">
@@ -3075,6 +3013,7 @@ function App() {
                         {filteredRecords.map(r => {
                             const isExpanded = expandedRecordId === r.id;
                             const unit = getUnit(r.targetFish);
+                            const combined = computeCombinedCatchStats(r);
                             return (
                                 <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow border border-sky-200 dark:border-slate-500 overflow-hidden transition-all">
                                     <div 
@@ -3145,30 +3084,59 @@ function App() {
                                             </div>
                                         )}
 
-                                        <div className="bg-sky-50 dark:bg-slate-900/60 border border-sky-100 dark:border-slate-800 rounded-xl p-3 flex flex-wrap justify-between items-center gap-x-3 gap-y-1.5">
-                                            <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1">
-                                                <div className="flex items-baseline text-slate-800 dark:text-slate-100">
-                                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">釣果:</span>
-                                                    <span className="text-lg sm:text-xl font-black">{r.min}〜{r.max}</span>
-                                                    <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">{unit}</span>
-                                                </div>
-                                                {(r.sizeMin || r.sizeMax) && (
+                                        <div className="bg-sky-50 dark:bg-slate-900/60 border border-sky-100 dark:border-slate-800 rounded-xl p-3 space-y-2">
+                                            {/* 自船の釣果・型・竿頭 */}
+                                            <div className="flex flex-wrap justify-between items-center gap-x-3 gap-y-1.5">
+                                                <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1">
                                                     <div className="flex items-baseline text-slate-800 dark:text-slate-100">
-                                                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
-                                                        <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
-                                                        <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">釣果:</span>
+                                                        <span className="text-lg sm:text-xl font-black">{r.min}〜{r.max}</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">{unit}</span>
                                                     </div>
-                                                )}
+                                                    {(r.sizeMin || r.sizeMax) && (
+                                                        <div className="flex items-baseline text-slate-800 dark:text-slate-100">
+                                                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">型:</span>
+                                                            <span className="text-lg sm:text-xl font-black">{r.sizeMin || '?'}〜{r.sizeMax || '?'}</span>
+                                                            <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 ml-0.5">cm</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-baseline text-slate-800 dark:text-slate-100 shrink-0">
+                                                    <IconTrophy className="w-4 h-4 mr-0.5 text-amber-500 self-center" />
+                                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">竿頭:</span>
+                                                    <span className="text-base sm:text-lg font-black">
+                                                        {r.topAnglerName ? (
+                                                            <HighlightText text={r.topAnglerName} query={searchQuery} />
+                                                        ) : '-'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-baseline text-slate-800 dark:text-slate-100 shrink-0">
-                                                <IconTrophy className="w-4 h-4 mr-0.5 text-amber-500 self-center" />
-                                                <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mr-1.5">竿頭:</span>
-                                                <span className="text-base sm:text-lg font-black">
-                                                    {r.topAnglerName ? (
-                                                        <HighlightText text={r.topAnglerName} query={searchQuery} />
-                                                    ) : '-'}
-                                                </span>
-                                            </div>
+
+                                            {/* 別船の入力がある日だけ自動表示される合算釣果・全体竿頭 */}
+                                            {combined.hasOtherBoats && (
+                                                <div className="pt-2 border-t border-sky-200/80 dark:border-slate-700/80 flex flex-wrap justify-between items-center gap-x-3 gap-y-1">
+                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200">
+                                                        <span className="text-xs font-black text-sky-700 dark:text-sky-400 mr-1.5 flex items-center gap-0.5">
+                                                            <span>🚢</span>
+                                                            <span>合算釣果:</span>
+                                                        </span>
+                                                        <span className="text-base sm:text-lg font-black">
+                                                            {combined.overallMin}〜{combined.overallMax}
+                                                        </span>
+                                                        <span className="text-xs font-bold ml-0.5">{unit}</span>
+                                                    </div>
+                                                    <div className="flex items-baseline text-sky-900 dark:text-sky-200 shrink-0">
+                                                        <span className="text-xs font-black text-amber-700 dark:text-amber-400 mr-1">
+                                                            👑 全体竿頭:
+                                                        </span>
+                                                        <span className="text-sm sm:text-base font-black">
+                                                            {combined.overallTopName ? (
+                                                                <HighlightText text={combined.overallTopName} query={searchQuery} />
+                                                            ) : '-'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
