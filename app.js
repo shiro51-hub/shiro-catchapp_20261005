@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（号船指定・別船3隻・履歴合算表示版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（31・27・25・智丸選択対応 ＆ 履歴合算表示版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -53,7 +53,15 @@ const HighlightText = ({ text = '', query = '' }) => {
     );
 };
 
-// メモテキストから別船データを抽出する共通パーサー（新形式【31号船】・旧形式【別船1】両対応）
+// 船番号・船名の表示ラベル整形ヘルパー（数字なら「〇〇号船」、文字ならそのまま「智丸」など）
+const formatBoatDisplayLabel = (boatVal, fallbackIdx = 0) => {
+    const cleaned = String(boatVal || '').trim();
+    if (!cleaned) return `別船${fallbackIdx + 1}`;
+    if (/^\d+$/.test(cleaned)) return `${cleaned}号船`;
+    return cleaned;
+};
+
+// メモテキストから別船データを抽出する共通パーサー（【31号船】【智丸】【別船1】すべて対応）
 const parseOtherBoatsFromMemo = (text) => {
     const emptySlot = () => ({ boatNo: '', min: '', max: '', top: '' });
     if (!text) return [emptySlot(), emptySlot(), emptySlot()];
@@ -62,12 +70,23 @@ const parseOtherBoatsFromMemo = (text) => {
     const extracted = [];
 
     lines.forEach(line => {
-        const m = line.match(/^【(?:別船(\d+)|([^】]+?)(?:号船)?)】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん|様)?)?$/);
+        const m = line.match(/^【([^】]+?)】\s*釣果:\s*(\d*)\s*〜\s*(\d*)[^\n]*?(?:竿頭:\s*([^\n]*?)(?:さん|様)?)?$/);
         if (m) {
-            const boatLabel = m[2] ? m[2].trim() : '';
-            const minVal = m[3] || '';
-            const maxVal = m[4] || '';
-            const topVal = (m[5] || '').trim();
+            let rawHead = (m[1] || '').trim();
+            if (rawHead === 'ポイント履歴') return;
+
+            let boatLabel = '';
+            if (/^別船\d+$/.test(rawHead)) {
+                boatLabel = '';
+            } else if (/^\d+号船$/.test(rawHead)) {
+                boatLabel = rawHead.replace(/号船$/, '');
+            } else {
+                boatLabel = rawHead;
+            }
+
+            const minVal = m[2] || '';
+            const maxVal = m[3] || '';
+            const topVal = (m[4] || '').trim();
             if (boatLabel || minVal || maxVal || topVal) {
                 extracted.push({ boatNo: boatLabel, min: minVal, max: maxVal, top: topVal });
             }
@@ -106,7 +125,7 @@ const computeCombinedCatchStats = (record) => {
         const bMin = b.min !== '' ? parseInt(b.min, 10) : NaN;
         const bMax = b.max !== '' ? parseInt(b.max, 10) : NaN;
         const bName = (b.top || '').trim();
-        const boatTag = b.boatNo ? `${b.boatNo}号船` : `別船${idx + 1}`;
+        const boatTag = formatBoatDisplayLabel(b.boatNo, idx);
         const displayWithBoat = bName ? `${bName}（${boatTag}）` : boatTag;
 
         if (!isNaN(bMin) || !isNaN(bMax)) {
@@ -433,7 +452,7 @@ function ShareImageModal({ record, onClose, setToastMessage }) {
     );
 }
 
-// 船長メモモーダル（号船指定・別船1〜3入力欄 ＆ 自動入力防止 ＆ 複数写真対応版）
+// 船長メモモーダル（31・27・25・智丸選択対応 ＆ 自動入力防止 ＆ 複数写真対応版）
 function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempMemo, onAutoSave, targetFish }) {
     if (!showMemoModal) return null;
 
@@ -480,7 +499,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         let baseText = (tempMemo || '')
             .split('\n')
             .filter(line => {
-                if (/^【(?:別船\d+|[^】]+?号船)】\s*釣果:/.test(line)) return false;
+                if (/^【[^】]+?】\s*釣果:/.test(line)) return false;
                 if (/^【ポイント履歴】/.test(line)) return false;
                 return true;
             })
@@ -490,7 +509,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
         let headerLines = [];
         newBoatsList.forEach((b, idx) => {
             if (b.boatNo !== '' || b.min !== '' || b.max !== '' || b.top !== '') {
-                const label = b.boatNo ? `【${b.boatNo}号船】` : `【別船${idx + 1}】`;
+                const label = `【${formatBoatDisplayLabel(b.boatNo, idx)}】`;
                 headerLines.push(`${label} 釣果: ${b.min}〜${b.max} 竿頭: ${b.top}`);
             }
         });
@@ -510,7 +529,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
     const handleBoatFieldChange = (idx, field, val) => {
         let cleanedVal = val;
         if (field === 'boatNo') {
-            cleanedVal = String(val).replace(/[^0-9]/g, '').slice(0, 3);
+            cleanedVal = String(val).replace(/[【】]/g, '').slice(0, 6);
         } else if (field === 'min' || field === 'max') {
             cleanedVal = String(val).replace(/[^0-9]/g, '').slice(0, 3);
         }
@@ -776,28 +795,31 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                         <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="p-2.5 sm:p-3 border-t border-sky-200 dark:border-slate-700 space-y-2 bg-white dark:bg-slate-800 animate-[fadeIn_0.15s_ease-out]">
                             <datalist id="companion-boat-numbers">
                                 <option value="31" />
-                                <option value="25" />
                                 <option value="27" />
+                                <option value="25" />
+                                <option value="智丸" />
                             </datalist>
 
                             {visibleIndices.map(idx => {
                                 const b = boatsList[idx];
+                                const isNumericBoat = b.boatNo !== '' && /^\d+$/.test(b.boatNo.trim());
                                 return (
                                     <div key={`boat-row-${idx}`} className="flex items-center gap-1.5 text-xs">
-                                        {/* 号船番号入力（31, 25, 27候補＋手入力） */}
+                                        {/* 船番号・船名入力（31, 27, 25, 智丸候補＋手入力） */}
                                         <div className="flex items-center gap-0.5 shrink-0">
                                             <input
                                                 type="text"
-                                                inputMode="numeric"
                                                 list="companion-boat-numbers"
                                                 autoComplete="new-password"
                                                 name={`companion_boat_no_${idx}_${Date.now()}`}
-                                                placeholder="--"
+                                                placeholder="船"
                                                 value={b.boatNo}
                                                 onChange={(e) => handleBoatFieldChange(idx, 'boatNo', e.target.value)}
-                                                className="w-10 px-1 py-1 text-center font-black border border-sky-300 dark:border-slate-600 rounded-lg bg-sky-50/70 dark:bg-slate-900 text-sky-900 dark:text-sky-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                                                className="w-12 px-1 py-1 text-center font-black border border-sky-300 dark:border-slate-600 rounded-lg bg-sky-50/70 dark:bg-slate-900 text-sky-900 dark:text-sky-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
                                             />
-                                            <span className="font-black text-slate-700 dark:text-slate-200 shrink-0">号船</span>
+                                            {isNumericBoat && (
+                                                <span className="font-black text-slate-700 dark:text-slate-200 shrink-0">号船</span>
+                                            )}
                                         </div>
 
                                         {/* 釣果（3桁スリム枠 ＋ 釣り物に応じた1文字単位） */}
@@ -1523,7 +1545,7 @@ function App() {
 ■ 絶対厳守のルール
 ・文体：「です・ます調」で統一する。簡潔な「〜です」「〜でした」という表現にする（「〜ですね」「〜ですよ」などの甘い語尾、丁寧すぎる表現禁止、「だぜ」「だな」などの友達や後輩にしゃべるような表現は禁止）。
 ・個別船の言及・比較の禁止：
-  複数隻が出船している場合でも「当船では」「別船では」「31号船では」といった船ごとの比較・号船番号・内訳描写は一切不要です。
+  複数隻が出船している場合でも「当船では」「別船では」「31号船では」「智丸では」といった船ごとの比較・号船番号・船名・内訳描写は一切不要です。
   また、「山下丸全体で」「全隻を通じて」といった大げさな前置き表現も使用禁止とします。単に「本日のトップは〇枚」「竿頭は〇〇さん」と簡潔に記載してください。
 ・敬称のルール：竿頭などお客様のお名前を紹介する際は、かしこまりすぎた「様」ではなく、必ず「さん」付けに統一すること（例: 〇〇さん）。
 ・釣果表記のルール（最重要）：釣果を紹介する際は、「〇〜〇尾」「〇〜〇匹」といった範囲（スソからトップまで）の表記や「平均〇尾」は一切使用禁止とします。必ず本日の「トップ（上限釣果）」の数字のみを記載してください。
