@@ -3400,14 +3400,14 @@ function App() {
                                         );
                                     })()}
 
-                                    {/* 下部6ボタン（上段：左=日報作成 / 中央=AIカルテ / 右=船長メモ、ライトモード変更なし・ナイトモードブルー統一・2行高さ統一） */}
+                                    {/* 下部6ボタン（上段：左=日報作成 / 中央=AIカルテ / 右=船長メモ、ナイトモードはブルー下地・枠線＋ベージュ/アンバー文字） */}
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         <div className="grid grid-cols-3 gap-2 w-full">
                                             {/* 1. 左：日報作成 ／ 日報済 */}
                                             {generatingAiId === r.id ? (
-                                                <div className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-blue-950/70 border border-amber-300 dark:border-cyan-400/80 text-amber-800 dark:text-sky-100 select-none">
+                                                <div className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-blue-950/70 border border-amber-300 dark:border-cyan-400/80 text-amber-800 dark:text-amber-200 select-none">
                                                     <span>作成中</span>
-                                                    <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-cyan-300">↻</span>
+                                                    <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                 </div>
                                             ) : hasReportDone ? (
                                                 <button
@@ -3420,10 +3420,10 @@ function App() {
                                                         setAiGeneratedText(r.aiGeneratedText || '');
                                                         setShowAiModal(true);
                                                     }}
-                                                    className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border border-amber-300 dark:border-cyan-400/80 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
+                                                    className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-cyan-400/80 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
                                                 >
                                                     <div className="flex items-center gap-1 leading-tight">
-                                                        <IconStar className="w-3.5 h-3.5 text-amber-500 dark:text-cyan-300 shrink-0" />
+                                                        <IconStar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                                                         <span>日報済</span>
                                                     </div>
                                                     <span className="text-[10px] font-bold text-amber-700 dark:text-cyan-300 opacity-95 leading-none mt-0.5 scale-95 whitespace-nowrap">
@@ -3472,16 +3472,16 @@ function App() {
                                                 }}
                                                 className={`min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs transition-all select-none ${
                                                     analyzingRecordId === r.id
-                                                        ? 'bg-amber-50 dark:bg-blue-950/70 text-amber-800 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80 cursor-wait'
+                                                        ? 'bg-amber-50 dark:bg-blue-950/70 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-cyan-400/80 cursor-wait'
                                                         : hasAnalysisDone
-                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80 active:scale-95'
+                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-cyan-400/80 active:scale-95'
                                                         : 'bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700 active:scale-95'
                                                 }`}
                                             >
                                                 {analyzingRecordId === r.id ? (
                                                     <div className="flex items-center gap-1">
                                                         <span>分析中</span>
-                                                        <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-cyan-300">↻</span>
+                                                        <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
                                                     </div>
                                                 ) : hasAnalysisDone ? (
                                                     <>
@@ -3507,7 +3507,7 @@ function App() {
                                                 onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
                                                 className={`min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs active:scale-95 transition-all select-none ${
                                                     hasMemoDone
-                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80'
+                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-cyan-400/80'
                                                         : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                                 }`}
                                             >
@@ -3516,7 +3516,7 @@ function App() {
                                                         <div className="flex items-center gap-1 leading-tight">
                                                             <span>📝</span>
                                                             <span>メモ済</span>
-                                                            <span className="text-amber-600 dark:text-cyan-300 font-black text-xs leading-none">✓</span>
+                                                            <span className="text-amber-600 dark:text-amber-400 font-black text-xs leading-none">✓</span>
                                                         </div>
                                                         <span className="text-[10px] font-bold text-amber-700 dark:text-cyan-300 opacity-95 leading-none mt-0.5 scale-95 max-w-full truncate px-0.5">
                                                             {memoSubText}
