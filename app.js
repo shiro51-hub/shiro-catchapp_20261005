@@ -1,5 +1,5 @@
 // ==========================================
-// app.js : メイン司令塔・画面遷移・全体レンダリング（32号船表記 ＆ 別船4隻入力対応版）
+// app.js : メイン司令塔・画面遷移・全体レンダリング（上段3ボタン並び順・ナイトモードブルー統一・2行高さ統一版）
 // ==========================================
 
 // 画像キャプチャ用のライブラリを動的に読み込む機能
@@ -168,6 +168,31 @@ const computeCombinedCatchStats = (record) => {
         hasOtherBoats,
         allCounts
     };
+};
+
+// 船長メモの2行目サマリーテキスト生成ヘルパー（別船・写真・文字数）
+const getMemoSubLabel = (memoText) => {
+    if (!memoText || !memoText.trim()) return '';
+    const boats = parseOtherBoatsFromMemo(memoText);
+    const hasBoats = boats.some(b => b.boatNo !== '' || b.min !== '' || b.max !== '' || b.top !== '');
+    const photoMatches = memoText.match(/https:\/\/lh3\.googleusercontent\.com\/d\/[a-zA-Z0-9_-]+/g) || [];
+    const photoCount = photoMatches.length;
+
+    const tags = [];
+    if (hasBoats) tags.push('別船あり');
+    if (photoCount > 0) tags.push(`写真${photoCount}枚`);
+    if (tags.length > 0) return tags.join('・');
+    return `${memoText.trim().length}文字`;
+};
+
+// AIカルテの2行目サマリーテキスト生成ヘルパー（釣況難易度の短縮表示）
+const getAnalysisSubLabel = (analysisResult) => {
+    if (!analysisResult) return '';
+    const raw = String(analysisResult.difficulty || '').trim();
+    if (!raw) return 'カルテ表示';
+    const firstChunk = raw.split(/[。、\n（(：:]/)[0].trim();
+    if (!firstChunk) return 'カルテ表示';
+    return firstChunk.length > 9 ? `${firstChunk.slice(0, 8)}…` : firstChunk;
 };
 
 // デジタル釣果ボードモーダル
@@ -810,7 +835,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                 const isNumericBoat = b.boatNo !== '' && /^\d+$/.test(b.boatNo.trim());
                                 return (
                                     <div key={`boat-row-${idx}`} className="flex items-center gap-1.5 text-xs">
-                                        {/* 船番号・船名入力（31, 27, 25, 智丸候補＋手入力） */}
                                         <div className="flex items-center gap-0.5 shrink-0">
                                             <input
                                                 type="text"
@@ -827,7 +851,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                             )}
                                         </div>
 
-                                        {/* 釣果（3桁スリム枠 ＋ 釣り物に応じた1文字単位） */}
                                         <div className="flex items-center gap-0.5 shrink-0">
                                             <input
                                                 type="text"
@@ -853,7 +876,6 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                                             <span className="text-slate-600 dark:text-slate-300 font-black shrink-0">{catchUnit}</span>
                                         </div>
 
-                                        {/* 竿頭名（自動入力防止済み・残り幅いっぱいに表示） */}
                                         <div className="flex items-center gap-1 flex-1 min-w-0">
                                             <span className="text-slate-400 font-bold shrink-0">竿頭:</span>
                                             <input
@@ -899,7 +921,7 @@ function MemoModalWithTags({ showMemoModal, setShowMemoModal, tempMemo, setTempM
                     )}
                 </div>
 
-                {/* 2. 実釣ポイントアコーディオン（タイトル横に記録あり配置・右端開閉ボタン拡大） */}
+                {/* 2. 実釣ポイントアコーディオン */}
                 <div className="mx-3 mt-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/90 dark:bg-slate-900/70 shrink-0 overflow-hidden">
                     <button
                         type="button"
@@ -1169,9 +1191,8 @@ function App() {
     const [sortOrder, setSortOrder] = React.useState('date_desc');
     const [expandedRecordId, setExpandedRecordId] = React.useState(null);
 
-    // 共有ポップアップ（モーダル）用のステート
     const [shareTargetRecord, setShareTargetRecord] = React.useState(null);
-    const [shareFormatMode, setShareFormatMode] = React.useState('simple'); // 'simple'（簡易版） or 'detail'（詳細版）
+    const [shareFormatMode, setShareFormatMode] = React.useState('simple');
     const [isEditingShareText, setIsEditingShareText] = React.useState(false);
     const [editedShareText, setEditedShareText] = React.useState('');
 
@@ -2129,7 +2150,6 @@ function App() {
                         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border-2 border-sky-400 dark:border-slate-600 w-full max-w-sm flex flex-col max-h-[88dvh] overflow-hidden" 
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* ヘッダー */}
                         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-sky-50 dark:bg-slate-900/70 shrink-0">
                             <div className="flex items-center gap-1.5">
                                 <span className="text-lg">📤</span>
@@ -2150,7 +2170,6 @@ function App() {
                             </button>
                         </div>
 
-                        {/* 簡易版 / 詳細版 切り替えタブ */}
                         <div className="p-3 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700 shrink-0">
                             <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-200/80 dark:bg-slate-950 rounded-xl">
                                 <button
@@ -2190,7 +2209,6 @@ function App() {
                             </div>
                         </div>
 
-                        {/* 送信内容プレビュー */}
                         <div className="p-3 flex-1 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800 flex flex-col">
                             <div className="flex justify-between items-center mb-1.5 gap-2 shrink-0">
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-400">
@@ -2242,7 +2260,6 @@ function App() {
                             )}
                         </div>
 
-                        {/* 送信アクションボタン */}
                         <div className="p-3 bg-gray-50 dark:bg-slate-900/70 border-t border-gray-200 dark:border-slate-700 shrink-0">
                             <div className="grid grid-cols-2 gap-2">
                                 <button 
@@ -3119,6 +3136,13 @@ function App() {
                             const isExpanded = expandedRecordId === r.id;
                             const unit = getUnit(r.targetFish);
                             const combined = computeCombinedCatchStats(r);
+                            const hasReportDone = (r.aiGeneratedPatterns?.length > 0) || Boolean(r.aiGeneratedText);
+                            const reportPatternCount = r.aiGeneratedPatterns?.length > 0 ? r.aiGeneratedPatterns.length : (r.aiGeneratedText ? 1 : 0);
+                            const hasAnalysisDone = Boolean(r.aiAnalysisResult);
+                            const analysisSubText = getAnalysisSubLabel(r.aiAnalysisResult);
+                            const hasMemoDone = Boolean(r.detailedMemo && r.detailedMemo.trim() !== '');
+                            const memoSubText = getMemoSubLabel(r.detailedMemo);
+
                             return (
                                 <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow border border-sky-200 dark:border-slate-500 overflow-hidden transition-all">
                                     <div 
@@ -3376,64 +3400,16 @@ function App() {
                                         );
                                     })()}
 
+                                    {/* 下部6ボタン（上段：左=日報作成 / 中央=AIカルテ / 右=船長メモ、ライトモード変更なし・ナイトモードブルー統一・2行高さ統一） */}
                                     <div className="p-3 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 flex flex-col gap-2">
                                         <div className="grid grid-cols-3 gap-2 w-full">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
-                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs active:scale-95 transition-all select-none ${
-                                                    r.detailedMemo && r.detailedMemo.trim() !== ''
-                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700'
-                                                        : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                                                }`}
-                                            >
-                                                <span>📝</span>
-                                                <span>{r.detailedMemo && r.detailedMemo.trim() !== '' ? 'メモ済' : '船長メモ'}</span>
-                                                {r.detailedMemo && r.detailedMemo.trim() !== '' && (
-                                                    <span className="text-amber-600 dark:text-amber-400 font-black text-xs leading-none">✓</span>
-                                                )}
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                disabled={analyzingRecordId === r.id}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (analyzingRecordId === r.id) return;
-                                                    if (r.aiAnalysisResult) {
-                                                        setCurrentAnalysis({ record: r, data: r.aiAnalysisResult });
-                                                        setShowAnalysisModal(true);
-                                                    } else {
-                                                        handleRunAiAnalysis(r);
-                                                    }
-                                                }}
-                                                className={`py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 border shadow-2xs transition-all select-none ${
-                                                    analyzingRecordId === r.id
-                                                        ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/80 cursor-wait'
-                                                        : r.aiAnalysisResult
-                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 active:scale-95'
-                                                        : 'bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700 active:scale-95'
-                                                }`}
-                                            >
-                                                {analyzingRecordId === r.id ? (
-                                                    <>
-                                                        <span>分析中</span>
-                                                        <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span>📊</span>
-                                                        <span>{r.aiAnalysisResult ? '分析済' : 'AIカルテ'}</span>
-                                                    </>
-                                                )}
-                                            </button>
-
+                                            {/* 1. 左：日報作成 ／ 日報済 */}
                                             {generatingAiId === r.id ? (
-                                                <div className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 select-none">
+                                                <div className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-50 dark:bg-blue-950/70 border border-amber-300 dark:border-cyan-400/80 text-amber-800 dark:text-sky-100 select-none">
                                                     <span>作成中</span>
-                                                    <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-amber-400">↻</span>
+                                                    <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-cyan-300">↻</span>
                                                 </div>
-                                            ) : (r.aiGeneratedPatterns?.length > 0 || r.aiGeneratedText) ? (
+                                            ) : hasReportDone ? (
                                                 <button
                                                     type="button"
                                                     title="タップで日報表示"
@@ -3444,10 +3420,15 @@ function App() {
                                                         setAiGeneratedText(r.aiGeneratedText || '');
                                                         setShowAiModal(true);
                                                     }}
-                                                    className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
+                                                    className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border border-amber-300 dark:border-cyan-400/80 shadow-2xs active:scale-95 transition-all select-none animate-[fadeIn_0.15s_ease-out]"
                                                 >
-                                                    <IconStar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                                    <span>日報済</span>
+                                                    <div className="flex items-center gap-1 leading-tight">
+                                                        <IconStar className="w-3.5 h-3.5 text-amber-500 dark:text-cyan-300 shrink-0" />
+                                                        <span>日報済</span>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-amber-700 dark:text-cyan-300 opacity-95 leading-none mt-0.5 scale-95 whitespace-nowrap">
+                                                        {reportPatternCount}パターン
+                                                    </span>
                                                 </button>
                                             ) : (
                                                 <button
@@ -3468,12 +3449,86 @@ function App() {
                                                         setAiCurrentStep(0);
                                                         setShowAiInputModal(true);
                                                     }}
-                                                    className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                    className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                                 >
                                                     <span>📄</span>
                                                     <span>日報作成</span>
                                                 </button>
                                             )}
+
+                                            {/* 2. 中央：AIカルテ ／ 分析済 */}
+                                            <button
+                                                type="button"
+                                                disabled={analyzingRecordId === r.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (analyzingRecordId === r.id) return;
+                                                    if (hasAnalysisDone) {
+                                                        setCurrentAnalysis({ record: r, data: r.aiAnalysisResult });
+                                                        setShowAnalysisModal(true);
+                                                    } else {
+                                                        handleRunAiAnalysis(r);
+                                                    }
+                                                }}
+                                                className={`min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs transition-all select-none ${
+                                                    analyzingRecordId === r.id
+                                                        ? 'bg-amber-50 dark:bg-blue-950/70 text-amber-800 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80 cursor-wait'
+                                                        : hasAnalysisDone
+                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80 active:scale-95'
+                                                        : 'bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-emerald-700 dark:text-emerald-400 border-slate-200 dark:border-slate-700 active:scale-95'
+                                                }`}
+                                            >
+                                                {analyzingRecordId === r.id ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <span>分析中</span>
+                                                        <span className="inline-block animate-spin text-sm leading-none ml-0.5 text-amber-600 dark:text-cyan-300">↻</span>
+                                                    </div>
+                                                ) : hasAnalysisDone ? (
+                                                    <>
+                                                        <div className="flex items-center gap-1 leading-tight">
+                                                            <span>📊</span>
+                                                            <span>分析済</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-amber-700 dark:text-cyan-300 opacity-95 leading-none mt-0.5 scale-95 max-w-full truncate px-0.5">
+                                                            {analysisSubText}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex items-center gap-1">
+                                                        <span>📊</span>
+                                                        <span>AIカルテ</span>
+                                                    </div>
+                                                )}
+                                            </button>
+
+                                            {/* 3. 右：船長メモ ／ メモ済 */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); openMemoModal(r); }}
+                                                className={`min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs active:scale-95 transition-all select-none ${
+                                                    hasMemoDone
+                                                        ? 'bg-amber-100/80 hover:bg-amber-200/80 dark:bg-blue-950/90 dark:hover:bg-blue-900/90 text-amber-900 dark:text-sky-100 border-amber-300 dark:border-cyan-400/80'
+                                                        : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                                                }`}
+                                            >
+                                                {hasMemoDone ? (
+                                                    <>
+                                                        <div className="flex items-center gap-1 leading-tight">
+                                                            <span>📝</span>
+                                                            <span>メモ済</span>
+                                                            <span className="text-amber-600 dark:text-cyan-300 font-black text-xs leading-none">✓</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-amber-700 dark:text-cyan-300 opacity-95 leading-none mt-0.5 scale-95 max-w-full truncate px-0.5">
+                                                            {memoSubText}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex items-center gap-1">
+                                                        <span>📝</span>
+                                                        <span>船長メモ</span>
+                                                    </div>
+                                                )}
+                                            </button>
                                         </div>
 
                                         <div className="grid grid-cols-3 gap-2 w-full pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
@@ -3485,7 +3540,7 @@ function App() {
                                                     setIsEditingShareText(false);
                                                     setShareTargetRecord(r);
                                                 }}
-                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
+                                                className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1 bg-white hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 transition-all select-none"
                                             >
                                                 <IconShare className="w-3.5 h-3.5 shrink-0" />
                                                 <span>共有</span>
@@ -3498,7 +3553,7 @@ function App() {
                                                     e.stopPropagation();
                                                     handleSaveRecordToCloud(r);
                                                 }}
-                                                className={`py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs active:scale-95 transition-all select-none ${
+                                                className={`min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black flex flex-col items-center justify-center border shadow-2xs active:scale-95 transition-all select-none ${
                                                     cloudSavingId === r.id
                                                         ? 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300 cursor-wait'
                                                         : r.cloudSavedAt
@@ -3536,7 +3591,7 @@ function App() {
                                                     e.stopPropagation();
                                                     setRecordToDelete(r);
                                                 }}
-                                                className="py-2 px-1 rounded-xl text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 shadow-2xs transition-all flex items-center justify-center gap-1 select-none active:scale-95"
+                                                className="min-h-[48px] py-1.5 px-1 rounded-xl text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 shadow-2xs transition-all flex items-center justify-center gap-1 select-none active:scale-95"
                                                 title="この日の記録を削除"
                                             >
                                                 <IconTrash className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
