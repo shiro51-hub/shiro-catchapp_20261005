@@ -2944,7 +2944,7 @@ function App() {
                 )}
 
                 {activeTab === 'history' && (
-                    <div className="space-y-3 animate-[fadeIn_0.2s_ease-out]">
+                    <div className="space-y-4 animate-[fadeIn_0.2s_ease-out]">
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <div className="relative flex-1 min-w-0">
@@ -3144,25 +3144,25 @@ function App() {
                             const memoSubText = getMemoSubLabel(r.detailedMemo);
 
                             return (
-                                <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow border border-sky-200 dark:border-slate-500 overflow-hidden transition-all">
+                                <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow-md border-2 border-sky-400 dark:border-sky-500/70 overflow-hidden transition-all">
                                     <div 
                                         className="p-4 cursor-pointer active:bg-gray-50 dark:active:bg-slate-700/50 select-none" 
                                         onClick={() => setExpandedRecordId(isExpanded ? null : r.id)}
                                     >
                                         <div className="flex justify-between items-center mb-2.5">
                                             <div className="flex items-center flex-wrap gap-2 min-w-0 pr-2">
-                                                <span className="font-black text-base sm:text-lg text-gray-800 dark:text-slate-100 whitespace-nowrap">
-                                                    <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
-                                                </span>
-                                                {r.targetFish ? (
-                                                    <span className="text-xs sm:text-sm bg-sky-200/40 dark:bg-sky-900/40 text-sky-900 dark:text-sky-200 px-2.5 py-0.5 sm:py-1 rounded-lg font-black select-none border border-sky-300/80 dark:border-sky-700 shadow-2xs whitespace-nowrap">
-                                                        <HighlightText text={r.targetFish} query={searchQuery} />
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-2 py-0.5 rounded font-black border border-gray-200 dark:border-slate-600 whitespace-nowrap">
-                                                        釣果
-                                                    </span>
-                                                )}
+                                                <span className="font-black text-xl sm:text-2xl tracking-tight text-gray-900 dark:text-white whitespace-nowrap">
+                                               <HighlightText text={r.date} query={searchQuery} /> {getDayOfWeek(r.date)}
+                                           </span>
+                                           {r.targetFish ? (
+                                               <span className="text-sm sm:text-base bg-sky-200/70 dark:bg-sky-900/60 text-sky-950 dark:text-sky-100 px-3 py-1 rounded-lg font-black select-none border border-sky-400 dark:border-sky-600 shadow-2xs whitespace-nowrap">
+                                                   <HighlightText text={r.targetFish} query={searchQuery} />
+                                               </span>
+                                           ) : (
+                                               <span className="text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 px-2.5 py-0.5 rounded-lg font-black border border-gray-300 dark:border-slate-600 whitespace-nowrap">
+                                                   釣果
+                                               </span>
+                                           )}
                                             </div>
 
                                             <div className="shrink-0 -mr-1 -mt-1">
