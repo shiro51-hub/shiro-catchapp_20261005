@@ -550,11 +550,11 @@ const AiAnalysisModal = ({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAnalysisModal(false)}></div>
             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col h-[85vh] animate-slideUpModal overflow-hidden">
                 
-                <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-emerald-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
-                    <h2 className="text-lg sm:text-xl font-black text-emerald-800 dark:text-emerald-400 flex items-center">
-                        <IconChart className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 shrink-0" /> AI釣況・多角分析カルテ
+                <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center gap-2 bg-emerald-50 dark:bg-slate-800 rounded-t-3xl shrink-0">
+                    <h2 className="text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-400 flex items-center whitespace-nowrap">
+                        <IconChart className="w-5 h-5 mr-1.5 shrink-0" /> AI多角分析カルテ
                     </h2>
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2 shrink-0">
                         <button 
                             type="button"
                             disabled={isAnalyzing}
@@ -564,7 +564,7 @@ const AiAnalysisModal = ({
                                     handleRunAiAnalysis(currentAnalysis.record);
                                 }
                             }} 
-                            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black shadow-sm transition-all flex items-center gap-1.5 select-none ${
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-black shadow-sm transition-all flex items-center gap-1 select-none ${
                                 isAnalyzing
                                     ? 'bg-emerald-700/80 text-white cursor-wait opacity-90'
                                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95'
@@ -579,10 +579,11 @@ const AiAnalysisModal = ({
                         <button 
                             type="button"
                             onClick={() => setShowAnalysisModal(false)} 
-                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full font-bold shadow-sm text-gray-500 hover:bg-gray-100 text-base active:scale-95 transition-all"
+                            className="px-3 py-2 flex items-center justify-center gap-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 border border-slate-400 dark:border-slate-400 rounded-xl font-black shadow-sm text-slate-800 dark:text-white text-xs sm:text-sm active:scale-95 transition-all select-none whitespace-nowrap"
                             aria-label="閉じる"
                         >
-                            ✕
+                            <span>✕</span>
+                            <span>閉じる</span>
                         </button>
                     </div>
                 </div>
