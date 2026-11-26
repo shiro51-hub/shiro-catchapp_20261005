@@ -3144,7 +3144,7 @@ function App() {
                             const memoSubText = getMemoSubLabel(r.detailedMemo);
 
                             return (
-                                <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow-md border-2 border-sky-400 dark:border-sky-500/70 overflow-hidden transition-all">
+                                <div key={r.id} className="bg-sky-100/70 dark:bg-slate-800 rounded-xl shadow-md border-2 border-sky-400 dark:border-slate-400 overflow-hidden transition-all">
                                     <div 
                                         className="p-4 cursor-pointer active:bg-gray-50 dark:active:bg-slate-700/50 select-none" 
                                         onClick={() => setExpandedRecordId(isExpanded ? null : r.id)}
