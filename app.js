@@ -3615,78 +3615,82 @@ function App() {
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
-                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200 dark:bg-slate-950 border-t-2 border-sky-300 dark:border-cyan-400/80 z-50 flex h-16 items-start justify-around gap-1.5 px-2 pb-1.5 transition-transform duration-300 ease-out select-none shadow-lg ${
+                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200 dark:bg-slate-950 border-t-2 border-sky-300 dark:border-sky-600/70 z-50 flex h-16 items-start justify-around gap-1.5 px-2 pb-1.5 transition-transform duration-300 ease-out select-none shadow-lg ${
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-13 py-1 rounded-b-xl transition-all relative ${
+                    className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'input' 
-                            ? 'bg-white dark:bg-sky-900 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-cyan-400 border-x-sky-300 dark:border-x-cyan-400/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-800/90 hover:dark:bg-slate-700 text-sky-800 dark:text-slate-200 border-b border-x border-sky-200/60 dark:border-slate-500 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => setActiveTab('input')}
                 >
-                    <IconAnchor className={`w-5 h-5 mb-0.5 transition-colors ${
-                        activeTab === 'input' 
-                            ? 'text-sky-600 dark:text-cyan-300' 
-                            : 'text-sky-700/80 dark:text-slate-300'
-                    }`} />
-                    <span className={`text-sm tracking-tight ${
+                    <div className="h-5 mb-0.5 flex items-center justify-center shrink-0">
+                        <IconAnchor className={`w-5 h-5 transition-colors ${
+                            activeTab === 'input' 
+                                ? 'text-sky-600 dark:text-sky-400' 
+                                : 'text-sky-700/80 dark:text-slate-400'
+                        }`} />
+                    </div>
+                    <span className={`text-sm tracking-tight whitespace-nowrap ${
                         activeTab === 'input' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-200'
+                            : 'font-bold text-slate-700 dark:text-slate-300'
                     }`}>
                         座席表
                     </span>
                 </button>
 
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-13 py-1 rounded-b-xl transition-all relative ${
+                    className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'counter' 
-                            ? 'bg-white dark:bg-sky-900 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-cyan-400 border-x-sky-300 dark:border-x-cyan-400/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-800/90 hover:dark:bg-slate-700 text-sky-800 dark:text-slate-200 border-b border-x border-sky-200/60 dark:border-slate-500 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => {
                         if (activeTab === 'counter') setCounterMode(prev => prev === 'tap' ? 'slide' : prev === 'slide' ? 'keypad' : 'tap');
                         else setActiveTab('counter');
                     }}
                 >
-                    <div className="relative flex items-center justify-center mb-0.5">
-                        <span className={`text-[10px] font-black leading-none px-2 py-0.5 rounded-full h-4.5 flex items-center justify-center shadow-2xs transition-all tracking-widest ${
+                    <div className="h-5 mb-0.5 flex items-center justify-center shrink-0">
+                        <span className={`text-[10px] font-black leading-none px-2 py-0.5 rounded-full flex items-center justify-center shadow-2xs transition-all tracking-widest ${
                             activeTab === 'counter'
-                                ? 'bg-sky-500 dark:bg-cyan-500 text-white dark:text-slate-950 shadow-sky-500/20'
-                                : 'bg-sky-100 dark:bg-slate-700 text-sky-700 dark:text-slate-200 border border-sky-300/60 dark:border-slate-500'
+                                ? 'bg-sky-500 dark:bg-sky-600 text-white shadow-sky-500/20'
+                                : 'bg-sky-100 dark:bg-slate-800 text-sky-700 dark:text-slate-300 border border-sky-300/60 dark:border-slate-600'
                         }`}>
                             {counterMode === 'tap' ? 'TAP' : counterMode === 'slide' ? 'SLIDE' : 'KEYPAD'}
                         </span>
                     </div>
-                    <span className={`text-sm tracking-tight ${
+                    <span className={`text-sm tracking-tight whitespace-nowrap ${
                         activeTab === 'counter' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-200'
+                            : 'font-bold text-slate-700 dark:text-slate-300'
                     }`}>
                         カウンター
                     </span>
                 </button>
 
                 <button
-                    className={`flex-1 flex flex-col items-center justify-center h-13 py-1 rounded-b-xl transition-all relative ${
+                    className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'history' 
-                            ? 'bg-white dark:bg-sky-900 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-cyan-400 border-x-sky-300 dark:border-x-cyan-400/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-800/90 hover:dark:bg-slate-700 text-sky-800 dark:text-slate-200 border-b border-x border-sky-200/60 dark:border-slate-500 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => setActiveTab('history')}
                 >
-                    <IconCalendar className={`w-5 h-5 mb-0.5 transition-colors ${
-                        activeTab === 'history' 
-                            ? 'text-amber-500 dark:text-amber-300' 
-                            : 'text-amber-600/80 dark:text-amber-400/90'
-                    }`} />
-                    <span className={`text-sm tracking-tight ${
+                    <div className="h-5 mb-0.5 flex items-center justify-center shrink-0">
+                        <IconCalendar className={`w-5 h-5 transition-colors ${
+                            activeTab === 'history' 
+                                ? 'text-amber-500 dark:text-amber-400' 
+                                : 'text-amber-600/80 dark:text-amber-400/75'
+                        }`} />
+                    </div>
+                    <span className={`text-sm tracking-tight whitespace-nowrap ${
                         activeTab === 'history' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-200'
+                            : 'font-bold text-slate-700 dark:text-slate-300'
                     }`}>
                         釣果・履歴
                     </span>
@@ -3695,7 +3699,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
-                    className="w-9 h-12 mt-1 flex items-center justify-center rounded-xl bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-800/90 dark:hover:bg-slate-700 border border-sky-300/60 dark:border-slate-500 text-sky-900 dark:text-slate-200 active:scale-90 transition-all shrink-0"
+                    className="w-9 h-12 mt-1 flex items-center justify-center rounded-xl bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-sky-300/60 dark:border-slate-600/80 text-sky-900 dark:text-slate-300 active:scale-90 transition-all shrink-0"
                     title="ナビバーを隠す"
                 >
                     <span className="text-lg leading-none font-black">⌵</span>
@@ -3715,7 +3719,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(true)}
-                    className="fixed bottom-3 right-3 z-40 bg-sky-200 hover:bg-sky-300 text-sky-900 dark:bg-sky-900 dark:hover:bg-sky-800 dark:text-white rounded-full w-11 h-11 flex flex-col items-center justify-center shadow-lg shadow-black/50 backdrop-blur-xs border-2 border-sky-400/80 dark:border-cyan-400 active:scale-95 transition-all animate-[fadeIn_0.2s_ease-out]"
+                    className="fixed bottom-3 right-3 z-40 bg-sky-200 hover:bg-sky-300 text-sky-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white rounded-full w-11 h-11 flex flex-col items-center justify-center shadow-lg shadow-black/50 backdrop-blur-xs border-2 border-sky-400/80 dark:border-sky-500/80 active:scale-95 transition-all animate-[fadeIn_0.2s_ease-out]"
                     title="ナビバーを表示する"
                 >
                     <span className="text-base font-black leading-none -mt-0.5">⌃</span>
