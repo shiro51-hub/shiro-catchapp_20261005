@@ -3615,27 +3615,27 @@ function App() {
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
-                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-sky-300 dark:border-slate-800 z-50 flex h-16 items-center justify-around px-2 transition-transform duration-300 ease-out select-none shadow-sm ${
+                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200/95 dark:bg-slate-950/95 backdrop-blur-md border-t-2 border-sky-300 dark:border-slate-700 z-50 flex h-16 items-center justify-around gap-1.5 px-2 transition-transform duration-300 ease-out select-none shadow-lg ${
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'input' 
-                            ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
-                            : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
+                            ? 'bg-white dark:bg-sky-900 shadow-md border-2 border-sky-400 dark:border-cyan-400' 
+                            : 'bg-sky-100/60 hover:bg-white/60 dark:bg-slate-800/90 hover:dark:bg-slate-700 border border-sky-300/60 dark:border-slate-500 active:scale-95'
                     }`}
                     onClick={() => setActiveTab('input')}
                 >
                     <IconAnchor className={`w-5 h-5 mb-0.5 transition-colors ${
                         activeTab === 'input' 
-                            ? 'text-sky-600 dark:text-sky-400' 
-                            : 'text-sky-700/70 dark:text-sky-400/60'
+                            ? 'text-sky-600 dark:text-cyan-300' 
+                            : 'text-sky-700/80 dark:text-slate-300'
                     }`} />
                     <span className={`text-sm tracking-tight ${
                         activeTab === 'input' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-300'
+                            : 'font-bold text-slate-700 dark:text-slate-200'
                     }`}>
                         座席表
                     </span>
@@ -3644,8 +3644,8 @@ function App() {
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all relative ${
                         activeTab === 'counter' 
-                            ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
-                            : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
+                            ? 'bg-white dark:bg-sky-900 shadow-md border-2 border-sky-400 dark:border-cyan-400' 
+                            : 'bg-sky-100/60 hover:bg-white/60 dark:bg-slate-800/90 hover:dark:bg-slate-700 border border-sky-300/60 dark:border-slate-500 active:scale-95'
                     }`}
                     onClick={() => {
                         if (activeTab === 'counter') setCounterMode(prev => prev === 'tap' ? 'slide' : prev === 'slide' ? 'keypad' : 'tap');
@@ -3655,8 +3655,8 @@ function App() {
                     <div className="relative flex items-center justify-center mb-0.5">
                         <span className={`text-[10px] font-black leading-none px-2 py-0.5 rounded-full h-4.5 flex items-center justify-center shadow-2xs transition-all tracking-widest ${
                             activeTab === 'counter'
-                                ? 'bg-sky-500 text-white shadow-sky-500/20'
-                                : 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60 dark:border-sky-800'
+                                ? 'bg-sky-500 dark:bg-cyan-500 text-white dark:text-slate-950 shadow-sky-500/20'
+                                : 'bg-sky-100 dark:bg-slate-700 text-sky-700 dark:text-slate-200 border border-sky-300/60 dark:border-slate-500'
                         }`}>
                             {counterMode === 'tap' ? 'TAP' : counterMode === 'slide' ? 'SLIDE' : 'KEYPAD'}
                         </span>
@@ -3664,7 +3664,7 @@ function App() {
                     <span className={`text-sm tracking-tight ${
                         activeTab === 'counter' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-300'
+                            : 'font-bold text-slate-700 dark:text-slate-200'
                     }`}>
                         カウンター
                     </span>
@@ -3673,20 +3673,20 @@ function App() {
                 <button
                     className={`flex-1 flex flex-col items-center justify-center h-12 py-1 rounded-xl transition-all ${
                         activeTab === 'history' 
-                            ? 'bg-white dark:bg-slate-800 shadow-xs border border-sky-300/80 dark:border-slate-700' 
-                            : 'hover:bg-white/40 dark:hover:bg-slate-800/40 active:scale-95'
+                            ? 'bg-white dark:bg-sky-900 shadow-md border-2 border-sky-400 dark:border-cyan-400' 
+                            : 'bg-sky-100/60 hover:bg-white/60 dark:bg-slate-800/90 hover:dark:bg-slate-700 border border-sky-300/60 dark:border-slate-500 active:scale-95'
                     }`}
                     onClick={() => setActiveTab('history')}
                 >
                     <IconCalendar className={`w-5 h-5 mb-0.5 transition-colors ${
                         activeTab === 'history' 
-                            ? 'text-amber-500 dark:text-amber-400' 
-                            : 'text-amber-600/70 dark:text-amber-400/60'
+                            ? 'text-amber-500 dark:text-amber-300' 
+                            : 'text-amber-600/80 dark:text-amber-400/90'
                     }`} />
                     <span className={`text-sm tracking-tight ${
                         activeTab === 'history' 
                             ? 'font-black text-slate-900 dark:text-white' 
-                            : 'font-bold text-slate-700 dark:text-slate-300'
+                            : 'font-bold text-slate-700 dark:text-slate-200'
                     }`}>
                         釣果・履歴
                     </span>
@@ -3695,7 +3695,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
-                    className="w-8 h-full flex items-center justify-center text-sky-900/60 hover:text-sky-950 dark:text-slate-400 dark:hover:text-slate-200 active:scale-90 transition-transform shrink-0"
+                    className="w-8 h-12 flex items-center justify-center rounded-xl text-sky-900/70 hover:text-sky-950 dark:text-slate-200 dark:hover:text-white dark:bg-slate-800/60 dark:border dark:border-slate-600 active:scale-90 transition-all shrink-0"
                     title="ナビバーを隠す"
                 >
                     <span className="text-lg leading-none font-bold">⌵</span>
