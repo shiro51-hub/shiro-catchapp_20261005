@@ -523,7 +523,7 @@ function SettingsPanel({
                     </button>
                 </div>
 
-                <div className="flex bg-sky-200 dark:bg-slate-950 px-2 pt-0.5 gap-1.5 border-b border-sky-300 dark:border-slate-800 font-black shrink-0 items-end">
+                <div className="flex bg-sky-200 dark:bg-slate-950 px-2 pt-1.5 gap-1.5 border-b-2 border-sky-300 dark:border-cyan-400/80 font-black shrink-0 items-end">
                     {[
                         { id: 'basic', label: '基本設定' },
                         { id: 'weather', label: '気象・潮時' },
@@ -537,8 +537,8 @@ function SettingsPanel({
                                 onClick={() => setActiveSettingsTab(tab.id)}
                                 className={`flex-1 py-2.5 px-2 rounded-t-xl text-sm font-black transition-all relative select-none flex items-center justify-center gap-1 ${
                                     isActive
-                                        ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border-t-2 border-x border-t-sky-600 dark:border-t-sky-400 border-x-sky-300 dark:border-x-slate-800 -mb-px z-10 shadow-sm'
-                                        : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900 hover:dark:bg-slate-855 text-sky-800 dark:text-slate-400 border-t border-x border-sky-200/60 dark:border-slate-800/80 hover:dark:text-white active:scale-[0.98]'
+                                        ? 'bg-white dark:bg-sky-900 text-sky-700 dark:text-white border-t-2 border-x-2 border-t-sky-600 dark:border-t-cyan-400 border-x-sky-300 dark:border-x-cyan-400/80 -mb-[2px] z-10 shadow-md'
+                                        : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-800/90 hover:dark:bg-slate-700 text-sky-800 dark:text-slate-200 border-t border-x border-sky-200/60 dark:border-slate-500 hover:dark:text-white active:scale-[0.98]'
                                 }`}
                             >
                                 <span>{tab.label}</span>
