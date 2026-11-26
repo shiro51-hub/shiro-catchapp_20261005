@@ -3615,22 +3615,22 @@ function App() {
             <div 
                 onTouchStart={handleSwipeStart}
                 onTouchEnd={handleSwipeEnd}
-                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200 dark:bg-slate-950 border-t-2 border-sky-300 dark:border-sky-600/70 z-50 flex h-16 items-start justify-around gap-1.5 px-2 pb-1.5 transition-transform duration-300 ease-out select-none shadow-lg ${
+                className={`fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-sky-200 dark:bg-slate-950 border-t-2 border-sky-300 dark:border-slate-500 z-50 flex h-16 items-start justify-around gap-1.5 px-2 pb-1.5 transition-transform duration-300 ease-out select-none shadow-lg ${
                     isBottomNavVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
                 }`}
             >
                 <button
                     className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'input' 
-                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-blue-950 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-slate-400 border-x-sky-300 dark:border-x-slate-400 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/80 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => setActiveTab('input')}
                 >
                     <div className="h-5 mb-0.5 flex items-center justify-center shrink-0">
                         <IconAnchor className={`w-5 h-5 transition-colors ${
                             activeTab === 'input' 
-                                ? 'text-sky-600 dark:text-sky-400' 
+                                ? 'text-sky-600 dark:text-sky-300' 
                                 : 'text-sky-700/80 dark:text-slate-400'
                         }`} />
                     </div>
@@ -3646,8 +3646,8 @@ function App() {
                 <button
                     className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'counter' 
-                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-blue-950 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-slate-400 border-x-sky-300 dark:border-x-slate-400 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/80 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => {
                         if (activeTab === 'counter') setCounterMode(prev => prev === 'tap' ? 'slide' : prev === 'slide' ? 'keypad' : 'tap');
@@ -3675,8 +3675,8 @@ function App() {
                 <button
                     className={`flex-1 basis-0 min-w-0 flex flex-col items-center justify-center h-14 py-1 rounded-b-xl transition-all relative ${
                         activeTab === 'history' 
-                            ? 'bg-white dark:bg-slate-800 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-sky-500 border-x-sky-300 dark:border-x-sky-500/80 -mt-[2px] z-10 shadow-md' 
-                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/70 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600/80 mt-0.5 active:scale-[0.98]'
+                            ? 'bg-white dark:bg-blue-950 text-sky-700 dark:text-white border-b-2 border-x-2 border-b-sky-600 dark:border-b-slate-400 border-x-sky-300 dark:border-x-slate-400 -mt-[2px] z-10 shadow-md' 
+                            : 'bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 hover:dark:bg-slate-800/80 text-sky-800 dark:text-slate-300 border-b border-x border-sky-200/60 dark:border-slate-600 mt-0.5 active:scale-[0.98]'
                     }`}
                     onClick={() => setActiveTab('history')}
                 >
@@ -3699,7 +3699,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(false)}
-                    className="w-9 h-12 mt-1 flex items-center justify-center rounded-xl bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-sky-300/60 dark:border-slate-600/80 text-sky-900 dark:text-slate-300 active:scale-90 transition-all shrink-0"
+                    className="w-9 h-12 mt-1 flex items-center justify-center rounded-xl bg-sky-100/85 hover:bg-sky-100 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-sky-300/60 dark:border-slate-500 text-sky-900 dark:text-slate-200 active:scale-90 transition-all shrink-0"
                     title="ナビバーを隠す"
                 >
                     <span className="text-lg leading-none font-black">⌵</span>
@@ -3719,7 +3719,7 @@ function App() {
                 <button
                     type="button"
                     onClick={() => setIsBottomNavVisible(true)}
-                    className="fixed bottom-3 right-3 z-40 bg-sky-200 hover:bg-sky-300 text-sky-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white rounded-full w-11 h-11 flex flex-col items-center justify-center shadow-lg shadow-black/50 backdrop-blur-xs border-2 border-sky-400/80 dark:border-sky-500/80 active:scale-95 transition-all animate-[fadeIn_0.2s_ease-out]"
+                    className="fixed bottom-3 right-3 z-40 bg-sky-200 hover:bg-sky-300 text-sky-900 dark:bg-blue-950 dark:hover:bg-blue-900 dark:text-white rounded-full w-11 h-11 flex flex-col items-center justify-center shadow-lg shadow-black/50 backdrop-blur-xs border-2 border-sky-400/80 dark:border-slate-400 active:scale-95 transition-all animate-[fadeIn_0.2s_ease-out]"
                     title="ナビバーを表示する"
                 >
                     <span className="text-base font-black leading-none -mt-0.5">⌃</span>
