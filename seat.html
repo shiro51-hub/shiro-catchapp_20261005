@@ -278,6 +278,7 @@
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
         <button type="button" id="btnBackWizard" class="primary" style="padding:13px;">🚢 船・人数を選び直す（配船画面へ）</button>
         <button type="button" id="btnResetSeats" class="danger" style="padding:13px;">座席の配置だけ全て空に戻す</button>
+        <button type="button" id="btnResetAllData" class="danger" style="padding:13px; background:#7f1d1d;">🗑 予約と座席をすべて初期化（新営業日）</button>
       </div>
     </div>
   </div>
@@ -340,7 +341,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_v5";
+    const STORE_KEY = "yamashitamaru_seat_v6";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
@@ -348,7 +349,16 @@
     let touchStartY = 0;
     let uidCounter = 1;
 
+    function getTodayStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
     let state = {
+      savedDate: getTodayStr(),
       configured: false,
       autoLockEnabled: false,
       sortByCount: true,
@@ -364,20 +374,49 @@
       return `${prefix}_${Date.now()}_${uidCounter}_${Math.random().toString(36).slice(2, 7)}`;
     }
 
+    function normalizeGuests(list) {
+      const seen = new Set();
+      return (list || []).map(g => {
+        let id = String(g.id || "");
+        if (!id || seen.has(id)) id = makeUniqueId("g");
+        seen.add(id);
+        return {
+          id,
+          name: String(g.name || "").trim(),
+          count: Math.min(13, Math.max(1, parseInt(g.count, 10) || 1)),
+          note: String(g.note || "").trim()
+        };
+      });
+    }
+
     function init() {
+      const today = getTodayStr();
       const saved = localStorage.getItem(STORE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          state = { ...state, ...parsed };
-          // 既存データのID重複があれば一意に振り直す
-          const seen = new Set();
-          state.guests.forEach(g => {
-            if (!g.id || seen.has(g.id)) {
-              g.id = makeUniqueId("fix");
+          const hasData = (parsed.guests && parsed.guests.length > 0) || (parsed.boats && parsed.boats.length > 0 && parsed.configured);
+          if (parsed.savedDate && parsed.savedDate !== today && hasData) {
+            const parts = parsed.savedDate.split("-");
+            const label = parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : parsed.savedDate;
+            const doReset = confirm(`📅 前日（${label}）のデータが残っています。\nリセットして新しく始めますか？\n\n・OK：すべて消去して新しく始める\n・キャンセル：前日のデータをそのまま使う`);
+            if (doReset) {
+              state.savedDate = today;
+              state.configured = false;
+              state.boats = [];
+              state.guests = [];
+              state.selId = null;
+              state.autoLockEnabled = !!parsed.autoLockEnabled;
+              save();
+            } else {
+              state = { ...state, ...parsed, savedDate: today };
+              state.guests = normalizeGuests(state.guests);
+              save();
             }
-            seen.add(g.id);
-          });
+          } else {
+            state = { ...state, ...parsed, savedDate: today };
+            state.guests = normalizeGuests(state.guests);
+          }
         } catch (e) {}
       }
       document.getElementById("apiKeyInput").value = localStorage.getItem("gemini_api_key") || "";
@@ -415,7 +454,6 @@
       });
       document.getElementById("btnClearSelDock").addEventListener("click", clearSel);
 
-      // スワイプ開閉
       const dock = document.getElementById("bottomDock");
       dock.addEventListener("touchstart", e => {
         touchStartY = e.touches[0].clientY;
@@ -428,7 +466,6 @@
         }
       }, { passive: true });
 
-      // 予約リスト内のクリック委譲（名前選択・修正ボタン）
       document.getElementById("guestList").addEventListener("click", (e) => {
         const editBtn = e.target.closest("[data-edit-id]");
         if (editBtn) {
@@ -438,53 +475,46 @@
         }
         const row = e.target.closest("[data-guest-id]");
         if (row) {
-          const gid = row.getAttribute("data-guest-id");
-          selGuest(gid);
+          selGuest(row.getAttribute("data-guest-id"));
         }
       });
 
-      // メイン画面のクリック委譲（座席タップ・船切替・定員変更・ウィザード操作）
       document.getElementById("main").addEventListener("click", (e) => {
-        // 1. 座席タップ（最優先）
         const seatEl = e.target.closest("[data-seat-bidx]");
         if (seatEl) {
-          const bIdx = parseInt(seatEl.getAttribute("data-seat-bidx"), 10);
+          const bIdx = Number(seatEl.getAttribute("data-seat-bidx"));
           const sk = seatEl.getAttribute("data-seat-sk");
-          const idx = parseInt(seatEl.getAttribute("data-seat-idx"), 10);
+          const idx = Number(seatEl.getAttribute("data-seat-idx"));
           clickSeat(bIdx, sk, idx);
           return;
         }
-        // 2. 選択解除ボタン
         if (e.target.closest("[data-clear-sel]")) {
           clearSel();
           return;
         }
-        // 3. 確定バナーの自動確定ボタン
         if (e.target.closest("[data-auto-lock-exec]")) {
           autoAssign(true);
           return;
         }
-        // 4. 船詳細へ切替
         const viewEl = e.target.closest("[data-set-view]");
         if (viewEl) {
           setView(viewEl.getAttribute("data-set-view"));
           return;
         }
-        // 5. 定員変更・左右入替
         const capBtn = e.target.closest("[data-cap-bidx]");
         if (capBtn) {
-          const bi = parseInt(capBtn.getAttribute("data-cap-bidx"), 10);
-          const side = capBtn.getAttribute("data-cap-side");
-          const delta = parseInt(capBtn.getAttribute("data-cap-delta"), 10);
-          changeCap(bi, side, delta);
+          changeCap(
+            Number(capBtn.getAttribute("data-cap-bidx")),
+            capBtn.getAttribute("data-cap-side"),
+            Number(capBtn.getAttribute("data-cap-delta"))
+          );
           return;
         }
         const swapBtn = e.target.closest("[data-swap-bidx]");
         if (swapBtn) {
-          swapCaps(parseInt(swapBtn.getAttribute("data-swap-bidx"), 10));
+          swapCaps(Number(swapBtn.getAttribute("data-swap-bidx")));
           return;
         }
-        // 6. 初期配船ウィザード操作
         const pickBoat = e.target.closest("[data-pick-boat]");
         if (pickBoat) {
           toggleDraftBoat(pickBoat.getAttribute("data-pick-boat"));
@@ -493,9 +523,9 @@
         const dCapBtn = e.target.closest("[data-dcap-idx]");
         if (dCapBtn) {
           changeDraftCap(
-            parseInt(dCapBtn.getAttribute("data-dcap-idx"), 10),
+            Number(dCapBtn.getAttribute("data-dcap-idx")),
             dCapBtn.getAttribute("data-dcap-side"),
-            parseInt(dCapBtn.getAttribute("data-dcap-delta"), 10)
+            Number(dCapBtn.getAttribute("data-dcap-delta"))
           );
           return;
         }
@@ -505,18 +535,15 @@
         }
       });
 
-      // タブバーのクリック委譲
       document.getElementById("boatTabs").addEventListener("click", (e) => {
         const tab = e.target.closest("[data-tab-view]");
         if (tab) setView(tab.getAttribute("data-tab-view"));
       });
 
-      // モーダル閉じるボタン一括
       document.querySelectorAll("[data-close]").forEach(btn => {
         btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
       });
 
-      // 設定モーダル内
       document.getElementById("autoLockRow").addEventListener("click", () => {
         state.autoLockEnabled = !state.autoLockEnabled;
         save(); updateAutoLockBtn();
@@ -532,8 +559,8 @@
       });
       document.getElementById("btnBackWizard").addEventListener("click", backToWizard);
       document.getElementById("btnResetSeats").addEventListener("click", resetSeatsOnly);
+      document.getElementById("btnResetAllData").addEventListener("click", resetAllNewDay);
 
-      // OCR・追加・編集・出力ボタン
       document.getElementById("ocrBtn").addEventListener("click", runOcr);
       document.getElementById("btnSubmitAdd").addEventListener("click", addGuest);
       document.getElementById("btnEditMinus").addEventListener("click", () => stepEdit(-1));
@@ -544,7 +571,11 @@
       document.getElementById("btnSaveExp").addEventListener("click", saveExp);
     }
 
-    function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    function save() {
+      state.savedDate = getTodayStr();
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
     function toast(msg) {
       const t = document.getElementById("toast");
       t.textContent = msg; t.style.display = "block";
@@ -585,19 +616,23 @@
 
     function changeDraftCap(idx, side, d) {
       const key = side === "left" ? "leftCap" : "rightCap";
-      draftBoats[idx][key] = Math.min(13, Math.max(1, draftBoats[idx][key] + d));
+      draftBoats[idx][key] = Math.min(13, Math.max(1, Number(draftBoats[idx][key]) + d));
       render();
     }
 
     function startWithDraft() {
       if (draftBoats.length === 0) { toast("出船する船を1隻以上選んでください"); return; }
-      state.boats = draftBoats.map(b => ({
-        name: b.name,
-        leftCap: b.leftCap,
-        rightCap: b.rightCap,
-        leftSeats: Array(b.leftCap).fill(null),
-        rightSeats: Array(b.rightCap).fill(null)
-      }));
+      state.boats = draftBoats.map(b => {
+        const lc = Number(b.leftCap) || 10;
+        const rc = Number(b.rightCap) || 10;
+        return {
+          name: b.name,
+          leftCap: lc,
+          rightCap: rc,
+          leftSeats: Array(lc).fill(null),
+          rightSeats: Array(rc).fill(null)
+        };
+      });
       state.configured = true;
       state.view = "overview";
       save(); render();
@@ -606,12 +641,25 @@
 
     function backToWizard() {
       if (state.boats.length > 0) {
-        draftBoats = state.boats.map(b => ({ name: b.name, leftCap: b.leftCap, rightCap: b.rightCap }));
+        draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
       }
       state.configured = false;
       setDrawerOpen(false);
       closeModal("setupModal");
       save(); render();
+    }
+
+    function resetAllNewDay() {
+      if (!confirm("予約一覧と座席をすべて消去して、新しい日の配船画面に戻りますか？")) return;
+      state.configured = false;
+      state.boats = [];
+      state.guests = [];
+      state.selId = null;
+      state.holdMode = false;
+      setDrawerOpen(false);
+      closeModal("setupModal");
+      save(); render();
+      toast("新しい営業日用に初期化しました");
     }
 
     function canFitAll(boatsSnap, unplaced) {
@@ -622,11 +670,13 @@
         b[sk].forEach(c => { if (c === null) r++; else { if (r > 0) blocks.push(r); r = 0; } });
         if (r > 0) blocks.push(r);
       }));
-      if (blocks.reduce((a, b) => a + b, 0) < unplaced.reduce((a, g) => a + g.count, 0)) return false;
-      const sorted = [...unplaced].sort((a, b) => b.count - a.count);
+      const totalEmpty = blocks.reduce((a, b) => a + b, 0);
+      const totalNeed = unplaced.reduce((a, g) => a + Number(g.count), 0);
+      if (totalEmpty < totalNeed) return false;
+      const sorted = [...unplaced].sort((a, b) => Number(b.count) - Number(a.count));
       function bt(i, rem) {
         if (i === sorted.length) return true;
-        const need = sorted[i].count, tried = new Set();
+        const need = Number(sorted[i].count), tried = new Set();
         for (let k = 0; k < rem.length; k++) {
           if (rem[k] >= need && !tried.has(rem[k])) {
             tried.add(rem[k]);
@@ -640,31 +690,44 @@
     }
 
     function evalPlace(bIdx, sk, start, guest) {
-      const arr = state.boats[bIdx][sk];
-      if (start + guest.count > arr.length) return { valid: false };
-      for (let i = start; i < start + guest.count; i++) {
-        if (arr[i] && arr[i].type === "ASSIGNED" && arr[i].guestId !== guest.id) return { valid: false };
+      const b = state.boats[bIdx];
+      if (!b || !b[sk]) return { valid: false };
+      const arr = b[sk];
+      const st = Number(start);
+      const cnt = Number(guest.count) || 1;
+      if (st < 0 || st + cnt > arr.length) return { valid: false };
+      for (let i = st; i < st + cnt; i++) {
+        if (arr[i] && arr[i].type === "ASSIGNED" && String(arr[i].guestId) !== String(guest.id)) {
+          return { valid: false };
+        }
       }
       const clone = JSON.parse(JSON.stringify(state.boats));
-      clone.forEach(b => ["leftSeats", "rightSeats"].forEach(s => b[s] = b[s].map(c => (c && c.guestId === guest.id) ? null : c)));
-      for (let i = start; i < start + guest.count; i++) clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: guest.id };
+      clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
+        boat[s] = boat[s].map(c => (c && String(c.guestId) === String(guest.id)) ? null : c);
+      }));
+      for (let i = st; i < st + cnt; i++) {
+        clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
+      }
       const placed = new Set();
-      clone.forEach(b => ["leftSeats", "rightSeats"].forEach(s => b[s].forEach(c => { if (c && c.type === "ASSIGNED") placed.add(c.guestId); })));
-      return { valid: true, fits: canFitAll(clone, state.guests.filter(g => !placed.has(g.id))) };
+      clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
+        boat[s].forEach(c => { if (c && c.type === "ASSIGNED") placed.add(String(c.guestId)); });
+      }));
+      return { valid: true, fits: canFitAll(clone, state.guests.filter(g => !placed.has(String(g.id)))) };
     }
 
     function checkRemainingFreedom() {
       const placed = getPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(g.id));
+      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
       if (unplaced.length === 0) return { status: "DONE", count: 0 };
 
       let anyGroupHasZeroChoice = false;
       let maxChoicesForAnyGroup = 0;
 
       for (const g of unplaced) {
+        const cnt = Number(g.count) || 1;
         let gChoices = 0;
         state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
-          for (let i = 0; i <= b[sk].length - g.count; i++) {
+          for (let i = 0; i <= b[sk].length - cnt; i++) {
             const ev = evalPlace(bi, sk, i, g);
             if (ev.valid && ev.fits) gChoices++;
           }
@@ -679,30 +742,32 @@
     }
 
     function clickSeat(bIdx, sk, idx) {
-      const arr = state.boats[bIdx][sk];
-      const cur = arr[idx];
+      const boat = state.boats[bIdx];
+      if (!boat || !boat[sk]) return;
+      const arr = boat[sk];
+      const seatIdx = Number(idx);
+      const cur = arr[seatIdx];
 
-      // 1. 仮押さえモード
       if (state.holdMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
-        arr[idx] = (cur && cur.type === "HOLD") ? null : { type: "HOLD" };
+        arr[seatIdx] = (cur && cur.type === "HOLD") ? null : { type: "HOLD" };
         save(); render(); return;
       }
 
-      // 2. お客様選択中 → 座席へ配置
       if (state.selId) {
-        const g = state.guests.find(x => x.id === state.selId);
+        const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; render(); return; }
 
-        if (cur && cur.type === "ASSIGNED" && cur.guestId === g.id) {
+        if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
           removeGuest(g.id);
           save(); render();
           toast(`${g.name}様を解除しました`);
           return;
         }
 
-        let st = idx;
-        if (st + g.count > arr.length) st = Math.max(0, arr.length - g.count);
+        const cnt = Number(g.count) || 1;
+        let st = seatIdx;
+        if (st + cnt > arr.length) st = Math.max(0, arr.length - cnt);
         const ev = evalPlace(bIdx, sk, st, g);
         if (!ev.valid) {
           toast("他の確定済みのお客様と重なるため配置できません");
@@ -710,8 +775,8 @@
         }
 
         removeGuest(g.id);
-        for (let i = st; i < st + g.count; i++) {
-          arr[i] = { type: "ASSIGNED", guestId: g.id, name: g.name, count: g.count, note: g.note };
+        for (let i = st; i < st + cnt; i++) {
+          arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
         }
         state.selId = null;
 
@@ -729,22 +794,20 @@
         } else if (freedom.status === "NO_CHOICE_SPLIT") {
           toast(`⚠️ これ以上は分断なしでは選べません（自動確定で調整してください）`);
         } else {
-          toast(ev.fits ? `✅ ${g.name}様(${g.count}名)を確定` : `⚠️ ${g.name}様配置（残り分断注意）`);
+          toast(ev.fits ? `✅ ${g.name}様(${cnt}名)を確定` : `⚠️ ${g.name}様配置（残り分断注意）`);
         }
         return;
       }
 
-      // 3. 未選択状態で確定席をタップ → 移動・解除用に選択
       if (cur && cur.type === "ASSIGNED") {
-        state.selId = cur.guestId;
+        state.selId = String(cur.guestId);
         render();
         toast(`${cur.name}様を選択中（移動先タップ、または再タップで解除）`);
         return;
       }
 
-      // 4. 仮押さえ席をタップ → 解除
       if (cur && cur.type === "HOLD") {
-        arr[idx] = null;
+        arr[seatIdx] = null;
         save(); render();
         toast("仮押さえを解除しました");
         return;
@@ -754,12 +817,15 @@
     }
 
     function removeGuest(id) {
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => b[sk] = b[sk].map(c => (c && c.guestId === id) ? null : c)));
+      const targetId = String(id);
+      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+        b[sk] = b[sk].map(c => (c && String(c.guestId) === targetId) ? null : c);
+      }));
     }
 
     function autoAssign(showFeedback = true) {
       const placed = getPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(g.id)).sort((a, b) => b.count - a.count);
+      const unplaced = state.guests.filter(g => !placed.has(String(g.id))).sort((a, b) => Number(b.count) - Number(a.count));
       if (unplaced.length === 0) { if (showFeedback) toast("全員すでに確定済みです"); return; }
       const runs = () => {
         const r = [];
@@ -775,17 +841,18 @@
       };
       let splits = 0;
       for (const g of unplaced) {
-        const fit = runs().filter(r => r.len >= g.count).sort((a, b) => a.len - b.len);
+        const cnt = Number(g.count) || 1;
+        const fit = runs().filter(r => r.len >= cnt).sort((a, b) => a.len - b.len);
         if (fit.length > 0) {
           const t = fit[0], arr = state.boats[t.bIdx][t.sk];
-          for (let i = t.st; i < t.st + g.count; i++) arr[i] = { type: "ASSIGNED", guestId: g.id, name: g.name, count: g.count, note: g.note };
+          for (let i = t.st; i < t.st + cnt; i++) arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
         } else {
           splits++;
-          let rem = g.count;
+          let rem = cnt;
           for (const r of runs().sort((a, b) => b.len - a.len)) {
             if (rem <= 0) break;
             const take = Math.min(r.len, rem), arr = state.boats[r.bIdx][r.sk];
-            for (let i = r.st; i < r.st + take; i++) arr[i] = { type: "ASSIGNED", guestId: g.id, name: `${g.name}(分)`, count: g.count, note: g.note };
+            for (let i = r.st; i < r.st + take; i++) arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: `${g.name}(分)`, count: cnt, note: g.note };
             rem -= take;
           }
         }
@@ -798,13 +865,15 @@
 
     function getPlacedIds() {
       const ids = new Set();
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => b[sk].forEach(c => { if (c && c.type === "ASSIGNED") ids.add(c.guestId); })));
+      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+        b[sk].forEach(c => { if (c && c.type === "ASSIGNED") ids.add(String(c.guestId)); });
+      }));
       return ids;
     }
 
     function changeCap(bIdx, side, d) {
       const b = state.boats[bIdx], k = side === "left" ? "leftCap" : "rightCap", sk = side === "left" ? "leftSeats" : "rightSeats";
-      const nxt = b[k] + d;
+      const nxt = Number(b[k]) + d;
       if (nxt < 1 || nxt > 13) return;
       b[k] = nxt;
       while (b[sk].length < nxt) b[sk].push(null);
@@ -813,8 +882,8 @@
     }
 
     function swapCaps(bIdx) {
-      const b = state.boats[bIdx], tmp = b.leftCap;
-      b.leftCap = b.rightCap; b.rightCap = tmp;
+      const b = state.boats[bIdx], tmp = Number(b.leftCap);
+      b.leftCap = Number(b.rightCap); b.rightCap = tmp;
       while (b.leftSeats.length < b.leftCap) b.leftSeats.push(null);
       b.leftSeats.length = b.leftCap;
       while (b.rightSeats.length < b.rightCap) b.rightSeats.push(null);
@@ -827,11 +896,12 @@
 
     function selGuest(id) {
       state.holdMode = false;
-      state.selId = (state.selId === id) ? null : id;
+      const targetId = String(id);
+      state.selId = (String(state.selId) === targetId) ? null : targetId;
       setDrawerOpen(false);
       render();
       if (state.selId) {
-        const g = state.guests.find(x => x.id === state.selId);
+        const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (g) toast(`👤 ${g.name}様(${g.count}名)を選択：配置する席をタップしてください`);
       }
     }
@@ -845,8 +915,8 @@
         document.body.classList.remove("has-dock");
         topBars.style.display = "none";
         dock.style.display = "none";
-        const totalCap = draftBoats.reduce((a, b) => a + b.leftCap + b.rightCap, 0);
-        const totalGuests = state.guests.reduce((a, g) => a + g.count, 0);
+        const totalCap = draftBoats.reduce((a, b) => a + Number(b.leftCap) + Number(b.rightCap), 0);
+        const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
         main.innerHTML = `
           <div class="wizard">
             <div class="w-title">🚢 本日の出船・人数を指定</div>
@@ -859,7 +929,7 @@
             </div>
             ${draftBoats.map((b, i) => `
               <div class="w-boat-row">
-                <div class="w-boat-top"><span>${b.name}</span><span style="font-size:15px;color:#38bdf8;">計 ${b.leftCap + b.rightCap}席</span></div>
+                <div class="w-boat-top"><span>${b.name}</span><span style="font-size:15px;color:#38bdf8;">計 ${Number(b.leftCap) + Number(b.rightCap)}席</span></div>
                 <div class="w-caps">
                   <div class="w-cap-box">
                     <div style="font-size:14px;color:var(--sub);">左舷</div>
@@ -903,8 +973,7 @@
       hb.className = state.holdMode ? "hold-btn on" : "hold-btn";
       hb.textContent = state.holdMode ? "🟠 仮押さえ：ON（席タップ）" : "🟠 仮押さえ：OFF";
 
-      // 選択中お客様バナー
-      const selG = state.guests.find(g => g.id === state.selId);
+      const selG = state.guests.find(g => String(g.id) === String(state.selId));
       let selBannerHtml = "";
       if (selG) {
         selBannerHtml = `
@@ -918,7 +987,6 @@
         `;
       }
 
-      // 自由選択終了バナー
       let bannerHtml = "";
       const freedom = checkRemainingFreedom();
       if (freedom.status === "LOCKED_UNIQUE") {
@@ -943,14 +1011,14 @@
         `;
       }
 
-      // ハイライト計算
       const hl = {};
       if (selG) {
+        const cnt = Number(selG.count) || 1;
         state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
-          for (let i = 0; i <= b[sk].length - selG.count; i++) {
+          for (let i = 0; i <= b[sk].length - cnt; i++) {
             const ev = evalPlace(bi, sk, i, selG);
             if (ev.valid) {
-              for (let k = i; k < i + selG.count; k++) {
+              for (let k = i; k < i + cnt; k++) {
                 const key = `${bi}-${sk}-${k}`;
                 if (!hl[key] || ev.fits) hl[key] = ev.fits ? "fit-ok" : "fit-warn";
               }
@@ -1010,12 +1078,11 @@
         `;
       }
 
-      // 引き出し式 予約表シート描画
       const placed = getPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(g.id));
-      const placedList = state.guests.filter(g => placed.has(g.id));
-      const unpCnt = unplaced.reduce((a, g) => a + g.count, 0);
-      const totCnt = state.guests.reduce((a, g) => a + g.count, 0);
+      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
+      const placedList = state.guests.filter(g => placed.has(String(g.id)));
+      const unpCnt = unplaced.reduce((a, g) => a + Number(g.count), 0);
+      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
 
       document.getElementById("dockStatus").textContent = `未配置 ${unpCnt}名(${unplaced.length}組) / 計${totCnt}名`;
       document.getElementById("sortModeBtn").textContent = state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順";
@@ -1029,12 +1096,12 @@
           const aDot = (a.note || "").includes("前日場所取") ? 1 : 0;
           const bDot = (b.note || "").includes("前日場所取") ? 1 : 0;
           if (aDot !== bDot) return bDot - aDot;
-          return b.count - a.count;
+          return Number(b.count) - Number(a.count);
         };
         const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
 
         gl.innerHTML = allSorted.map(g => {
-          const isP = placed.has(g.id), isS = state.selId === g.id;
+          const isP = placed.has(String(g.id)), isS = String(state.selId) === String(g.id);
           const hasDot = (g.note || "").includes("前日場所取");
           return `
             <div class="g-row ${isS ? 'sel' : ''} ${isP ? 'done' : ''}" data-guest-id="${g.id}">
@@ -1080,7 +1147,7 @@
 
     function addGuest() {
       const name = document.getElementById("addName").value.trim();
-      const count = parseInt(document.getElementById("addCount").value, 10) || 1;
+      const count = Math.min(13, Math.max(1, parseInt(document.getElementById("addCount").value, 10) || 1));
       const note = document.getElementById("addNote").value.trim();
       if (!name) { toast("名前を入力してください"); return; }
       state.guests.push({ id: makeUniqueId("add"), name, count, note });
@@ -1089,7 +1156,7 @@
     }
 
     function openEdit(id) {
-      const g = state.guests.find(x => x.id === id);
+      const g = state.guests.find(x => String(x.id) === String(id));
       if (!g) return;
       document.getElementById("editId").value = g.id;
       document.getElementById("editName").value = g.name;
@@ -1109,7 +1176,7 @@
       const count = Math.min(13, Math.max(1, parseInt(document.getElementById("editCount").value, 10) || 1));
       const note = document.getElementById("editNote").value.trim();
       if (!name) return;
-      const g = state.guests.find(x => x.id === id);
+      const g = state.guests.find(x => String(x.id) === String(id));
       if (!g) return;
       g.name = name; g.count = count; g.note = note;
       removeGuest(id);
@@ -1120,14 +1187,14 @@
       const id = document.getElementById("editId").value;
       if (!confirm("この予約を削除しますか？")) return;
       removeGuest(id);
-      state.guests = state.guests.filter(g => g.id !== id);
-      if (state.selId === id) state.selId = null;
+      state.guests = state.guests.filter(g => String(g.id) !== String(id));
+      if (String(state.selId) === String(id)) state.selId = null;
       save(); render(); closeModal("editModal"); toast("削除しました");
     }
 
     function resetSeatsOnly() {
       if (!confirm("全座席を空に戻しますか？")) return;
-      state.boats.forEach(b => { b.leftSeats = Array(b.leftCap).fill(null); b.rightSeats = Array(b.rightCap).fill(null); });
+      state.boats.forEach(b => { b.leftSeats = Array(Number(b.leftCap)).fill(null); b.rightSeats = Array(Number(b.rightCap)).fill(null); });
       save(); render(); closeModal("setupModal"); toast("座席をリセットしました");
     }
 
@@ -1161,7 +1228,12 @@
           if (g.hasDot) n.push("前日場所取");
           if (g.rod > 0) n.push(`竿${g.rod}`);
           if (g.kara) n.push("カラ");
-          return { id: makeUniqueId("ocr"), name: g.name, count: Number(g.count) || 1, note: n.join(" / ") };
+          return {
+            id: makeUniqueId("ocr"),
+            name: String(g.name || "").trim(),
+            count: Math.min(13, Math.max(1, parseInt(g.count, 10) || 1)),
+            note: n.join(" / ")
+          };
         });
         state.selId = null;
         save(); render();
@@ -1182,7 +1254,7 @@
       if (id === "exportModal") {
         const b32 = state.boats.find(b => b.name === "32号船");
         document.getElementById("expArea").value = b32 ? JSON.stringify({
-          date: new Date().toISOString().slice(0, 10), boat: "32号船",
+          date: getTodayStr(), boat: "32号船",
           left: b32.leftSeats.map((c, i) => ({ seatNo: i + 1, name: c && c.type === "ASSIGNED" ? c.name : "", note: c && c.type === "ASSIGNED" ? c.note : "" })),
           right: b32.rightSeats.map((c, i) => ({ seatNo: i + 1, name: c && c.type === "ASSIGNED" ? c.name : "", note: c && c.type === "ASSIGNED" ? c.note : "" }))
         }, null, 2) : "本日の配船に32号船がありません";
