@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b1120" />
+  <link rel="icon" type="image/png" href="text_logo.png" />
+  <link rel="apple-touch-icon" href="text_logo.png" />
   <title>山下丸 釣り座管理</title>
   <style>
     :root {
@@ -56,16 +58,34 @@
 
     .header-title {
       font-weight: 800;
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 0.03em;
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+    }
+
+    .header-logo {
+      height: 26px;
+      width: auto;
+      object-fit: contain;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2px 5px;
+    }
+
+    .header-sub-badge {
+      font-size: 12px;
+      font-weight: 800;
+      color: #38bdf8;
+      white-space: nowrap;
     }
 
     .header-btns {
       display: flex;
-      gap: 6px;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
     button {
@@ -73,8 +93,8 @@
       color: var(--text-main);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 13px;
+      padding: 8px 9px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -152,7 +172,7 @@
     .hold-toggle {
       flex: 1;
       padding: 10px;
-      font-size: 14px;
+      font-size: 13px;
       border-radius: 8px;
       border: 2px solid var(--border);
       background: var(--bg-input);
@@ -621,11 +641,14 @@
 <body>
 
   <header>
-    <div class="header-title">⚓ 山下丸 釣り座管理</div>
+    <div class="header-title">
+      <img src="text_logo.png" alt="山下丸" class="header-logo" onerror="this.style.display='none'" />
+      <span class="header-sub-badge">釣り座</span>
+    </div>
     <div class="header-btns">
-      <button onclick="openModal('ocrModal')">📷 予約表読込</button>
-      <button onclick="openModal('setupModal')">⚙ 配船・設定</button>
-      <button class="primary" onclick="openModal('exportModal')">📤 32号連携</button>
+      <button onclick="openModal('ocrModal')">📷 読込</button>
+      <button onclick="openModal('setupModal')">⚙ 配船</button>
+      <button class="primary" onclick="openModal('exportModal')">📤 32号</button>
     </div>
   </header>
 
@@ -1322,7 +1345,7 @@
 
       const listEl = document.getElementById("guestList");
       if (state.guests.length === 0) {
-        listEl.innerHTML = `<div style="color:var(--text-sub);font-size:12px;padding:10px;">「📷 予約表読込」または「＋ 手動追加」から予約を入れてください</div>`;
+        listEl.innerHTML = `<div style="color:var(--text-sub);font-size:12px;padding:10px;">「📷 読込」または「＋ 手動追加」から予約を入れてください</div>`;
         return;
       }
 
@@ -1355,7 +1378,6 @@
       renderAll();
     }
 
-    // 予約編集モーダル制御
     function openEditGuest(event, id) {
       event.stopPropagation();
       const guest = state.guests.find(g => g.id === id);
@@ -1392,7 +1414,6 @@
       guest.count = newCount;
       guest.note = newNote;
 
-      // すでに座席に配置済みの場合の連動更新
       let placedLoc = null;
       state.boats.forEach((b, bIdx) => {
         ["leftSeats", "rightSeats"].forEach(sk => {
@@ -1405,7 +1426,6 @@
 
       if (placedLoc) {
         if (oldCount === newCount) {
-          // 名前とメモだけ上書き
           state.boats.forEach(b => {
             ["leftSeats", "rightSeats"].forEach(sk => {
               b[sk].forEach(c => {
@@ -1417,7 +1437,6 @@
             });
           });
         } else {
-          // 人数が変わった場合は一旦外して同じ場所に入り直すかチェック
           removeGuestFromBoats(id);
           const evalRes = evaluatePlacement(placedLoc.bIdx, placedLoc.sk, placedLoc.firstIdx, guest);
           if (evalRes.valid) {
@@ -1537,7 +1556,7 @@
     async function runGeminiOcr() {
       const apiKey = localStorage.getItem("gemini_api_key");
       if (!apiKey) {
-        showToast("先に「⚙ 配船・設定」でGemini APIキーを入力してください");
+        showToast("先に「⚙ 配船」でGemini APIキーを入力してください");
         return;
       }
       const fileInput = document.getElementById("ocrFileInput");
