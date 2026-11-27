@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b1120" />
-  <link rel="icon" type="image/png" href="text_logo.png" />
-  <link rel="apple-touch-icon" href="text_logo.png" />
   <title>山下丸 釣り座管理</title>
   <style>
     :root {
@@ -27,12 +25,11 @@
 
     header {
       position: sticky; top: 0; z-index: 50; background: #070b14;
-      border-bottom: 1px solid var(--bd); padding: 8px 10px;
+      border-bottom: 1px solid var(--bd); padding: 10px 10px;
       display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    .h-title { display: flex; align-items: center; gap: 6px; font-weight: 800; }
-    .h-logo { height: 26px; width: auto; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px; }
-    .h-badge { font-size: 13px; color: #38bdf8; white-space: nowrap; }
+    .h-title { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 16px; color: #fff; }
+    .h-badge { font-size: 12px; color: #38bdf8; background: #0f172a; border: 1px solid var(--bd); padding: 2px 6px; border-radius: 6px; }
     .h-btns { display: flex; gap: 5px; }
 
     button {
@@ -43,9 +40,20 @@
     button:active { transform: scale(0.97); }
     button.primary { background: var(--blue); border-color: #3b82f6; color: #fff; }
     button.success { background: #059669; border-color: var(--green); color: #fff; }
+    button.warning { background: #d97706; border-color: var(--orange); color: #fff; }
     button.danger { background: #b91c1c; border-color: var(--red); color: #fff; }
 
     .container { padding: 10px; width: 100%; max-width: 540px; margin: 0 auto; }
+
+    /* 確定アラートバナー */
+    .lock-banner {
+      background: linear-gradient(135deg, #451a03, #78350f);
+      border: 2px solid #f59e0b; border-radius: 12px; padding: 12px;
+      margin-bottom: 10px; color: #fef3c7;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    }
+    .lock-banner-title { font-size: 15px; font-weight: 800; color: #fcd34d; margin-bottom: 4px; }
+    .lock-banner-desc { font-size: 13px; margin-bottom: 10px; line-height: 1.45; }
 
     /* 初期スタート画面（配船指定） */
     .wizard { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; padding: 14px; }
@@ -137,7 +145,8 @@
     .m-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bd); padding-bottom: 8px; margin-bottom: 12px; font-weight: 800; }
     .field { margin-bottom: 12px; }
     .field label { display: block; font-size: 12px; color: var(--sub); margin-bottom: 4px; font-weight: 700; }
-    input, textarea { width: 100%; background: var(--inp); border: 1px solid var(--bd); color: var(--tx); border-radius: 8px; padding: 10px; font-size: 16px; user-select: text; }
+    input[type="text"], input[type="password"], input[type="number"], textarea { width: 100%; background: var(--inp); border: 1px solid var(--bd); color: var(--tx); border-radius: 8px; padding: 10px; font-size: 16px; user-select: text; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--inp); border: 1px solid var(--bd); border-radius: 8px; padding: 10px; margin-bottom: 12px; }
     .toast {
       position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: 200;
       background: #1e293b; border: 1px solid #475569; color: #fff; padding: 10px 16px;
@@ -148,7 +157,7 @@
 <body>
   <header>
     <div class="h-title">
-      <img src="text_logo.png" alt="山下丸" class="h-logo" onerror="this.style.display='none'" />
+      <span>⚓ 山下丸</span>
       <span class="h-badge">釣り座管理</span>
     </div>
     <div class="h-btns">
@@ -162,7 +171,7 @@
     <div class="tabs" id="boatTabs"></div>
     <div class="mode-bar">
       <button id="holdModeBtn" class="hold-btn" onclick="toggleHold()">🟠 仮押さえ：OFF</button>
-      <button class="success" onclick="autoAssign()">✨ 残り自動配置</button>
+      <button class="success" onclick="autoAssign(true)">✨ 残り自動確定</button>
     </div>
   </div>
 
@@ -184,7 +193,14 @@
   <!-- 配船・API設定モーダル -->
   <div class="modal-bg" id="setupModal">
     <div class="modal">
-      <div class="m-head"><span>⚙ 配船・API設定</span><button onclick="closeModal('setupModal')">閉じる</button></div>
+      <div class="m-head"><span>⚙ 配船・動作設定</span><button onclick="closeModal('setupModal')">閉じる</button></div>
+      <div class="toggle-row" onclick="toggleAutoLockSetting()">
+        <div>
+          <div style="font-size:14px; font-weight:800;">🔒 選択肢ゼロ時の自動確定</div>
+          <div style="font-size:11px; color:var(--sub);">自由選択が不可能になったら自動で席を確定する</div>
+        </div>
+        <button id="autoLockToggleBtn" class="primary" style="min-width:64px;">OFF</button>
+      </div>
       <div class="field">
         <label>Gemini APIキー（予約表の写真解析用）</label>
         <input type="password" id="apiKeyInput" placeholder="AIzaSy..." onchange="saveKey()" />
@@ -254,13 +270,14 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_v2";
+    const STORE_KEY = "yamashitamaru_seat_v3";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
 
     let state = {
       configured: false,
+      autoLockEnabled: false,
       view: "overview",
       holdMode: false,
       selId: null,
@@ -282,7 +299,21 @@
     function toast(msg) {
       const t = document.getElementById("toast");
       t.textContent = msg; t.style.display = "block";
-      clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 2600);
+      clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
+    }
+
+    function toggleAutoLockSetting() {
+      state.autoLockEnabled = !state.autoLockEnabled;
+      save();
+      updateAutoLockBtn();
+      toast(state.autoLockEnabled ? "選択肢ゼロ時の自動確定をONにしました" : "選択肢ゼロ時はお知らせバナー表示にしました");
+    }
+
+    function updateAutoLockBtn() {
+      const btn = document.getElementById("autoLockToggleBtn");
+      if (!btn) return;
+      btn.textContent = state.autoLockEnabled ? "ON" : "OFF";
+      btn.className = state.autoLockEnabled ? "success" : "";
     }
 
     // 初期配船ウィザード操作
@@ -363,6 +394,40 @@
       return { valid: true, fits: canFitAll(clone, state.guests.filter(g => !placed.has(g.id))) };
     }
 
+    // 未配置客の「分断なし配置パターン」が残り何通りあるか検査する
+    function checkRemainingFreedom() {
+      const placed = getPlacedIds();
+      const unplaced = state.guests.filter(g => !placed.has(g.id));
+      if (unplaced.length === 0) return { status: "DONE", count: 0 };
+
+      // 各未配置グループについて「fits:true（分断なしで収まる）」配置候補位置がいくつあるかカウント
+      let totalChoices = 0;
+      let anyGroupHasZeroChoice = false;
+      let maxChoicesForAnyGroup = 0;
+
+      for (const g of unplaced) {
+        let gChoices = 0;
+        state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
+          for (let i = 0; i <= b[sk].length - g.count; i++) {
+            const ev = evalPlace(bi, sk, i, g);
+            if (ev.valid && ev.fits) gChoices++;
+          }
+        }));
+        totalChoices += gChoices;
+        if (gChoices === 0) anyGroupHasZeroChoice = true;
+        if (gChoices > maxChoicesForAnyGroup) maxChoicesForAnyGroup = gChoices;
+      }
+
+      if (anyGroupHasZeroChoice) {
+        return { status: "NO_CHOICE_SPLIT", unplacedCount: unplaced.length };
+      }
+      // すべての未配置グループにおいて「入り得る場所が1ヶ所ずつしかない（選択肢ゼロ）」状態
+      if (maxChoicesForAnyGroup <= 1) {
+        return { status: "LOCKED_UNIQUE", unplacedCount: unplaced.length };
+      }
+      return { status: "FREE", unplacedCount: unplaced.length };
+    }
+
     function clickSeat(bIdx, sk, idx) {
       const arr = state.boats[bIdx][sk], cur = arr[idx];
       if (state.holdMode) {
@@ -384,8 +449,25 @@
         for (let i = st; i < st + g.count; i++) {
           arr[i] = { type: "ASSIGNED", guestId: g.id, name: g.name, count: g.count, note: g.note };
         }
-        state.selId = null; save(); render();
-        toast(ev.fits ? `✅ ${g.name}様(${g.count}名)を確定` : `⚠️ ${g.name}様配置（残り分断注意）`);
+        state.selId = null;
+
+        // 配置直後の自由度チェック
+        const freedom = checkRemainingFreedom();
+        if (state.autoLockEnabled && (freedom.status === "LOCKED_UNIQUE" || freedom.status === "NO_CHOICE_SPLIT")) {
+          autoAssign(false);
+          save(); render();
+          toast(`🔒 選べなくなったため、残り${freedom.unplacedCount}組の席を自動確定しました！`);
+          return;
+        }
+
+        save(); render();
+        if (freedom.status === "LOCKED_UNIQUE") {
+          toast(`🔒 残り${freedom.unplacedCount}組はもう選べません（配置が1通りに確定）`);
+        } else if (freedom.status === "NO_CHOICE_SPLIT") {
+          toast(`⚠️ これ以上は分断なしでは選べません（自動確定で調整してください）`);
+        } else {
+          toast(ev.fits ? `✅ ${g.name}様(${g.count}名)を確定` : `⚠️ ${g.name}様配置（残り分断注意）`);
+        }
         return;
       }
       if (cur && cur.type === "ASSIGNED") { state.selId = cur.guestId; render(); toast(`${cur.name}様を選択中`); return; }
@@ -397,10 +479,10 @@
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => b[sk] = b[sk].map(c => (c && c.guestId === id) ? null : c)));
     }
 
-    function autoAssign() {
+    function autoAssign(showFeedback = true) {
       const placed = getPlacedIds();
       const unplaced = state.guests.filter(g => !placed.has(g.id)).sort((a, b) => b.count - a.count);
-      if (unplaced.length === 0) { toast("全員配置済みです"); return; }
+      if (unplaced.length === 0) { if (showFeedback) toast("全員すでに確定済みです"); return; }
       const runs = () => {
         const r = [];
         state.boats.forEach((b, bIdx) => ["leftSeats", "rightSeats"].forEach(sk => {
@@ -430,8 +512,10 @@
           }
         }
       }
-      save(); render();
-      toast(splits > 0 ? `⚠️ ${splits}組が分断配置になりました` : "✨ 残り全員を分断なしで配置しました");
+      if (showFeedback) {
+        save(); render();
+        toast(splits > 0 ? `⚠️ 空き不足のため${splits}組が分断確定になりました` : "✅ 残り全員の座席を自動確定しました！");
+      }
     }
 
     function getPlacedIds() {
@@ -531,6 +615,31 @@
       hb.className = state.holdMode ? "hold-btn on" : "hold-btn";
       hb.textContent = state.holdMode ? "🟠 仮押さえ：ON（席タップ）" : "🟠 仮押さえ：OFF";
 
+      // 自由選択終了（確定通知）バナーの生成
+      let bannerHtml = "";
+      const freedom = checkRemainingFreedom();
+      if (freedom.status === "LOCKED_UNIQUE") {
+        bannerHtml = `
+          <div class="lock-banner">
+            <div class="lock-banner-title">🔒 自由選択終了（残り${freedom.unplacedCount}組の席が確定しました）</div>
+            <div class="lock-banner-desc">これ以上自由に席を選ぶとグループが分断されます。残りの空き枠に全員を自動確定できます。</div>
+            <button class="warning" style="width:100%; padding:11px; font-size:14px;" onclick="autoAssign(true)">
+              ✅ 残りの${freedom.unplacedCount}組をこの配置で確定する
+            </button>
+          </div>
+        `;
+      } else if (freedom.status === "NO_CHOICE_SPLIT") {
+        bannerHtml = `
+          <div class="lock-banner" style="border-color:#ef4444; background:linear-gradient(135deg,#450a0a,#7f1d1d);">
+            <div class="lock-banner-title" style="color:#fca5a5;">⚠️ 自由選択終了（空き枠不足・自動調整が必要です）</div>
+            <div class="lock-banner-desc">これ以上お客様が自由に席を選ぶことができません。下のボタンで残りの席を確定させてください。</div>
+            <button class="danger" style="width:100%; padding:11px; font-size:14px;" onclick="autoAssign(true)">
+              ✨ 残りの${freedom.unplacedCount}組を自動確定する
+            </button>
+          </div>
+        `;
+      }
+
       // ハイライト計算
       const hl = {};
       const selG = state.guests.find(g => g.id === state.selId);
@@ -549,7 +658,7 @@
       }
 
       if (state.view === "overview") {
-        main.innerHTML = state.boats.map((b, bi) => {
+        main.innerHTML = bannerHtml + state.boats.map((b, bi) => {
           const le = b.leftSeats.filter(x => !x).length, re = b.rightSeats.filter(x => !x).length;
           return `
             <div class="ov-card" onclick="setView('${b.name}')">
@@ -572,7 +681,7 @@
         const bi = state.boats.findIndex(b => b.name === state.view);
         if (bi === -1) { state.view = "overview"; render(); return; }
         const b = state.boats[bi];
-        main.innerHTML = `
+        main.innerHTML = bannerHtml + `
           <div style="display:flex;gap:8px;align-items:center;background:var(--card);padding:8px;border-radius:10px;border:1px solid var(--bd);">
             <div style="flex:1;text-align:center;"><div style="font-size:11px;color:var(--sub);">左舷</div>
               <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:2px;">
@@ -751,6 +860,7 @@
     }
 
     function openModal(id) {
+      if (id === "setupModal") updateAutoLockBtn();
       if (id === "exportModal") {
         const b32 = state.boats.find(b => b.name === "32号船");
         document.getElementById("expArea").value = b32 ? JSON.stringify({
