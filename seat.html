@@ -26,7 +26,7 @@
     }
     body { padding-bottom: 48px; }
 
-    /* ヘッダー（2段構成＋お客さん閲覧モード切替） */
+    /* ヘッダー（2段構成＋右上メニュー開閉ボタン） */
     header {
       position: sticky; top: 0; z-index: 50; background: #070b14;
       border-bottom: 1px solid var(--bd); padding: 8px 10px 9px;
@@ -44,12 +44,12 @@
       font-size: 14px; font-weight: 800; color: #38bdf8;
       background: #0f172a; border: 1px solid var(--bd); padding: 2px 8px; border-radius: 6px;
     }
-    .view-toggle-btn {
-      padding: 6px 10px; font-size: 13px; font-weight: 800;
-      border-radius: 7px; border: 1px solid var(--bd);
-      background: #1e293b; color: #e2e8f0; flex-shrink: 0;
+    .menu-toggle-btn {
+      padding: 7px 11px; font-size: 14px; font-weight: 800;
+      border-radius: 8px; border: 1px solid #38bdf8;
+      background: #0f172a; color: #e0f2fe; flex-shrink: 0;
     }
-    .view-toggle-btn.guest-on {
+    .menu-toggle-btn.collapsed {
       background: #064e3b; border-color: #10b981; color: #6ee7b7;
     }
 
@@ -234,7 +234,7 @@
     .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); margin-right: 4px; margin-top: 2px; }
 
-    /* 予約一覧セクション（スタッフ操作時表示） */
+    /* 予約一覧セクション（メニュー展開時表示） */
     .guest-section {
       background: #070b14; border: 2px solid var(--bd); border-radius: 14px;
       padding: 12px; margin-top: 16px;
@@ -261,7 +261,7 @@
     .g-meta { font-size: 14px; color: #cbd5e1; margin-top: 4px; }
     .g-meta.dot-mark { color: #fcd34d; font-weight: 700; }
 
-    /* 予約表ビュー（忠実一括表示＋横棒＋船名表示） */
+    /* 予約表ビュー（忠実一括表示＋横棒＆号数表示） */
     .sheet-summary {
       background: var(--inp); border: 1px solid var(--bd); border-radius: 10px;
       padding: 10px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -274,7 +274,6 @@
     .sheet-idx { font-size: 13px; color: var(--sub); font-weight: 700; min-width: 24px; }
     .sheet-main { flex: 1; min-width: 0; }
     .sheet-name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    /* 座席確定済み：文字は読める状態で横棒を引く */
     .strike-name {
       position: relative; display: inline-block; color: #cbd5e1;
     }
@@ -315,9 +314,9 @@
         <span class="h-ship">山下丸</span>
         <span class="h-sub">釣り座管理</span>
       </div>
-      <button type="button" id="guestViewBtn" class="view-toggle-btn" onclick="toggleGuestView()">👁 客閲覧：OFF</button>
+      <button type="button" id="menuToggleBtn" class="menu-toggle-btn" onclick="toggleMenuCollapse()">メニュー ▲</button>
     </div>
-    <!-- 2段目ボタン：左＝読込、真ん中＝設定、右＝予約表（客閲覧ON時は非表示） -->
+    <!-- 2段目ボタン：左＝読込、真ん中＝設定、右＝予約表（メニュー収納時は非表示） -->
     <div class="h-btns" id="staffHeaderBtns">
       <button type="button" onclick="openModal('ocrModal')">📷 読込</button>
       <button type="button" onclick="openModal('setupModal')">⚙ 設定</button>
@@ -326,7 +325,7 @@
   </header>
 
   <div id="topBars" style="display:none;">
-    <!-- スタッフ操作バー（客閲覧ON時は非表示） -->
+    <!-- スタッフ操作バー（メニュー収納時は非表示） -->
     <div class="mode-bar" id="staffModeBar">
       <div class="mark-split">
         <button type="button" id="bagModeBtn" class="bag-btn" onclick="toggleMarkMode('BAG')">■ 荷物：OFF</button>
@@ -456,12 +455,12 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v5";
+    const STORE_KEY = "yamashitamaru_seat_flow_v6";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
     let uidCounter = 1;
-    let lastOcrImageDataUrl = null; // メモリ保持用
+    let lastOcrImageDataUrl = null;
 
     function getTodayStr() {
       const d = new Date();
@@ -474,11 +473,11 @@
       ocrLoaded: false,
       ocrWrittenTotal: null,
       ocrImage: null,
-      guestView: false,
+      menuCollapsed: false, // false: メニュー ▲（展開）, true: メニュー ▼（収納）
       autoLockEnabled: false,
       sortByCount: true,
       view: "overview",
-      markMode: null, // null | "BAG" | "SHOP"
+      markMode: null,
       selId: null,
       boats: [],
       guests: []
@@ -510,7 +509,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v4");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v5");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -561,7 +560,6 @@
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify(state));
       } catch (e) {
-        // 画像サイズ超過時は画像を除いて保存し、メモリ上には保持
         const copy = { ...state, ocrImage: null };
         localStorage.setItem(STORE_KEY, JSON.stringify(copy));
       }
@@ -574,15 +572,14 @@
       clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
     }
 
-    // お客さん閲覧モード切替（操作ボタン群を隠し、船タブと座席表は残す）
-    function toggleGuestView() {
-      state.guestView = !state.guestView;
-      if (state.guestView) {
+    // メニュー表示・非表示の開閉（「メニュー ▲」／「メニュー ▼」）
+    function toggleMenuCollapse() {
+      state.menuCollapsed = !state.menuCollapsed;
+      if (state.menuCollapsed) {
         state.selId = null;
         state.markMode = null;
       }
       save(); render();
-      toast(state.guestView ? "👁 お客さん閲覧モード ON（操作ボタンを非表示にしました）" : "🔧 スタッフ操作モードに戻しました");
     }
 
     function goStep(stepName) {
@@ -594,14 +591,13 @@
         }
       }
       state.step = stepName;
-      state.guestView = false;
+      state.menuCollapsed = false;
       closeModal("setupModal");
       save(); render();
     }
 
     function toggleSortOrder() { state.sortByCount = !state.sortByCount; save(); render(); }
 
-    // 荷物（■）・店取り（●）の半分幅2分割モード切替
     function toggleMarkMode(mode) {
       state.markMode = (state.markMode === mode) ? null : mode;
       if (state.markMode) state.selId = null;
@@ -627,7 +623,6 @@
       btn.className = state.autoLockEnabled ? "success" : "";
     }
 
-    // ステップ1（読取確認）
     function adjustVerifyCount(id, delta) {
       const g = state.guests.find(x => String(x.id) === String(id));
       if (!g) return;
@@ -660,7 +655,6 @@
       toast("予約人数を確定しました。出船する船と人数を指定してください");
     }
 
-    // ステップ2（配船・人数指定：未選択・未入力0からスタート）
     function toggleDraftBoat(name) {
       const idx = draftBoats.findIndex(b => b.name === name);
       if (idx >= 0) draftBoats.splice(idx, 1);
@@ -722,7 +716,7 @@
       state.ocrWrittenTotal = null;
       state.ocrImage = null;
       lastOcrImageDataUrl = null;
-      state.guestView = false;
+      state.menuCollapsed = false;
       state.boats = [];
       state.guests = [];
       state.selId = null;
@@ -733,7 +727,6 @@
       toast("新しい営業日用に初期化しました");
     }
 
-    // 荷物（BAG）・店取り（SHOP）を考慮した空き枠計算
     function canFitAll(boatsSnap, unplaced) {
       if (unplaced.length === 0) return true;
 
@@ -852,17 +845,15 @@
     }
 
     function handleSeatClick(bIdx, sk, idx) {
-      if (state.guestView) return; // お客さん閲覧時は誤操作防止
+      if (state.menuCollapsed) return;
 
       const boat = state.boats[bIdx];
       if (!boat || !boat[sk]) return;
       const seatIdx = Number(idx);
       const cur = boat[sk][seatIdx];
 
-      // 荷物（BAG）または店取り（SHOP）モード中
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
-        // 同じ種類なら解除、違う種類なら上書き切替
         if (cur && cur.type === state.markMode) {
           state.boats[bIdx][sk][seatIdx] = null;
           save(); render();
@@ -1020,7 +1011,6 @@
       return ids;
     }
 
-    // 予約表ビュー用：そのお客様が何号船に乗っているかを返す
     function getGuestAssignedBoats(guestId) {
       const targetId = String(guestId);
       const names = [];
@@ -1068,16 +1058,13 @@
       const topBars = document.getElementById("topBars");
       const main = document.getElementById("main");
       const staffHeaderBtns = document.getElementById("staffHeaderBtns");
-      const guestViewBtn = document.getElementById("guestViewBtn");
+      const menuToggleBtn = document.getElementById("menuToggleBtn");
 
-      // お客さん閲覧ボタンの表示更新
-      guestViewBtn.textContent = state.guestView ? "👁 客閲覧：ON" : "👁 客閲覧：OFF";
-      guestViewBtn.className = state.guestView ? "view-toggle-btn guest-on" : "view-toggle-btn";
-      staffHeaderBtns.style.display = state.guestView ? "none" : "grid";
+      // 右上ボタン：「メニュー ▲」／「メニュー ▼」
+      menuToggleBtn.textContent = state.menuCollapsed ? "メニュー ▼" : "メニュー ▲";
+      menuToggleBtn.className = state.menuCollapsed ? "menu-toggle-btn collapsed" : "menu-toggle-btn";
+      staffHeaderBtns.style.display = state.menuCollapsed ? "none" : "grid";
 
-      // ==========================================
-      // ステップ1：予約表の読込・確認・確定画面
-      // ==========================================
       if (state.step === "verify") {
         topBars.style.display = "none";
 
@@ -1139,9 +1126,6 @@
         return;
       }
 
-      // ==========================================
-      // ステップ2：出船する船と各船の人数指定画面
-      // ==========================================
       if (state.step === "boats") {
         topBars.style.display = "none";
         const totalCap = draftBoats.reduce((a, b) => a + (Number(b.leftCap) || 0) + (Number(b.rightCap) || 0), 0);
@@ -1225,14 +1209,10 @@
         return;
       }
 
-      // ==========================================
-      // ステップ3：座席管理メイン画面
-      // ==========================================
       topBars.style.display = "block";
 
-      // スタッフ操作バー（客閲覧ON時は隠す）
       const staffModeBar = document.getElementById("staffModeBar");
-      staffModeBar.style.display = state.guestView ? "none" : "flex";
+      staffModeBar.style.display = state.menuCollapsed ? "none" : "flex";
 
       const bagBtn = document.getElementById("bagModeBtn");
       bagBtn.className = state.markMode === "BAG" ? "bag-btn on" : "bag-btn";
@@ -1242,7 +1222,6 @@
       shopBtn.className = state.markMode === "SHOP" ? "shop-btn on" : "shop-btn";
       shopBtn.textContent = state.markMode === "SHOP" ? "● 店取り：ON（席タップ）" : "● 店取り：OFF";
 
-      // 常時表示の船タブ（全体＋出船する船）
       let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</button>`;
       state.boats.forEach(b => {
         const emp = b.leftSeats.filter(x => !x).length + b.rightSeats.filter(x => !x).length;
@@ -1250,8 +1229,7 @@
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
 
-      // 選択中お客様バナー（スタッフ操作時のみ）
-      const selG = !state.guestView ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
+      const selG = !state.menuCollapsed ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
       let selBannerHtml = "";
       if (selG) {
         selBannerHtml = `
@@ -1265,9 +1243,8 @@
         `;
       }
 
-      // アラートバナー（スタッフ操作時のみ）
       let bannerHtml = "";
-      if (!state.guestView) {
+      if (!state.menuCollapsed) {
         const freedom = checkRemainingFreedom();
         if (freedom.status === "OVER_CAPACITY") {
           bannerHtml = `
@@ -1299,7 +1276,6 @@
         }
       }
 
-      // ハイライト計算
       const hl = {};
       if (selG) {
         const cnt = Number(selG.count) || 1;
@@ -1316,7 +1292,6 @@
         }));
       }
 
-      // 座席表HTML
       let seatsSectionHtml = "";
       if (state.view === "overview") {
         seatsSectionHtml = state.boats.map((b, bi) => {
@@ -1345,7 +1320,7 @@
         const bi = state.boats.findIndex(b => b.name === state.view);
         if (bi === -1) { state.view = "overview"; render(); return; }
         const b = state.boats[bi];
-        const capEditBar = state.guestView ? "" : `
+        const capEditBar = state.menuCollapsed ? "" : `
           <div style="display:flex;gap:8px;align-items:center;background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--bd);">
             <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">左舷</div>
               <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
@@ -1375,9 +1350,8 @@
         `;
       }
 
-      // 予約一覧HTML（客閲覧ON時は隠して座席表のみ見せる）
       let guestSectionHtml = "";
-      if (!state.guestView) {
+      if (!state.menuCollapsed) {
         const placed = getPlacedIds();
         const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
         const placedList = state.guests.filter(g => placed.has(String(g.id)));
@@ -1473,7 +1447,6 @@
       return `<button type="button" class="${cls}" onclick="handleSeatClick(${bi},'${sk}',${i})"><div class="s-pos">${pos}</div>${body}</button>`;
     }
 
-    // 予約表ビュー（忠実一括表示＋席確定済みに横棒＆号数表示）
     function renderSheetModal() {
       const body = document.getElementById("sheetModalBody");
       const origBtn = document.getElementById("openOrigImgBtn");
@@ -1587,7 +1560,6 @@
       save(); render(); closeModal("setupModal"); toast("座席をリセットしました");
     }
 
-    // 元画像表示用に適度なサイズへ圧縮して保持
     function createCompressedDataUrl(file) {
       return new Promise((resolve) => {
         const reader = new FileReader();
