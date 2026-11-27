@@ -155,13 +155,16 @@
     .lock-banner-title { font-size: 17px; font-weight: 800; color: #fcd34d; margin-bottom: 5px; }
     .lock-banner-desc { font-size: 15px; margin-bottom: 10px; line-height: 1.45; }
 
-    /* 操作バー（荷物■ / 店取り● の半分幅2分割＋残り自動確定） */
+    /* 操作バー（荷物■ / 店取り● の半分幅2分割 ＋ 1つ前に戻す＆残り自動確定） */
     .mode-bar {
       display: flex; flex-direction: column; padding: 8px 10px;
       background: var(--card); border-bottom: 1px solid var(--bd); gap: 7px;
     }
     .mark-split {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;
+    }
+    .action-split {
+      display: grid; grid-template-columns: 1fr 1.45fr; gap: 8px; width: 100%;
     }
     .bag-btn {
       padding: 11px 6px; font-size: 15px; font-weight: 800;
@@ -178,6 +181,10 @@
     .shop-btn.on {
       background: var(--shop-bg); border-color: var(--shop-bd); color: var(--shop-tx);
       box-shadow: 0 0 0 1px var(--shop-bd) inset;
+    }
+    .undo-btn {
+      padding: 11px 6px; font-size: 14px; font-weight: 800;
+      background: #1e293b; border: 1px solid #64748b; color: #f8fafc;
     }
 
     /* 常時表示の船タブ（全体＋出船する船） */
@@ -331,7 +338,10 @@
         <button type="button" id="bagModeBtn" class="bag-btn" onclick="toggleMarkMode('BAG')">■ 荷物：OFF</button>
         <button type="button" id="shopModeBtn" class="shop-btn" onclick="toggleMarkMode('SHOP')">● 店取り：OFF</button>
       </div>
-      <button type="button" class="success" style="width:100%; padding:11px;" onclick="autoAssign(true)">✨ 残り自動確定</button>
+      <div class="action-split">
+        <button type="button" id="undoBtn" class="undo-btn" onclick="undoLastAction()" disabled>↩ 1つ前に戻す</button>
+        <button type="button" class="success" style="padding:11px;" onclick="autoAssign(true)">✨ 残り自動確定</button>
+      </div>
     </div>
     <!-- 常時表示の船タブ（全体＋出船する船） -->
     <div class="tabs" id="boatTabs"></div>
@@ -346,7 +356,6 @@
     <div class="modal">
       <div class="m-head"><span>⚙ 設定・配船・連携</span><button type="button" onclick="closeModal('setupModal')">閉じる</button></div>
 
-      <!-- 32号船連携エリア（設定内に配置） -->
       <div style="background:var(--inp); border:1px solid #3b82f6; border-radius:10px; padding:11px; margin-bottom:13px;">
         <div style="font-size:15px; font-weight:800; color:#93c5fd; margin-bottom:8px;">📤 32号船 釣果アプリ連携</div>
         <textarea id="expArea" rows="5" readonly style="font-family:monospace; font-size:12px;"></textarea>
@@ -455,12 +464,13 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v6";
+    const STORE_KEY = "yamashitamaru_seat_flow_v7";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
     let uidCounter = 1;
     let lastOcrImageDataUrl = null;
+    let undoStack = []; // 1つ前に戻す用の履歴スタック
 
     function getTodayStr() {
       const d = new Date();
@@ -473,7 +483,7 @@
       ocrLoaded: false,
       ocrWrittenTotal: null,
       ocrImage: null,
-      menuCollapsed: false, // false: メニュー ▲（展開）, true: メニュー ▼（収納）
+      menuCollapsed: false,
       autoLockEnabled: false,
       sortByCount: true,
       view: "overview",
@@ -482,6 +492,26 @@
       boats: [],
       guests: []
     };
+
+    function pushUndo(actionLabel) {
+      undoStack.push({
+        label: actionLabel,
+        boats: JSON.parse(JSON.stringify(state.boats))
+      });
+      if (undoStack.length > 20) undoStack.shift();
+    }
+
+    function undoLastAction() {
+      if (undoStack.length === 0) {
+        toast("これ以上戻せる操作がありません");
+        return;
+      }
+      const prev = undoStack.pop();
+      state.boats = prev.boats;
+      state.selId = null;
+      save(); render();
+      toast(`↩ 1つ前に戻しました（${prev.label}）`);
+    }
 
     function makeUniqueId(prefix) {
       uidCounter += 1;
@@ -509,7 +539,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v5");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v6");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -572,7 +602,6 @@
       clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
     }
 
-    // メニュー表示・非表示の開閉（「メニュー ▲」／「メニュー ▼」）
     function toggleMenuCollapse() {
       state.menuCollapsed = !state.menuCollapsed;
       if (state.menuCollapsed) {
@@ -703,6 +732,7 @@
         return { name: b.name, leftCap: lc, rightCap: rc, leftSeats: Array(lc).fill(null), rightSeats: Array(rc).fill(null) };
       });
 
+      undoStack = [];
       state.step = "seats";
       state.view = "overview";
       save(); render();
@@ -722,6 +752,7 @@
       state.selId = null;
       state.markMode = null;
       draftBoats = [];
+      undoStack = [];
       closeModal("setupModal");
       save(); render();
       toast("新しい営業日用に初期化しました");
@@ -851,13 +882,26 @@
       if (!boat || !boat[sk]) return;
       const seatIdx = Number(idx);
       const cur = boat[sk][seatIdx];
+      const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
 
+      // 荷物（BAG）または店取り（SHOP）モード中
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
+        // すでに同じマークが入っている席を消すときは確認ダイアログを表示
         if (cur && cur.type === state.markMode) {
+          const label = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
+          if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${label}」を解除しますか？`)) return;
+          pushUndo(`${label}の解除`);
           state.boats[bIdx][sk][seatIdx] = null;
           save(); render();
+          toast(`${label}を解除しました`);
           return;
+        }
+        // 別のマークへ上書きする場合も確認
+        if (cur && isMarkSeat(cur) && cur.type !== state.markMode) {
+          const oldLabel = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
+          const newLabel = state.markMode === "BAG" ? "■ 荷物" : "● 店取り";
+          if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${oldLabel}」を「${newLabel}」に変更しますか？`)) return;
         }
         if (!cur) {
           const placed = getPlacedIds();
@@ -869,17 +913,24 @@
             return;
           }
         }
+        const newLabel = state.markMode === "BAG" ? "■ 荷物" : "● 店取り";
+        pushUndo(`${newLabel}の入力`);
         state.boats[bIdx][sk][seatIdx] = { type: state.markMode };
         save(); render();
         return;
       }
 
+      // お客様選択中
       if (state.selId) {
         const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; render(); return; }
 
+        // 同じお客様の席をタップして解除する場合は確認ダイアログを表示
         if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
+          if (!confirm(`${g.name}様（${g.count}名）の座席確定を解除しますか？`)) return;
+          pushUndo(`${g.name}様の解除`);
           removeGuest(g.id);
+          state.selId = null;
           save(); render();
           toast(`${g.name}様を解除しました`);
           return;
@@ -900,6 +951,16 @@
           return;
         }
 
+        // 配置先に荷物・店取りが重なる場合は確認ダイアログを出す
+        let overlappingMarks = 0;
+        for (let i = st; i < st + cnt; i++) {
+          if (isMarkSeat(state.boats[bIdx][sk][i])) overlappingMarks++;
+        }
+        if (overlappingMarks > 0) {
+          if (!confirm(`この場所には「荷物」または「店取り」が${overlappingMarks}席含まれています。上書きして ${g.name}様(${cnt}名) を配置しますか？`)) return;
+        }
+
+        pushUndo(`${g.name}様の配置`);
         removeGuest(g.id);
         const targetArr = state.boats[bIdx][sk];
         for (let i = st; i < st + cnt; i++) {
@@ -916,7 +977,6 @@
         }
 
         save(); render();
-        const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
         if (freedom.status === "LOCKED_UNIQUE") {
           toast(`🔒 ${g.name}様を確定（残り${freedom.unplacedCount}組の配置も確定）`);
         } else if (freedom.status === "NO_CHOICE_SPLIT") {
@@ -927,6 +987,7 @@
         return;
       }
 
+      // 通常時（何も選択していない状態）
       if (cur && cur.type === "ASSIGNED") {
         state.selId = String(cur.guestId);
         render();
@@ -934,8 +995,11 @@
         return;
       }
 
+      // 荷物・店取りの解除時は必ず確認ダイアログを出す
       if (isMarkSeat(cur)) {
-        const label = cur.type === "BAG" ? "荷物" : "店取り";
+        const label = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
+        if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${label}」を解除しますか？`)) return;
+        pushUndo(`${label}の解除`);
         state.boats[bIdx][sk][seatIdx] = null;
         save(); render();
         toast(`${label}を解除しました`);
@@ -960,6 +1024,8 @@
       const placed = getPlacedIds();
       const unplaced = state.guests.filter(g => !placed.has(String(g.id))).sort((a, b) => Number(b.count) - Number(a.count));
       if (unplaced.length === 0) { if (showFeedback) toast("全員すでに確定済みです"); return; }
+
+      if (showFeedback) pushUndo("残り自動確定");
 
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         for (let i = 0; i < b[sk].length; i++) {
@@ -1026,6 +1092,7 @@
       const b = state.boats[bIdx], k = side === "left" ? "leftCap" : "rightCap", sk = side === "left" ? "leftSeats" : "rightSeats";
       const nxt = Number(b[k]) + d;
       if (nxt < 1 || nxt > 15) return;
+      pushUndo(`${b.name}の人数変更`);
       b[k] = nxt;
       while (b[sk].length < nxt) b[sk].push(null);
       if (b[sk].length > nxt) b[sk].length = nxt;
@@ -1034,6 +1101,7 @@
 
     function swapCaps(bIdx) {
       const b = state.boats[bIdx], tmp = Number(b.leftCap);
+      pushUndo(`${b.name}の左右入替`);
       b.leftCap = Number(b.rightCap); b.rightCap = tmp;
       while (b.leftSeats.length < b.leftCap) b.leftSeats.push(null);
       b.leftSeats.length = b.leftCap;
@@ -1060,7 +1128,6 @@
       const staffHeaderBtns = document.getElementById("staffHeaderBtns");
       const menuToggleBtn = document.getElementById("menuToggleBtn");
 
-      // 右上ボタン：「メニュー ▲」／「メニュー ▼」
       menuToggleBtn.textContent = state.menuCollapsed ? "メニュー ▼" : "メニュー ▲";
       menuToggleBtn.className = state.menuCollapsed ? "menu-toggle-btn collapsed" : "menu-toggle-btn";
       staffHeaderBtns.style.display = state.menuCollapsed ? "none" : "grid";
@@ -1221,6 +1288,10 @@
       const shopBtn = document.getElementById("shopModeBtn");
       shopBtn.className = state.markMode === "SHOP" ? "shop-btn on" : "shop-btn";
       shopBtn.textContent = state.markMode === "SHOP" ? "● 店取り：ON（席タップ）" : "● 店取り：OFF";
+
+      const undoBtn = document.getElementById("undoBtn");
+      undoBtn.disabled = undoStack.length === 0;
+      undoBtn.textContent = undoStack.length > 0 ? `↩ 1つ前に戻す(${undoStack.length})` : "↩ 1つ前に戻す";
 
       let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</button>`;
       state.boats.forEach(b => {
@@ -1556,6 +1627,7 @@
 
     function resetSeatsOnly() {
       if (!confirm("全座席を空に戻しますか？")) return;
+      pushUndo("全座席リセット");
       state.boats.forEach(b => { b.leftSeats = Array(Number(b.leftCap)).fill(null); b.rightSeats = Array(Number(b.rightCap)).fill(null); });
       save(); render(); closeModal("setupModal"); toast("座席をリセットしました");
     }
