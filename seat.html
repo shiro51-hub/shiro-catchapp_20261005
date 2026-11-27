@@ -321,7 +321,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v2";
+    const STORE_KEY = "yamashitamaru_seat_flow_v3";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
@@ -332,7 +332,6 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
-    // step: "boats" (配船指定) | "verify" (AI読取結果の確認・確定) | "seats" (座席管理)
     let state = {
       savedDate: getTodayStr(),
       step: "boats",
@@ -368,7 +367,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v1");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v2");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -429,7 +428,14 @@
     }
 
     function toggleSortOrder() { state.sortByCount = !state.sortByCount; save(); render(); }
-    function toggleHoldMode() { state.holdMode = !state.holdMode; if (state.holdMode) state.selId = null; render(); }
+    function toggleHoldMode() {
+      state.holdMode = !state.holdMode;
+      if (state.holdMode) state.selId = null;
+      render();
+      if (!state.holdMode) {
+        toast("仮押さえモードをOFFにしました");
+      }
+    }
     function clearSel() { state.selId = null; state.holdMode = false; render(); }
     function setView(v) { state.view = v; render(); }
 
@@ -446,7 +452,6 @@
       btn.className = state.autoLockEnabled ? "success" : "";
     }
 
-    // ステップ1（読取確認画面）での人数増減・削除
     function adjustVerifyCount(id, delta) {
       const g = state.guests.find(x => String(x.id) === String(id));
       if (!g) return;
@@ -476,7 +481,6 @@
       toast("予約人数を確定しました。次に出船する船と人数を指定してください");
     }
 
-    // ステップ2（配船・人数指定）
     function toggleDraftBoat(name) {
       const idx = draftBoats.findIndex(b => b.name === name);
       if (idx >= 0) draftBoats.splice(idx, 1);
@@ -529,29 +533,64 @@
       toast("新しい営業日用に初期化しました");
     }
 
+    // 仮押さえ（HOLD）を正しく考慮した配置可能判定
+    // ・仮押さえ席は他の客が勝手に座れない壁として残しつつ、
+    // ・「仮押さえ席＝未配置の予約客が後から入る枠」として総必要席数から差し引いて計算する
     function canFitAll(boatsSnap, unplaced) {
       if (unplaced.length === 0) return true;
+
+      let holdCount = 0;
       const blocks = [];
       boatsSnap.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         let r = 0;
-        b[sk].forEach(c => { if (c === null) r++; else { if (r > 0) blocks.push(r); r = 0; } });
+        b[sk].forEach(c => {
+          if (c === null) {
+            r++;
+          } else {
+            if (c.type === "HOLD") holdCount++;
+            if (r > 0) blocks.push(r);
+            r = 0;
+          }
+        });
         if (r > 0) blocks.push(r);
       }));
-      if (blocks.reduce((a, b) => a + b, 0) < unplaced.reduce((a, g) => a + Number(g.count), 0)) return false;
+
+      const totalEmpty = blocks.reduce((a, b) => a + b, 0);
+      const totalUnplacedNeed = unplaced.reduce((a, g) => a + Number(g.count), 0);
+
+      // 未配置客の総人数から、すでに確保済みの仮押さえ席数を差し引いた人数が、残りの純粋な空き席に入ればOK
+      const netNeed = Math.max(0, totalUnplacedNeed - holdCount);
+      if (totalEmpty < netNeed) return false;
+      if (netNeed === 0) return true;
+
+      // 仮押さえが入っていない残りの未配置グループが、純粋な空きブロックへ分断なしで収まるか検証
+      // （仮押さえ数ぶん、小さいグループまたは1名単位の枠が仮押さえ側へ吸収されるとみなす）
       const sorted = [...unplaced].sort((a, b) => Number(b.count) - Number(a.count));
-      function bt(i, rem) {
+
+      function bt(i, remBlocks, remHold) {
         if (i === sorted.length) return true;
-        const need = Number(sorted[i].count), tried = new Set();
-        for (let k = 0; k < rem.length; k++) {
-          if (rem[k] >= need && !tried.has(rem[k])) {
-            tried.add(rem[k]);
-            const nxt = [...rem]; nxt[k] -= need;
-            if (bt(i + 1, nxt)) return true;
+        const need = Number(sorted[i].count);
+
+        // 1. 通常の連続空きブロックへ収めるパターン
+        const tried = new Set();
+        for (let k = 0; k < remBlocks.length; k++) {
+          if (remBlocks[k] >= need && !tried.has(remBlocks[k])) {
+            tried.add(remBlocks[k]);
+            const nxt = [...remBlocks];
+            nxt[k] -= need;
+            if (bt(i + 1, nxt, remHold)) return true;
           }
         }
+
+        // 2. 仮押さえ枠（remHold）に吸収されるパターン（例：前日場所取りの1名〜少人数グループ）
+        if (remHold >= need) {
+          if (bt(i + 1, remBlocks, remHold - need)) return true;
+        }
+
         return false;
       }
-      return bt(0, blocks);
+
+      return bt(0, blocks, holdCount);
     }
 
     function evalPlace(bIdx, sk, start, guest) {
@@ -561,14 +600,22 @@
       const st = Number(start);
       const cnt = Number(guest.count) || 1;
       if (st < 0 || st + cnt > arr.length) return { valid: false };
+
+      // 他の確定済み客（ASSIGNED）と重なる場合は配置不可（仮押さえ HOLD は上書き配置可能）
       for (let i = st; i < st + cnt; i++) {
-        if (arr[i] && arr[i].type === "ASSIGNED" && String(arr[i].guestId) !== String(guest.id)) return { valid: false };
+        if (arr[i] && arr[i].type === "ASSIGNED" && String(arr[i].guestId) !== String(guest.id)) {
+          return { valid: false };
+        }
       }
+
       const clone = JSON.parse(JSON.stringify(state.boats));
       clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
-        boat[s] = boat[s].map(c => (c && String(c.guestId) === String(guest.id)) ? null : c);
+        boat[s] = boat[s].map(c => (c && c.type === "ASSIGNED" && String(c.guestId) === String(guest.id)) ? null : c);
       }));
-      for (let i = st; i < st + cnt; i++) clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
+      for (let i = st; i < st + cnt; i++) {
+        clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
+      }
+
       const placed = new Set();
       clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
         boat[s].forEach(c => { if (c && c.type === "ASSIGNED") placed.add(String(c.guestId)); });
@@ -585,6 +632,11 @@
       const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
       if (totalGuests > totalCap) {
         return { status: "OVER_CAPACITY", overBy: totalGuests - totalCap, unplacedCount: unplaced.length };
+      }
+
+      // 仮押さえモード編集中は、自由選択終了や自動確定を発動させない
+      if (state.holdMode) {
+        return { status: "FREE", unplacedCount: unplaced.length };
       }
 
       let anyGroupHasZeroChoice = false;
@@ -608,19 +660,19 @@
       return { status: "FREE", unplacedCount: unplaced.length };
     }
 
-    // 座席ボタンタップ時の処理（配列参照ズレ修正済み）
     function handleSeatClick(bIdx, sk, idx) {
       const boat = state.boats[bIdx];
       if (!boat || !boat[sk]) return;
       const seatIdx = Number(idx);
       const cur = boat[sk][seatIdx];
 
-      // 1. 仮押さえモード
+      // 1. 仮押さえモード（ONの間は自動確定を一切発動させない）
       if (state.holdMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
         if (cur && cur.type === "HOLD") {
           state.boats[bIdx][sk][seatIdx] = null;
-          save(); render(); return;
+          save(); render();
+          return;
         }
         const placed = getPlacedIds();
         const unplacedGuestsCnt = state.guests.filter(g => !placed.has(String(g.id))).reduce((a, g) => a + Number(g.count), 0);
@@ -631,7 +683,8 @@
           return;
         }
         state.boats[bIdx][sk][seatIdx] = { type: "HOLD" };
-        save(); render(); return;
+        save(); render();
+        return;
       }
 
       // 2. お客様選択中 → 座席へ名前を配置
@@ -661,7 +714,6 @@
           return;
         }
 
-        // 先に既存の配置を消してから、最新の state.boats[bIdx][sk] を取得して書き込む
         removeGuest(g.id);
         const targetArr = state.boats[bIdx][sk];
         for (let i = st; i < st + cnt; i++) {
@@ -712,7 +764,7 @@
       const targetId = String(id);
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         for (let i = 0; i < b[sk].length; i++) {
-          if (b[sk][i] && String(b[sk][i].guestId) === targetId) {
+          if (b[sk][i] && b[sk][i].type === "ASSIGNED" && String(b[sk][i].guestId) === targetId) {
             b[sk][i] = null;
           }
         }
@@ -723,6 +775,14 @@
       const placed = getPlacedIds();
       const unplaced = state.guests.filter(g => !placed.has(String(g.id))).sort((a, b) => Number(b.count) - Number(a.count));
       if (unplaced.length === 0) { if (showFeedback) toast("全員すでに確定済みです"); return; }
+
+      // 自動確定時はまず仮押さえをクリアして空き枠として使えるようにする
+      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+        for (let i = 0; i < b[sk].length; i++) {
+          if (b[sk][i] && b[sk][i].type === "HOLD") b[sk][i] = null;
+        }
+      }));
+
       const runs = () => {
         const r = [];
         state.boats.forEach((b, bIdx) => ["leftSeats", "rightSeats"].forEach(sk => {
@@ -803,9 +863,7 @@
       const topBars = document.getElementById("topBars");
       const main = document.getElementById("main");
 
-      // ==========================================
       // ステップ1：AI読取結果の確認・修正・確定画面
-      // ==========================================
       if (state.step === "verify") {
         topBars.style.display = "none";
         const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
@@ -851,9 +909,7 @@
         return;
       }
 
-      // ==========================================
       // ステップ2：出船する船と各船の人数指定画面
-      // ==========================================
       if (state.step === "boats") {
         topBars.style.display = "none";
         const totalCap = draftBoats.reduce((a, b) => a + Number(b.leftCap) + Number(b.rightCap), 0);
@@ -925,9 +981,7 @@
         return;
       }
 
-      // ==========================================
       // ステップ3：座席管理メイン画面
-      // ==========================================
       topBars.style.display = "block";
 
       let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</button>`;
