@@ -21,7 +21,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif;
       font-size: 18px; line-height: 1.45;
     }
-    body.has-dock { padding-bottom: 270px; }
+    body.has-dock { padding-bottom: 290px; }
 
     header {
       position: sticky; top: 0; z-index: 50; background: #070b14;
@@ -85,7 +85,7 @@
     .hold-btn { flex: 1; padding: 12px 8px; font-size: 15px; border: 2px solid var(--bd); background: var(--inp); color: var(--sub); }
     .hold-btn.on { background: var(--orange-bg); border-color: var(--orange); color: #fcd34d; }
 
-    /* 全体俯瞰（1マスの縦幅を46pxに拡大） */
+    /* 全体俯瞰（1マスの縦幅46px） */
     .ov-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
     .ov-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--bd); }
     .mini-hull { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -117,22 +117,41 @@
     .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); margin-right: 4px; margin-top: 2px; }
 
+    /* 下部ドック（2列縦スクロール＆高さ切替） */
     .dock {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; background: #070b14;
-      border-top: 2px solid var(--bd); padding: 10px 10px 14px;
+      border-top: 2px solid #3b82f6; padding: 8px 10px 12px;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.85);
+      transition: max-height 0.2s ease;
     }
-    .dock-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; color: #38bdf8; font-weight: 700; }
-    .g-list { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 4px; }
+    .dock-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; font-size: 14px; color: #38bdf8; font-weight: 800; gap: 6px;
+    }
+    .g-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-height: 175px;
+      overflow-y: auto;
+      padding-right: 2px;
+      padding-bottom: 6px;
+    }
+    .dock.expanded .g-list {
+      max-height: 62vh;
+    }
     .g-chip {
-      flex: 0 0 auto; min-width: 142px; background: var(--card); border: 2px solid var(--bd);
+      background: var(--card); border: 2px solid var(--bd);
       border-radius: 11px; padding: 9px 10px;
+      display: flex; flex-direction: column; justify-content: space-between;
     }
-    .g-chip.sel { background: #1e3a8a; border-color: #60a5fa; }
-    .g-chip.done { opacity: 0.5; border-style: dashed; }
-    .g-top { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 17px; }
-    .g-cnt { background: var(--blue); padding: 2px 7px; border-radius: 6px; font-size: 14px; }
-    .g-bot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-    .g-meta { font-size: 13px; color: #cbd5e1; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .g-chip.sel { background: #1e3a8a; border-color: #60a5fa; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
+    .g-chip.done { opacity: 0.48; border-style: dashed; }
+    .g-top { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 17px; gap: 4px; }
+    .g-name-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .g-cnt { background: var(--blue); padding: 2px 7px; border-radius: 6px; font-size: 14px; flex-shrink: 0; }
+    .g-bot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 4px; }
+    .g-meta { font-size: 13px; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .modal-bg { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.82); display: none; align-items: center; justify-content: center; padding: 12px; }
     .modal-bg.open { display: flex; }
@@ -178,9 +197,10 @@
   <div class="dock" id="bottomDock" style="display:none;">
     <div class="dock-head">
       <span id="dockStatus">予約未読込</span>
-      <div style="display:flex; gap:6px;">
-        <button style="padding:6px 10px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
-        <button style="padding:6px 10px; font-size:14px;" onclick="clearSel()">解除</button>
+      <div style="display:flex; gap:5px; flex-shrink:0;">
+        <button id="expandDockBtn" style="padding:5px 9px; font-size:13px;" onclick="toggleDockExpand()">▲ 拡大</button>
+        <button style="padding:5px 9px; font-size:13px;" onclick="openModal('addModal')">＋ 追加</button>
+        <button style="padding:5px 9px; font-size:13px;" onclick="clearSel()">解除</button>
       </div>
     </div>
     <div class="g-list" id="guestList"></div>
@@ -280,6 +300,7 @@
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
+    let dockExpanded = false;
 
     let state = {
       configured: false,
@@ -308,6 +329,19 @@
       const t = document.getElementById("toast");
       t.textContent = msg; t.style.display = "block";
       clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
+    }
+
+    function toggleDockExpand(forceState) {
+      dockExpanded = (typeof forceState === "boolean") ? forceState : !dockExpanded;
+      const dock = document.getElementById("bottomDock");
+      const btn = document.getElementById("expandDockBtn");
+      if (dockExpanded) {
+        dock.classList.add("expanded");
+        btn.textContent = "▼ 戻す";
+      } else {
+        dock.classList.remove("expanded");
+        btn.textContent = "▲ 拡大";
+      }
     }
 
     function toggleAutoLockSetting() {
@@ -710,18 +744,18 @@
       const unpCnt = unplaced.reduce((a, g) => a + g.count, 0);
       const totCnt = state.guests.reduce((a, g) => a + g.count, 0);
       const capCnt = state.boats.reduce((a, b) => a + b.leftCap + b.rightCap, 0);
-      document.getElementById("dockStatus").textContent = `未配置:${unpCnt}名(${unplaced.length}組) / 予約:${totCnt}名 / 席:${capCnt}`;
+      document.getElementById("dockStatus").textContent = `未:${unpCnt}名(${unplaced.length}組) / 計:${totCnt}名 / 席:${capCnt}`;
 
       const gl = document.getElementById("guestList");
       if (state.guests.length === 0) {
-        gl.innerHTML = `<div style="font-size:14px;color:var(--sub);padding:10px;">「📷 読込」または「＋ 追加」から予約を入れてください</div>`;
+        gl.innerHTML = `<div style="grid-column:1/-1;font-size:14px;color:var(--sub);padding:10px;text-align:center;">「📷 読込」または「＋ 追加」から予約を入れてください</div>`;
       } else {
         const sorted = [...unplaced, ...state.guests.filter(g => placed.has(g.id))];
         gl.innerHTML = sorted.map(g => {
           const isP = placed.has(g.id), isS = state.selId === g.id;
           return `
             <div class="g-chip ${isS ? 'sel' : ''} ${isP ? 'done' : ''}" onclick="selGuest('${g.id}')">
-              <div class="g-top"><span>${g.name}</span><span class="g-cnt">${g.count}名</span></div>
+              <div class="g-top"><span class="g-name-txt">${g.name}</span><span class="g-cnt">${g.count}名</span></div>
               <div class="g-bot">
                 <span class="g-meta">${isP ? '✅ 配置済' : (g.note || '通常')}</span>
                 <button style="padding:3px 8px;font-size:13px;" onclick="openEdit(event,'${g.id}')">✎</button>
@@ -757,7 +791,12 @@
     }
 
     function setView(v) { state.view = v; render(); }
-    function selGuest(id) { state.holdMode = false; state.selId = state.selId === id ? null : id; render(); }
+    function selGuest(id) {
+      state.holdMode = false;
+      state.selId = state.selId === id ? null : id;
+      if (state.selId && dockExpanded) toggleDockExpand(false);
+      render();
+    }
 
     function addGuest() {
       const name = document.getElementById("addName").value.trim();
@@ -846,6 +885,7 @@
           return { id: `ocr_${Date.now()}_${i}`, name: g.name, count: Number(g.count) || 1, note: n.join(" / ") };
         });
         save(); render();
+        toggleDockExpand(true);
         msg.innerHTML = parsed.isMatch
           ? `<b style="color:#10b981;">✅ 検算一致：記載${parsed.writtenTotal}名 ＝ 合計${parsed.calculatedTotal}名</b>`
           : `<b style="color:#ef4444;">⚠️ 人数不一致：記載${parsed.writtenTotal}名 ≠ 合計${parsed.calculatedTotal}名</b>`;
