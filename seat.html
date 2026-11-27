@@ -14,18 +14,18 @@
       --orange: #f59e0b; --orange-bg: #451a03;
       --red: #ef4444;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0; padding: 0; width: 100%; overflow-x: hidden;
       background: var(--bg); color: var(--tx);
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif;
       font-size: 18px; line-height: 1.45;
     }
-    body.has-dock { padding-bottom: 92px; }
+    body { padding-bottom: 40px; }
 
     header {
       position: sticky; top: 0; z-index: 50; background: #070b14;
-      border-bottom: 1px solid var(--bd); padding: 10px 10px;
+      border-bottom: 1px solid var(--bd); padding: 10px;
       display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
     .h-title { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 18px; color: #fff; }
@@ -36,8 +36,9 @@
       background: var(--panel); color: var(--tx); border: 1px solid var(--bd);
       border-radius: 9px; padding: 10px 11px; font-size: 15px; font-weight: 700;
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      touch-action: manipulation; font-family: inherit;
     }
-    button:active { transform: scale(0.97); }
+    button:active { opacity: 0.85; }
     button.primary { background: var(--blue); border-color: #3b82f6; color: #fff; }
     button.success { background: #059669; border-color: var(--green); color: #fff; }
     button.warning { background: #d97706; border-color: var(--orange); color: #fff; }
@@ -45,14 +46,14 @@
 
     .container { padding: 10px; width: 100%; max-width: 560px; margin: 0 auto; }
 
-    /* 選択中バナー */
+    /* 選択中ガイドバー */
     .selected-banner {
-      position: sticky; top: 56px; z-index: 45;
+      position: sticky; top: 56px; z-index: 40;
       background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
       border: 2px solid #60a5fa; border-radius: 12px; padding: 11px 12px;
-      margin-bottom: 10px; color: #fff;
+      margin-bottom: 12px; color: #fff;
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.55);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
     }
     .selected-banner-info { font-size: 17px; font-weight: 800; line-height: 1.35; }
     .selected-banner-sub { font-size: 13px; color: #dbeafe; font-weight: 600; }
@@ -72,9 +73,8 @@
     .w-sub { font-size: 15px; color: var(--sub); margin-bottom: 14px; }
     .boat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
     .b-pick {
-      padding: 15px 6px; border-radius: 10px; border: 2px solid var(--bd);
-      background: var(--inp); color: var(--sub); font-size: 17px; font-weight: 800; text-align: center;
-      cursor: pointer;
+      width: 100%; padding: 15px 6px; border-radius: 10px; border: 2px solid var(--bd);
+      background: var(--inp); color: var(--sub); font-size: 17px; font-weight: 800;
     }
     .b-pick.on { background: var(--blue-bg); border-color: #3b82f6; color: #fff; }
     .w-boat-row {
@@ -92,7 +92,7 @@
     .tab {
       flex: 1; min-width: 78px; padding: 10px 6px; border-radius: 8px;
       background: var(--card); border: 1px solid var(--bd); text-align: center;
-      font-size: 15px; font-weight: 700; color: var(--sub); cursor: pointer;
+      font-size: 15px; font-weight: 700; color: var(--sub); flex-direction: column; line-height: 1.25;
     }
     .tab.active { background: var(--blue); border-color: #60a5fa; color: #fff; }
 
@@ -100,19 +100,17 @@
     .hold-btn { flex: 1; padding: 12px 8px; font-size: 15px; border: 2px solid var(--bd); background: var(--inp); color: var(--sub); }
     .hold-btn.on { background: var(--orange-bg); border-color: var(--orange); color: #fcd34d; }
 
-    /* 全体俯瞰 */
+    /* 全体俯瞰（1マス縦幅48px） */
     .ov-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
     .ov-head {
       display: flex; justify-content: space-between; align-items: center;
       padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--bd);
-      cursor: pointer;
     }
     .mini-hull { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .mini-seat {
-      height: 46px; border-radius: 8px; background: var(--inp); border: 2px solid #263552;
+      width: 100%; height: 48px; border-radius: 8px; background: var(--inp); border: 2px solid #263552;
       display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
       font-size: 16px; font-weight: 700; color: var(--sub); margin-bottom: 6px;
-      cursor: pointer;
     }
     .mini-seat.hold { background: var(--orange-bg); border-color: var(--orange); color: #fcd34d; }
     .mini-seat.assigned { background: var(--blue-bg); border-color: #3b82f6; color: #ffffff; }
@@ -126,63 +124,42 @@
     }
     .hull { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .seat {
-      min-height: 68px; border-radius: 10px; background: var(--inp); border: 2px solid #263552;
-      padding: 8px 10px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 8px;
-      cursor: pointer;
+      width: 100%; min-height: 68px; border-radius: 10px; background: var(--inp); border: 2px solid #263552;
+      padding: 8px 10px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+      margin-bottom: 8px; text-align: left;
     }
     .seat.hold { background: var(--orange-bg); border-color: var(--orange); }
     .seat.assigned { background: var(--blue-bg); border-color: #3b82f6; }
     .seat.fit-ok { background: var(--green-bg); border-color: var(--green); }
     .seat.fit-warn { background: #3b2f06; border-color: #eab308; }
     .s-pos { font-size: 13px; color: var(--sub); font-weight: 700; }
-    .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); margin-right: 4px; margin-top: 2px; }
 
-    /* 全画面引き出し式 予約表シート */
-    .drawer-backdrop {
-      position: fixed; inset: 0; z-index: 65; background: rgba(0, 0, 0, 0.72);
-      display: none;
+    /* 予約一覧セクション（ページ下部に直接配置・重ねない） */
+    .guest-section {
+      background: #070b14; border: 2px solid var(--bd); border-radius: 14px;
+      padding: 12px; margin-top: 16px;
     }
-    .drawer-backdrop.open { display: block; }
-
-    .dock {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 70; background: #070b14;
-      border-top: 2px solid #3b82f6; border-radius: 16px 16px 0 0;
-      padding: 8px 12px 14px;
-      box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.9);
-    }
-    .dock.collapsed { height: 76px; overflow: hidden; }
-    .dock.expanded { height: 88vh; display: flex; flex-direction: column; }
-    .grab-handle {
-      width: 44px; height: 5px; background: #475569; border-radius: 99px;
-      margin: 0 auto 6px; cursor: pointer;
-    }
-    .dock-head {
+    .gs-head {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 8px; font-size: 15px; color: #38bdf8; font-weight: 800; gap: 6px;
-      flex-shrink: 0; cursor: pointer;
+      gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
     }
-    .dock-sub-controls {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 6px; margin-bottom: 10px; flex-shrink: 0;
+    .gs-title { font-size: 17px; font-weight: 800; color: #38bdf8; }
+    .gs-controls {
+      display: flex; gap: 6px; margin-bottom: 10px;
     }
-    .g-list {
-      display: flex; flex-direction: column; gap: 8px;
-      overflow-y: auto; flex: 1; padding-bottom: 16px;
+    .g-list { display: flex; flex-direction: column; gap: 8px; }
+    .g-row-wrap { display: flex; align-items: stretch; gap: 6px; }
+    .g-row-btn {
+      flex: 1; min-width: 0; background: var(--card); border: 2px solid var(--bd);
+      border-radius: 12px; padding: 12px;
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+      text-align: left;
     }
-    .dock.collapsed .dock-sub-controls,
-    .dock.collapsed .g-list { display: none; }
-
-    .g-row {
-      background: var(--card); border: 2px solid var(--bd);
-      border-radius: 12px; padding: 12px 12px;
-      display: flex; justify-content: space-between; align-items: center; gap: 10px;
-      cursor: pointer;
-    }
-    .g-row.sel { background: #1e3a8a; border-color: #60a5fa; box-shadow: 0 0 12px rgba(59,130,246,0.55); }
-    .g-row.done { opacity: 0.45; border-style: dashed; }
-    .g-row-main { flex: 1; min-width: 0; }
-    .g-row-top { display: flex; align-items: center; gap: 8px; }
+    .g-row-btn.sel { background: #1e3a8a; border-color: #60a5fa; }
+    .g-row-btn.done { opacity: 0.45; border-style: dashed; }
+    .g-row-top { display: flex; align-items: center; gap: 8px; width: 100%; }
     .g-name-txt { font-size: 19px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .g-cnt { background: var(--blue); color: #fff; padding: 2px 9px; border-radius: 7px; font-size: 15px; font-weight: 800; flex-shrink: 0; }
     .g-meta { font-size: 14px; color: #cbd5e1; margin-top: 4px; }
@@ -197,7 +174,7 @@
     .field label { display: block; font-size: 14px; color: var(--sub); margin-bottom: 5px; font-weight: 700; }
     input[type="text"], input[type="password"], input[type="number"], textarea, select {
       width: 100%; background: var(--inp); border: 1px solid var(--bd); color: var(--tx);
-      border-radius: 8px; padding: 11px; font-size: 17px; user-select: text;
+      border-radius: 8px; padding: 11px; font-size: 17px;
     }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--inp); border: 1px solid var(--bd); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
     .toast {
@@ -229,25 +206,6 @@
   </div>
 
   <div class="container" id="main"></div>
-
-  <div class="drawer-backdrop" id="drawerBackdrop" onclick="setDrawerOpen(false)"></div>
-
-  <!-- 下部引き出し式 予約表シート -->
-  <div class="dock collapsed" id="bottomDock" style="display:none;">
-    <div class="grab-handle" onclick="setDrawerOpen(!drawerOpen)"></div>
-    <div class="dock-head" onclick="setDrawerOpen(!drawerOpen)">
-      <span id="dockStatus">▲ 予約一覧を開く</span>
-      <div style="display:flex; gap:6px; flex-shrink:0;" onclick="event.stopPropagation()">
-        <button type="button" style="padding:6px 10px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
-        <button type="button" id="drawerToggleBtn" class="primary" style="padding:6px 11px; font-size:14px;" onclick="setDrawerOpen(!drawerOpen)">▲ 一覧</button>
-      </div>
-    </div>
-    <div class="dock-sub-controls">
-      <button type="button" id="sortModeBtn" style="flex:1; padding:8px; font-size:14px;" onclick="toggleSortOrder()">並び順：人数が多い順</button>
-      <button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel()">選択解除</button>
-    </div>
-    <div class="g-list" id="guestList"></div>
-  </div>
 
   <div class="toast" id="toast"></div>
 
@@ -340,12 +298,10 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_v7";
+    const STORE_KEY = "yamashitamaru_seat_simple_v1";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
-    let drawerOpen = false;
-    let touchStartY = 0;
     let uidCounter = 1;
 
     function getTodayStr() {
@@ -417,16 +373,6 @@
       }
       document.getElementById("apiKeyInput").value = localStorage.getItem("gemini_api_key") || "";
       document.getElementById("modelSelect").value = localStorage.getItem("gemini_seat_model") || "gemini-4-hydrogen";
-
-      // ドロワー上下スワイプ
-      const dock = document.getElementById("bottomDock");
-      dock.addEventListener("touchstart", e => { touchStartY = e.touches[0].clientY; }, { passive: true });
-      dock.addEventListener("touchend", e => {
-        const diff = touchStartY - e.changedTouches[0].clientY;
-        if (diff > 45 && !drawerOpen) setDrawerOpen(true);
-        if (diff < -60 && drawerOpen && document.getElementById("guestList").scrollTop <= 0) setDrawerOpen(false);
-      }, { passive: true });
-
       render();
     }
 
@@ -440,24 +386,6 @@
       const t = document.getElementById("toast");
       t.textContent = msg; t.style.display = "block";
       clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
-    }
-
-    function setDrawerOpen(open) {
-      drawerOpen = open;
-      const dock = document.getElementById("bottomDock");
-      const bg = document.getElementById("drawerBackdrop");
-      const btn = document.getElementById("drawerToggleBtn");
-      if (drawerOpen) {
-        dock.classList.remove("collapsed");
-        dock.classList.add("expanded");
-        bg.classList.add("open");
-        btn.textContent = "▼ 閉じる";
-      } else {
-        dock.classList.remove("expanded");
-        dock.classList.add("collapsed");
-        bg.classList.remove("open");
-        btn.textContent = "▲ 一覧";
-      }
     }
 
     function toggleSortOrder() { state.sortByCount = !state.sortByCount; save(); render(); }
@@ -508,7 +436,6 @@
         draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
       }
       state.configured = false;
-      setDrawerOpen(false);
       closeModal("setupModal");
       save(); render();
     }
@@ -520,7 +447,6 @@
       state.guests = [];
       state.selId = null;
       state.holdMode = false;
-      setDrawerOpen(false);
       closeModal("setupModal");
       save(); render();
       toast("新しい営業日用に初期化しました");
@@ -599,9 +525,8 @@
       return { status: "FREE", unplacedCount: unplaced.length };
     }
 
-    // ★座席タップ時の直接実行関数
-    function onSeatTap(bIdx, sk, idx, e) {
-      if (e) e.stopPropagation();
+    // 座席ボタンタップ時の処理
+    function handleSeatClick(bIdx, sk, idx) {
       const boat = state.boats[bIdx];
       if (!boat || !boat[sk]) return;
       const arr = boat[sk];
@@ -615,7 +540,7 @@
         save(); render(); return;
       }
 
-      // 2. お客様選択中 → 座席へ配置
+      // 2. お客様選択中 → 座席へ名前を配置
       if (state.selId) {
         const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; render(); return; }
@@ -678,7 +603,7 @@
         return;
       }
 
-      toast("下の「▲ 予約一覧」からお名前を選んでください");
+      toast("下の「予約一覧」からお名前を選んでから席をタップしてください");
     }
 
     function removeGuest(id) {
@@ -756,27 +681,24 @@
       save(); render(); toast("左右の定員を入れ替えました");
     }
 
-    function selGuest(id) {
+    function selectGuestById(id) {
       state.holdMode = false;
       const targetId = String(id);
       state.selId = (String(state.selId) === targetId) ? null : targetId;
-      setDrawerOpen(false);
       render();
       if (state.selId) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
         const g = state.guests.find(x => String(x.id) === String(state.selId));
-        if (g) toast(`👤 ${g.name}様(${g.count}名)を選択：配置する席をタップしてください`);
+        if (g) toast(`👤 ${g.name}様(${g.count}名)を選択：上の座席をタップしてください`);
       }
     }
 
     function render() {
       const topBars = document.getElementById("topBars");
-      const dock = document.getElementById("bottomDock");
       const main = document.getElementById("main");
 
       if (!state.configured) {
-        document.body.classList.remove("has-dock");
         topBars.style.display = "none";
-        dock.style.display = "none";
         const totalCap = draftBoats.reduce((a, b) => a + Number(b.leftCap) + Number(b.rightCap), 0);
         const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
         main.innerHTML = `
@@ -786,7 +708,7 @@
             <div class="boat-grid">
               ${BOAT_LIST.map(n => {
                 const on = draftBoats.some(b => b.name === n);
-                return `<div class="b-pick ${on ? 'on' : ''}" onclick="toggleDraftBoat('${n}')">${n}</div>`;
+                return `<button type="button" class="b-pick ${on ? 'on' : ''}" onclick="toggleDraftBoat('${n}')">${n}</button>`;
               }).join("")}
             </div>
             ${draftBoats.map((b, i) => `
@@ -820,14 +742,12 @@
         return;
       }
 
-      document.body.classList.add("has-dock");
       topBars.style.display = "block";
-      dock.style.display = "";
 
-      let tabsHtml = `<div class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</div>`;
+      let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</button>`;
       state.boats.forEach(b => {
         const emp = b.leftSeats.filter(x => !x).length + b.rightSeats.filter(x => !x).length;
-        tabsHtml += `<div class="tab ${state.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')">${b.name}<br><span style="font-size:13px;">空${emp}</span></div>`;
+        tabsHtml += `<button type="button" class="tab ${state.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')">${b.name}<span style="font-size:13px;">空${emp}</span></button>`;
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
 
@@ -835,6 +755,7 @@
       hb.className = state.holdMode ? "hold-btn on" : "hold-btn";
       hb.textContent = state.holdMode ? "🟠 仮押さえ：ON（席タップ）" : "🟠 仮押さえ：OFF";
 
+      // 選択中お客様バナー
       const selG = state.guests.find(g => String(g.id) === String(state.selId));
       let selBannerHtml = "";
       if (selG) {
@@ -842,13 +763,14 @@
           <div class="selected-banner">
             <div>
               <div class="selected-banner-info">👤 ${selG.name}様 (${selG.count}名) を選択中</div>
-              <div class="selected-banner-sub">▼ 配置したい席をタップしてください</div>
+              <div class="selected-banner-sub">▼ 配置したい座席ボタンをタップしてください</div>
             </div>
             <button type="button" onclick="clearSel()" style="padding:8px 12px; font-size:14px; background:rgba(0,0,0,0.35); border-color:#93c5fd;">解除</button>
           </div>
         `;
       }
 
+      // 自由選択終了バナー
       let bannerHtml = "";
       const freedom = checkRemainingFreedom();
       if (freedom.status === "LOCKED_UNIQUE") {
@@ -873,6 +795,7 @@
         `;
       }
 
+      // ハイライト計算
       const hl = {};
       if (selG) {
         const cnt = Number(selG.count) || 1;
@@ -889,21 +812,26 @@
         }));
       }
 
+      // 座席表HTML
+      let seatsSectionHtml = "";
       if (state.view === "overview") {
-        main.innerHTML = selBannerHtml + bannerHtml + state.boats.map((b, bi) => {
+        seatsSectionHtml = state.boats.map((b, bi) => {
           const le = b.leftSeats.filter(x => !x).length, re = b.rightSeats.filter(x => !x).length;
           return `
             <div class="ov-card">
-              <div class="ov-head" onclick="setView('${b.name}')">
-                <b style="font-size:18px;">🚢 ${b.name} <span style="font-size:13px;color:#38bdf8;">(詳細へ▶)</span></b>
-                <span style="font-size:14px;color:var(--sub);">左空:<b style="color:#38bdf8;">${le}</b>/${b.leftCap} 右空:<b style="color:#38bdf8;">${re}</b>/${b.rightCap}</span>
+              <div class="ov-head">
+                <b style="font-size:18px;">🚢 ${b.name}</b>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px;color:var(--sub);">左空:<b style="color:#38bdf8;">${le}</b>/${b.leftCap} 右空:<b style="color:#38bdf8;">${re}</b>/${b.rightCap}</span>
+                  <button type="button" style="padding:5px 9px; font-size:13px;" onclick="setView('${b.name}')">詳細▶</button>
+                </div>
               </div>
               <div class="mini-hull">
                 <div><div style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:4px;font-weight:700;">▲ 左舷</div>
-                  ${b.leftSeats.map((c, i) => miniHtml(bi, "leftSeats", c, i, hl[`${bi}-leftSeats-${i}`])).join("")}
+                  ${b.leftSeats.map((c, i) => miniBtnHtml(bi, "leftSeats", c, i, hl[`${bi}-leftSeats-${i}`])).join("")}
                 </div>
                 <div><div style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:4px;font-weight:700;">▲ 右舷</div>
-                  ${b.rightSeats.map((c, i) => miniHtml(bi, "rightSeats", c, i, hl[`${bi}-rightSeats-${i}`])).join("")}
+                  ${b.rightSeats.map((c, i) => miniBtnHtml(bi, "rightSeats", c, i, hl[`${bi}-rightSeats-${i}`])).join("")}
                 </div>
               </div>
             </div>
@@ -913,7 +841,7 @@
         const bi = state.boats.findIndex(b => b.name === state.view);
         if (bi === -1) { state.view = "overview"; render(); return; }
         const b = state.boats[bi];
-        main.innerHTML = selBannerHtml + bannerHtml + `
+        seatsSectionHtml = `
           <div style="display:flex;gap:8px;align-items:center;background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--bd);">
             <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">左舷</div>
               <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
@@ -930,28 +858,26 @@
           <div class="bow-bar">▲ ミヨシ（船首） ▲</div>
           <div class="hull">
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">左 舷</div>
-              ${b.leftSeats.map((c, i) => seatHtml(bi, "leftSeats", c, i, b.leftCap, hl[`${bi}-leftSeats-${i}`])).join("")}
+              ${b.leftSeats.map((c, i) => seatBtnHtml(bi, "leftSeats", c, i, b.leftCap, hl[`${bi}-leftSeats-${i}`])).join("")}
             </div>
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">右 舷</div>
-              ${b.rightSeats.map((c, i) => seatHtml(bi, "rightSeats", c, i, b.rightCap, hl[`${bi}-rightSeats-${i}`])).join("")}
+              ${b.rightSeats.map((c, i) => seatBtnHtml(bi, "rightSeats", c, i, b.rightCap, hl[`${bi}-rightSeats-${i}`])).join("")}
             </div>
           </div>
           <div class="bow-bar">▼ オオドモ（船尾） ▼</div>
         `;
       }
 
+      // 予約一覧HTML（座席表の下にそのまま配置）
       const placed = getPlacedIds();
       const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
       const placedList = state.guests.filter(g => placed.has(String(g.id)));
       const unpCnt = unplaced.reduce((a, g) => a + Number(g.count), 0);
       const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
 
-      document.getElementById("dockStatus").textContent = `未配置 ${unpCnt}名(${unplaced.length}組) / 計${totCnt}名`;
-      document.getElementById("sortModeBtn").textContent = state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順";
-
-      const gl = document.getElementById("guestList");
+      let guestListHtml = "";
       if (state.guests.length === 0) {
-        gl.innerHTML = `<div style="font-size:15px;color:var(--sub);padding:24px 10px;text-align:center;">「📷 読込」または「＋ 追加」から予約を入れてください</div>`;
+        guestListHtml = `<div style="font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">上の「📷 読込」または右の「＋ 追加」から予約を入れてください</div>`;
       } else {
         const sortFn = (a, b) => {
           if (!state.sortByCount) return 0;
@@ -962,12 +888,12 @@
         };
         const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
 
-        gl.innerHTML = allSorted.map(g => {
+        guestListHtml = allSorted.map(g => {
           const isP = placed.has(String(g.id)), isS = String(state.selId) === String(g.id);
           const hasDot = (g.note || "").includes("前日場所取");
           return `
-            <div class="g-row ${isS ? 'sel' : ''} ${isP ? 'done' : ''}" onclick="selGuest('${g.id}')">
-              <div class="g-row-main">
+            <div class="g-row-wrap">
+              <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''}" onclick="selectGuestById('${g.id}')">
                 <div class="g-row-top">
                   <span class="g-name-txt">${g.name}</span>
                   <span class="g-cnt">${g.count}名</span>
@@ -975,22 +901,40 @@
                 <div class="g-meta ${hasDot ? 'dot-mark' : ''}">
                   ${isP ? '✅ 座席確定済み' : (g.note || '通常予約')}
                 </div>
-              </div>
-              <button type="button" onclick="openEdit(event,'${g.id}')" style="padding:8px 12px; font-size:15px; flex-shrink:0;">✎ 修正</button>
+              </button>
+              <button type="button" onclick="openEdit('${g.id}')" style="padding:0 14px; font-size:15px; flex-shrink:0;">✎ 修正</button>
             </div>
           `;
         }).join("");
       }
+
+      const guestSectionHtml = `
+        <div class="guest-section" id="guestSection">
+          <div class="gs-head">
+            <div class="gs-title">📋 予約一覧（未配置 ${unpCnt}名/${unplaced.length}組 ・ 計${totCnt}名）</div>
+            <button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
+          </div>
+          <div class="gs-controls">
+            <button type="button" style="flex:1; padding:8px; font-size:14px;" onclick="toggleSortOrder()">
+              ${state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順"}
+            </button>
+            <button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel()">選択解除</button>
+          </div>
+          <div class="g-list">${guestListHtml}</div>
+        </div>
+      `;
+
+      main.innerHTML = selBannerHtml + bannerHtml + seatsSectionHtml + guestSectionHtml;
     }
 
-    function miniHtml(bi, sk, c, i, h) {
+    function miniBtnHtml(bi, sk, c, i, h) {
       let cls = "mini-seat", txt = "空";
       if (c) { cls += c.type === "HOLD" ? " hold" : " assigned"; txt = c.type === "HOLD" ? "仮押さえ" : `${c.name}(${c.count})`; }
       else if (h) { cls += " " + h; txt = h === "fit-ok" ? "案内OK" : "注意"; }
-      return `<div class="${cls}" onclick="onSeatTap(${bi},'${sk}',${i},event)"><span>${i + 1}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:78%;">${txt}</span></div>`;
+      return `<button type="button" class="${cls}" onclick="handleSeatClick(${bi},'${sk}',${i})"><span>${i + 1}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:78%;">${txt}</span></button>`;
     }
 
-    function seatHtml(bi, sk, c, i, tot, h) {
+    function seatBtnHtml(bi, sk, c, i, tot, h) {
       let cls = "seat", body = `<div class="s-name" style="color:#475569;font-size:15px;">空席</div>`;
       const pos = i === 0 ? "1 (ミヨシ)" : (i === tot - 1 ? `${i + 1} (オオドモ)` : `${i + 1}`);
       if (c) {
@@ -1004,7 +948,7 @@
         cls += " " + h;
         body = `<div class="s-name" style="color:${h === 'fit-ok' ? '#6ee7b7' : '#fde047'};font-size:15px;">${h === 'fit-ok' ? '✅ 案内OK' : '⚠️ 分断注意'}</div>`;
       }
-      return `<div class="${cls}" onclick="onSeatTap(${bi},'${sk}',${i},event)"><div class="s-pos">${pos}</div>${body}</div>`;
+      return `<button type="button" class="${cls}" onclick="handleSeatClick(${bi},'${sk}',${i})"><div class="s-pos">${pos}</div>${body}</button>`;
     }
 
     function addGuest() {
@@ -1017,8 +961,7 @@
       save(); render(); closeModal("addModal"); toast(`${name}様を追加しました`);
     }
 
-    function openEdit(e, id) {
-      if (e) e.stopPropagation();
+    function openEdit(id) {
       const g = state.guests.find(x => String(x.id) === String(id));
       if (!g) return;
       document.getElementById("editId").value = g.id;
@@ -1101,9 +1044,10 @@
         state.selId = null;
         save(); render();
         closeModal("ocrModal");
-        setDrawerOpen(true);
+        const gsEl = document.getElementById("guestSection");
+        if (gsEl) gsEl.scrollIntoView({ behavior: "smooth" });
         toast(parsed.isMatch
-          ? `✅ 検算一致（${parsed.calculatedTotal}名）予約一覧を表示します`
+          ? `✅ 検算一致（${parsed.calculatedTotal}名）下の予約一覧に反映しました`
           : `⚠️ 人数不一致：記載${parsed.writtenTotal}名 ≠ 合計${parsed.calculatedTotal}名`);
       } catch (e) {
         msg.innerHTML = `<span style="color:#ef4444;">エラー: ${e.message}</span>`;
