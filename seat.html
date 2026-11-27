@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>山下丸 釣り座管理</title>
+  <style>
+    :root {
+      --bg-main: #0b1120;
+      --bg-card: #131c31;
+      --bg-panel: #1a253c;
+      --bg-input: #0f172a;
+      --border: #2c3e5e;
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+      --accent-blue: #2563eb;
+      --accent-blue-bg: #172e66;
+      --accent-green: #10b981;
+      --accent-green-bg: #064e3b;
+      --accent-orange: #f59e0b;
+      --accent-orange-bg: #451a03;
+      --accent-red: #ef4444;
+      --accent-red-bg: #450a0a;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      padding-bottom: 245px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #070b14;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .header-title {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button.primary {
+      background: var(--accent-blue);
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    button.success {
+      background: #059669;
+      border-color: #10b981;
+      color: #fff;
+    }
+
+    button.warning {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: #fff;
+    }
+
+    button.danger {
+      background: #b91c1c;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .boat-tabs {
+      display: flex;
+      overflow-x: auto;
+      background: #0d1526;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 8px;
+      gap: 6px;
+    }
+
+    .boat-tab {
+      flex: 1;
+      min-width: 72px;
+      padding: 9px 6px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+
+    .boat-tab.active {
+      background: var(--accent-blue);
+      border-color: #60a5fa;
+      color: #fff;
+    }
+
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .hold-toggle {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-sub);
+    }
+
+    .hold-toggle.active {
+      background: var(--accent-orange-bg);
+      border-color: var(--accent-orange);
+      color: #fcd34d;
+    }
+
+    .container {
+      padding: 10px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .overview-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .overview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .overview-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .overview-boat-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .overview-counts {
+      font-size: 13px;
+      color: var(--text-sub);
+      display: flex;
+      gap: 10px;
+    }
+
+    .overview-counts span b {
+      color: #38bdf8;
+      font-size: 15px;
+    }
+
+    .mini-hull {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mini-side {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .mini-side-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .mini-seat {
+      height: 16px;
+      border-radius: 4px;
+      background: var(--bg-input);
+      border: 1px solid #263552;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 10px;
+      color: var(--text-sub);
+    }
+
+    .mini-seat.hold {
+      background: var(--accent-orange-bg);
+      border-color: var(--accent-orange);
+      color: #fcd34d;
+    }
+
+    .mini-seat.assigned {
+      background: var(--accent-blue-bg);
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+
+    .mini-seat.fit-ok {
+      background: var(--accent-green-bg);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+    }
+
+    .mini-seat.fit-warn {
+      border-color: #eab308;
+      background: #3f3208;
+    }
+
+    .detail-controls {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+
+    .cap-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cap-box {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .cap-box-title {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+
+    .cap-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .cap-btns button {
+      padding: 4px 10px;
+      font-size: 16px;
+    }
+
+    .cap-num {
+      font-size: 17px;
+      font-weight: 800;
+      min-width: 24px;
+    }
+
+    .bow-label, .stern-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #38bdf8;
+      padding: 6px;
+      background: #0d172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stern-label {
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
+    .detail-hull {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .detail-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .seat-card {
+      min-height: 54px;
+      border-radius: 9px;
+      background: var(--bg-input);
+      border: 2px solid #263552;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .seat-card.hold {
+      background: var(--accent-orange-bg);
+      border-color: var(--accent-orange);
+    }
+
+    .seat-card.assigned {
+      background: var(--accent-blue-bg);
+      border-color: #3b82f6;
+    }
+
+    .seat-card.fit-ok {
+      background: var(--accent-green-bg);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+    }
+
+    .seat-card.fit-warn {
+      background: #3b2f06;
+      border-color: #eab308;
+    }
+
+    .seat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .seat-pos-tag {
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .seat-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .seat-badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 60;
+      background: #070b14;
+      border-top: 2px solid var(--border);
+      padding: 8px 10px 12px;
+      box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    .dock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .dock-status {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .guest-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .guest-chip {
+      flex: 0 0 auto;
+      min-width: 126px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 9px;
+      cursor: pointer;
+    }
+
+    .guest-chip.selected {
+      background: #1e3a8a;
+      border-color: #60a5fa;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+    }
+
+    .guest-chip.placed {
+      opacity: 0.55;
+      border-style: dashed;
+    }
+
+    .guest-chip-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      gap: 4px;
+    }
+
+    .guest-count {
+      background: #2563eb;
+      color: #fff;
+      font-size: 12px;
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+    .guest-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      gap: 4px;
+    }
+
+    .guest-meta {
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 85px;
+    }
+
+    .chip-edit-btn {
+      padding: 2px 6px;
+      font-size: 11px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 5px;
+      color: #e2e8f0;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 14px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    input[type="text"], input[type="password"], input[type="number"], textarea, select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 15px;
+      user-select: text;
+    }
+
+    .boat-select-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .boat-check-btn {
+      padding: 10px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-sub);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .boat-check-btn.active {
+      background: var(--accent-blue-bg);
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    .toast {
+      position: fixed;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      display: none;
+      max-width: 92vw;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">⚓ 山下丸 釣り座管理</div>
+    <div class="header-btns">
+      <button onclick="openModal('ocrModal')">📷 予約表読込</button>
+      <button onclick="openModal('setupModal')">⚙ 配船・設定</button>
+      <button class="primary" onclick="openModal('exportModal')">📤 32号連携</button>
+    </div>
+  </header>
+
+  <div class="boat-tabs" id="boatTabs"></div>
+
+  <div class="mode-bar">
+    <button id="holdModeBtn" class="hold-toggle" onclick="toggleHoldMode()">
+      🟠 朝イチ仮押さえモード：OFF
+    </button>
+    <button class="success" onclick="autoAssignRemaining()">✨ 残り自動配置</button>
+  </div>
+
+  <div class="container" id="mainContainer"></div>
+
+  <!-- 下部ドック：予約グループ一覧 -->
+  <div class="bottom-dock">
+    <div class="dock-header">
+      <div class="dock-status" id="dockStatus">予約未読込</div>
+      <div style="display:flex; gap:6px;">
+        <button style="padding:4px 8px; font-size:12px;" onclick="openModal('addGuestModal')">＋ 手動追加</button>
+        <button style="padding:4px 8px; font-size:12px;" onclick="clearSelection()">選択解除</button>
+      </div>
+    </div>
+    <div class="guest-list" id="guestList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- モーダル1：配船・API設定 -->
+  <div class="modal-backdrop" id="setupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">⚙ 本日の配船・アプリ設定</div>
+        <button onclick="closeModal('setupModal')">閉じる</button>
+      </div>
+
+      <div class="field">
+        <label>出船する船を選択（複数選択可）</label>
+        <div class="boat-select-grid" id="boatChoiceGrid"></div>
+      </div>
+
+      <div id="boatCapSettings"></div>
+
+      <div class="field">
+        <label>Gemini APIキー（予約表の写真解析用）</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." onchange="saveApiKey()" />
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="danger" style="flex:1;" onclick="resetAllSeats()">座席のみ全リセット</button>
+        <button class="primary" style="flex:1;" onclick="closeModal('setupModal')">完了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル2：予約表画像解析（Gemini API） -->
+  <div class="modal-backdrop" id="ocrModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📷 予約表の写真から自動読込</div>
+        <button onclick="closeModal('ocrModal')">閉じる</button>
+      </div>
+
+      <div class="field">
+        <label>ターゲット魚種（複数ある場合の絞り込みヒント）</label>
+        <input type="text" id="targetFishInput" value="カワハギ" placeholder="例：カワハギ、アマダイ" />
+      </div>
+
+      <div class="field">
+        <label>予約表の画像を選択（LINEで保存した画像）</label>
+        <input type="file" id="ocrFileInput" accept="image/*" />
+      </div>
+
+      <button class="primary" style="width:100%; padding:12px;" id="runOcrBtn" onclick="runGeminiOcr()">
+        AIで予約表を解析・検算する
+      </button>
+
+      <div id="ocrResultBox" style="margin-top:12px; font-size:13px;"></div>
+    </div>
+  </div>
+
+  <!-- モーダル3：予約グループ手動追加 -->
+  <div class="modal-backdrop" id="addGuestModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">＋ 予約グループ追加</div>
+        <button onclick="closeModal('addGuestModal')">閉じる</button>
+      </div>
+      <div class="field">
+        <label>代表者名</label>
+        <input type="text" id="newGuestName" placeholder="例：赤岸" />
+      </div>
+      <div class="field">
+        <label>人数</label>
+        <input type="number" id="newGuestCount" value="1" min="1" max="13" />
+      </div>
+      <div class="field">
+        <label>備品・メモ（貸し竿・カラ・前日場所取など）</label>
+        <input type="text" id="newGuestNote" placeholder="例：前日場所取 / 竿2 / カラ" />
+      </div>
+      <button class="primary" style="width:100%; padding:12px;" onclick="addManualGuest()">リストに追加する</button>
+    </div>
+  </div>
+
+  <!-- モーダル4：予約グループ編集・削除 -->
+  <div class="modal-backdrop" id="editGuestModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">✎ 予約内容の修正・削除</div>
+        <button onclick="closeModal('editGuestModal')">閉じる</button>
+      </div>
+      <input type="hidden" id="editGuestId" />
+      <div class="field">
+        <label>代表者名（読み取り誤字の修正など）</label>
+        <input type="text" id="editGuestName" />
+      </div>
+      <div class="field">
+        <label>人数（急な人数変更）</label>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button style="padding:10px 18px; font-size:18px;" onclick="stepEditCount(-1)">−</button>
+          <input type="number" id="editGuestCount" min="1" max="13" style="text-align:center; font-size:18px; font-weight:800;" />
+          <button style="padding:10px 18px; font-size:18px;" onclick="stepEditCount(1)">＋</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>備品・メモ（前日場所取 / 竿 / カラ など）</label>
+        <input type="text" id="editGuestNote" />
+      </div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="danger" style="flex:1; padding:12px;" onclick="deleteEditingGuest()">🗑 この予約を削除</button>
+        <button class="primary" style="flex:1; padding:12px;" onclick="saveEditingGuest()">✅ 変更を保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル5：32号船データ連携出力 -->
+  <div class="modal-backdrop" id="exportModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📤 第32号船 釣果アプリ連携</div>
+        <button onclick="closeModal('exportModal')">閉じる</button>
+      </div>
+      <p style="font-size:13px; color:var(--text-sub); margin-top:0;">
+        確定した<b>32号船</b>の左右座席表データを、釣果記録アプリへ渡す形式で出力・保存します。
+      </p>
+      <textarea id="exportJsonArea" rows="10" readonly style="font-family:monospace; font-size:12px;"></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="primary" style="flex:1;" onclick="copy32Export()">📋 データをコピー</button>
+        <button class="success" style="flex:1;" onclick="save32ToSharedStorage()">💾 ブラウザ共有領域に保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AVAILABLE_BOATS = ["32号船", "31号船", "27号船", "25号船", "智丸"];
+    const STORAGE_KEY = "yamashitamaru_seat_app_v1";
+    const SHARED_32_KEY = "yamashitamaru_seat_32_export";
+
+    let state = {
+      activeView: "overview",
+      holdMode: false,
+      selectedGuestId: null,
+      boats: [
+        { name: "32号船", leftCap: 10, rightCap: 10, leftSeats: Array(10).fill(null), rightSeats: Array(10).fill(null) },
+        { name: "31号船", leftCap: 10, rightCap: 10, leftSeats: Array(10).fill(null), rightSeats: Array(10).fill(null) },
+        { name: "27号船", leftCap: 10, rightCap: 10, leftSeats: Array(10).fill(null), rightSeats: Array(10).fill(null) }
+      ],
+      guests: []
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state = { ...state, ...parsed };
+        } catch (e) {}
+      }
+      const savedKey = localStorage.getItem("gemini_api_key") || "";
+      document.getElementById("apiKeyInput").value = savedKey;
+      renderAll();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function saveApiKey() {
+      const val = document.getElementById("apiKeyInput").value.trim();
+      localStorage.setItem("gemini_api_key", val);
+      showToast("APIキーを保存しました");
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.style.display = "none"; }, 2800);
+    }
+
+    function syncSeatArrays(boat) {
+      while (boat.leftSeats.length < boat.leftCap) boat.leftSeats.push(null);
+      if (boat.leftSeats.length > boat.leftCap) boat.leftSeats.length = boat.leftCap;
+      while (boat.rightSeats.length < boat.rightCap) boat.rightSeats.push(null);
+      if (boat.rightSeats.length > boat.rightCap) boat.rightSeats.length = boat.rightCap;
+    }
+
+    function canFitAllRemaining(boatsSnapshot, unplacedGuests) {
+      if (unplacedGuests.length === 0) return true;
+      const blocks = [];
+      boatsSnapshot.forEach(b => {
+        ["leftSeats", "rightSeats"].forEach(sideKey => {
+          let run = 0;
+          b[sideKey].forEach(cell => {
+            if (cell === null) {
+              run++;
+            } else {
+              if (run > 0) blocks.push(run);
+              run = 0;
+            }
+          });
+          if (run > 0) blocks.push(run);
+        });
+      });
+
+      const totalEmpty = blocks.reduce((a, b) => a + b, 0);
+      const totalNeeded = unplacedGuests.reduce((a, g) => a + g.count, 0);
+      if (totalEmpty < totalNeeded) return false;
+
+      const sorted = [...unplacedGuests].sort((a, b) => b.count - a.count);
+
+      function backtrack(idx, remBlocks) {
+        if (idx === sorted.length) return true;
+        const need = sorted[idx].count;
+        const tried = new Set();
+        for (let i = 0; i < remBlocks.length; i++) {
+          const cap = remBlocks[i];
+          if (cap >= need && !tried.has(cap)) {
+            tried.add(cap);
+            const nextBlocks = [...remBlocks];
+            nextBlocks[i] = cap - need;
+            if (backtrack(idx + 1, nextBlocks)) return true;
+          }
+        }
+        return false;
+      }
+
+      return backtrack(0, blocks);
+    }
+
+    function evaluatePlacement(boatIdx, sideKey, startIdx, guest) {
+      const boat = state.boats[boatIdx];
+      const arr = boat[sideKey];
+      const count = guest.count;
+      if (startIdx + count > arr.length) return { valid: false };
+
+      for (let i = startIdx; i < startIdx + count; i++) {
+        const cell = arr[i];
+        if (cell && cell.type === "ASSIGNED" && cell.guestId !== guest.id) {
+          return { valid: false };
+        }
+      }
+
+      const clonedBoats = JSON.parse(JSON.stringify(state.boats));
+      clonedBoats.forEach(b => {
+        ["leftSeats", "rightSeats"].forEach(sk => {
+          b[sk] = b[sk].map(c => (c && c.guestId === guest.id) ? null : c);
+        });
+      });
+
+      for (let i = startIdx; i < startIdx + count; i++) {
+        clonedBoats[boatIdx][sideKey][i] = { type: "ASSIGNED", guestId: guest.id };
+      }
+
+      const placedIds = new Set();
+      clonedBoats.forEach(b => {
+        ["leftSeats", "rightSeats"].forEach(sk => {
+          b[sk].forEach(c => { if (c && c.type === "ASSIGNED") placedIds.add(c.guestId); });
+        });
+      });
+
+      const remaining = state.guests.filter(g => !placedIds.has(g.id));
+      const fitsPerfectly = canFitAllRemaining(clonedBoats, remaining);
+      return { valid: true, fitsPerfectly };
+    }
+
+    function handleSeatClick(boatIdx, sideKey, seatIdx) {
+      const boat = state.boats[boatIdx];
+      const arr = boat[sideKey];
+      const current = arr[seatIdx];
+
+      if (state.holdMode) {
+        if (current && current.type === "ASSIGNED") {
+          showToast("確定済みの席です（解除するには名前を選んでタップ）");
+          return;
+        }
+        arr[seatIdx] = (current && current.type === "HOLD") ? null : { type: "HOLD" };
+        saveState();
+        renderAll();
+        return;
+      }
+
+      if (state.selectedGuestId) {
+        const guest = state.guests.find(g => g.id === state.selectedGuestId);
+        if (!guest) return;
+
+        if (current && current.type === "ASSIGNED" && current.guestId === guest.id) {
+          removeGuestFromBoats(guest.id);
+          saveState();
+          renderAll();
+          showToast(`${guest.name}様の座席を解除しました`);
+          return;
+        }
+
+        let targetStart = seatIdx;
+        if (targetStart + guest.count > arr.length) {
+          targetStart = Math.max(0, arr.length - guest.count);
+        }
+
+        const evalRes = evaluatePlacement(boatIdx, sideKey, targetStart, guest);
+        if (!evalRes.valid) {
+          showToast("他の確定済みのお客様と重なるため配置できません");
+          return;
+        }
+
+        removeGuestFromBoats(guest.id);
+        for (let i = targetStart; i < targetStart + guest.count; i++) {
+          arr[i] = {
+            type: "ASSIGNED",
+            guestId: guest.id,
+            name: guest.name,
+            count: guest.count,
+            note: guest.note,
+            isHead: i === targetStart
+          };
+        }
+
+        state.selectedGuestId = null;
+        saveState();
+        renderAll();
+        if (!evalRes.fitsPerfectly) {
+          showToast(`⚠️ ${guest.name}様(${guest.count}名)を配置（残り客の分断注意）`);
+        } else {
+          showToast(`✅ ${guest.name}様(${guest.count}名)を確定しました`);
+        }
+        return;
+      }
+
+      if (current && current.type === "ASSIGNED") {
+        state.selectedGuestId = current.guestId;
+        renderAll();
+        showToast(`${current.name}様を選択中（移動先タップ、または再タップで解除）`);
+        return;
+      }
+
+      if (current && current.type === "HOLD") {
+        arr[seatIdx] = null;
+        saveState();
+        renderAll();
+        showToast("仮押さえを1席解除しました");
+        return;
+      }
+
+      showToast("下の予約リストから名前を選ぶか、仮押さえモードをONにしてください");
+    }
+
+    function removeGuestFromBoats(guestId) {
+      state.boats.forEach(b => {
+        ["leftSeats", "rightSeats"].forEach(sk => {
+          b[sk] = b[sk].map(c => (c && c.guestId === guestId) ? null : c);
+        });
+      });
+    }
+
+    function autoAssignRemaining() {
+      const placedIds = getPlacedGuestIds();
+      const unplaced = state.guests.filter(g => !placedIds.has(g.id)).sort((a, b) => b.count - a.count);
+
+      if (unplaced.length === 0) {
+        showToast("全員すでに配置済みです！");
+        return;
+      }
+
+      function getEmptyRuns() {
+        const runs = [];
+        state.boats.forEach((b, bIdx) => {
+          ["leftSeats", "rightSeats"].forEach(sk => {
+            let start = -1;
+            b[sk].forEach((c, idx) => {
+              if (c === null) {
+                if (start === -1) start = idx;
+              } else {
+                if (start !== -1) {
+                  runs.push({ bIdx, sk, start, len: idx - start });
+                  start = -1;
+                }
+              }
+            });
+            if (start !== -1) {
+              runs.push({ bIdx, sk, start, len: b[sk].length - start });
+            }
+          });
+        });
+        return runs;
+      }
+
+      let splitCount = 0;
+      for (const guest of unplaced) {
+        const runs = getEmptyRuns().filter(r => r.len >= guest.count).sort((a, b) => a.len - b.len);
+        if (runs.length > 0) {
+          const target = runs[0];
+          const arr = state.boats[target.bIdx][target.sk];
+          for (let i = target.start; i < target.start + guest.count; i++) {
+            arr[i] = {
+              type: "ASSIGNED",
+              guestId: guest.id,
+              name: guest.name,
+              count: guest.count,
+              note: guest.note,
+              isHead: i === target.start
+            };
+          }
+        } else {
+          splitCount++;
+          let leftToPlace = guest.count;
+          const allRuns = getEmptyRuns().sort((a, b) => b.len - a.len);
+          for (const r of allRuns) {
+            if (leftToPlace <= 0) break;
+            const take = Math.min(r.len, leftToPlace);
+            const arr = state.boats[r.bIdx][r.sk];
+            for (let i = r.start; i < r.start + take; i++) {
+              arr[i] = {
+                type: "ASSIGNED",
+                guestId: guest.id,
+                name: `${guest.name}(分)`,
+                count: guest.count,
+                note: guest.note,
+                isHead: i === r.start
+              };
+            }
+            leftToPlace -= take;
+          }
+        }
+      }
+
+      saveState();
+      renderAll();
+      if (splitCount > 0) {
+        showToast(`⚠️ 空き不足のため ${splitCount}組 が分断配置になりました`);
+      } else {
+        showToast("✨ 未配置グループを分断なしで自動配置しました！");
+      }
+    }
+
+    function getPlacedGuestIds() {
+      const ids = new Set();
+      state.boats.forEach(b => {
+        ["leftSeats", "rightSeats"].forEach(sk => {
+          b[sk].forEach(c => { if (c && c.type === "ASSIGNED") ids.add(c.guestId); });
+        });
+      });
+      return ids;
+    }
+
+    function toggleHoldMode() {
+      state.holdMode = !state.holdMode;
+      if (state.holdMode) state.selectedGuestId = null;
+      renderAll();
+    }
+
+    function clearSelection() {
+      state.selectedGuestId = null;
+      state.holdMode = false;
+      renderAll();
+    }
+
+    function changeCap(boatIdx, side, delta) {
+      const boat = state.boats[boatIdx];
+      const key = side === "left" ? "leftCap" : "rightCap";
+      const next = boat[key] + delta;
+      if (next < 1 || next > 13) return;
+      boat[key] = next;
+      syncSeatArrays(boat);
+      saveState();
+      renderAll();
+    }
+
+    function swapSidesCap(boatIdx) {
+      const boat = state.boats[boatIdx];
+      const tmp = boat.leftCap;
+      boat.leftCap = boat.rightCap;
+      boat.rightCap = tmp;
+      syncSeatArrays(boat);
+      saveState();
+      renderAll();
+      showToast("左右の定員を入れ替えました");
+    }
+
+    function getPosLabel(idx, total) {
+      if (idx === 0) return "1 (ミヨシ)";
+      if (idx === total - 1) return `${idx + 1} (オオドモ)`;
+      return `${idx + 1}`;
+    }
+
+    function renderAll() {
+      renderTabs();
+      renderModeBar();
+      renderMain();
+      renderDock();
+    }
+
+    function renderTabs() {
+      const tabsEl = document.getElementById("boatTabs");
+      let html = `<div class="boat-tab ${state.activeView === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体 (${state.boats.length}隻)</div>`;
+      state.boats.forEach(b => {
+        const emptyCount = b.leftSeats.filter(x => x === null).length + b.rightSeats.filter(x => x === null).length;
+        html += `<div class="boat-tab ${state.activeView === b.name ? 'active' : ''}" onclick="setView('${b.name}')">${b.name}<br><span style="font-size:11px;font-weight:normal;">空${emptyCount}</span></div>`;
+      });
+      tabsEl.innerHTML = html;
+    }
+
+    function setView(v) {
+      state.activeView = v;
+      renderAll();
+    }
+
+    function renderModeBar() {
+      const btn = document.getElementById("holdModeBtn");
+      if (state.holdMode) {
+        btn.classList.add("active");
+        btn.textContent = "🟠 仮押さえモード：ON（席をタップ）";
+      } else {
+        btn.classList.remove("active");
+        btn.textContent = "🟠 朝イチ仮押さえモード：OFF";
+      }
+    }
+
+    function renderMain() {
+      const container = document.getElementById("mainContainer");
+      const selectedGuest = state.guests.find(g => g.id === state.selectedGuestId);
+
+      const highlightMap = {};
+      if (selectedGuest) {
+        state.boats.forEach((b, bIdx) => {
+          ["leftSeats", "rightSeats"].forEach(sk => {
+            for (let i = 0; i <= b[sk].length - selectedGuest.count; i++) {
+              const res = evaluatePlacement(bIdx, sk, i, selectedGuest);
+              if (res.valid) {
+                for (let k = i; k < i + selectedGuest.count; k++) {
+                  const key = `${bIdx}-${sk}-${k}`;
+                  if (!highlightMap[key] || res.fitsPerfectly) {
+                    highlightMap[key] = res.fitsPerfectly ? "fit-ok" : "fit-warn";
+                  }
+                }
+              }
+            }
+          });
+        });
+      }
+
+      if (state.activeView === "overview") {
+        let html = `<div class="overview-grid">`;
+        state.boats.forEach((b, bIdx) => {
+          const leftEmpty = b.leftSeats.filter(x => x === null).length;
+          const rightEmpty = b.rightSeats.filter(x => x === null).length;
+          html += `
+            <div class="overview-card" onclick="setView('${b.name}')">
+              <div class="overview-card-header">
+                <div class="overview-boat-name">🚢 ${b.name} <span style="font-size:12px;color:#38bdf8;">（タップで詳細）</span></div>
+                <div class="overview-counts">
+                  <span>左空:<b>${leftEmpty}</b>/${b.leftCap}</span>
+                  <span>右空:<b>${rightEmpty}</b>/${b.rightCap}</span>
+                </div>
+              </div>
+              <div class="mini-hull">
+                <div class="mini-side">
+                  <div class="mini-side-label">▲ 左舷（ミヨシ→オオドモ）</div>
+                  ${b.leftSeats.map((c, idx) => renderMiniSeat(c, idx, b.leftCap, highlightMap[`${bIdx}-leftSeats-${idx}`])).join("")}
+                </div>
+                <div class="mini-side">
+                  <div class="mini-side-label">▲ 右舷（ミヨシ→オオドモ）</div>
+                  ${b.rightSeats.map((c, idx) => renderMiniSeat(c, idx, b.rightCap, highlightMap[`${bIdx}-rightSeats-${idx}`])).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+      } else {
+        const bIdx = state.boats.findIndex(b => b.name === state.activeView);
+        if (bIdx === -1) {
+          state.activeView = "overview";
+          renderMain();
+          return;
+        }
+        const b = state.boats[bIdx];
+        let html = `
+          <div class="detail-controls">
+            <div class="cap-row">
+              <div class="cap-box">
+                <div class="cap-box-title">左舷 定員</div>
+                <div class="cap-btns">
+                  <button onclick="changeCap(${bIdx}, 'left', -1)">−</button>
+                  <span class="cap-num">${b.leftCap}</span>
+                  <button onclick="changeCap(${bIdx}, 'left', 1)">＋</button>
+                </div>
+              </div>
+              <button style="padding:10px 8px;" onclick="swapSidesCap(${bIdx})">⇄<br>左右入替</button>
+              <div class="cap-box">
+                <div class="cap-box-title">右舷 定員</div>
+                <div class="cap-btns">
+                  <button onclick="changeCap(${bIdx}, 'right', -1)">−</button>
+                  <span class="cap-num">${b.rightCap}</span>
+                  <button onclick="changeCap(${bIdx}, 'right', 1)">＋</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bow-label">▲ ミヨシ（船首） ▲</div>
+          <div class="detail-hull">
+            <div class="detail-col">
+              <div style="text-align:center;font-size:12px;font-weight:700;color:#94a3b8;">左 舷</div>
+              ${b.leftSeats.map((c, idx) => renderDetailSeat(bIdx, "leftSeats", c, idx, b.leftCap, highlightMap[`${bIdx}-leftSeats-${idx}`])).join("")}
+            </div>
+            <div class="detail-col">
+              <div style="text-align:center;font-size:12px;font-weight:700;color:#94a3b8;">右 舷</div>
+              ${b.rightSeats.map((c, idx) => renderDetailSeat(bIdx, "rightSeats", c, idx, b.rightCap, highlightMap[`${bIdx}-rightSeats-${idx}`])).join("")}
+            </div>
+          </div>
+          <div class="stern-label">▼ オオドモ（船尾） ▼</div>
+        `;
+        container.innerHTML = html;
+      }
+    }
+
+    function renderMiniSeat(cell, idx, total, hlClass) {
+      let cls = "mini-seat";
+      let text = "空";
+      if (cell) {
+        if (cell.type === "HOLD") { cls += " hold"; text = "仮押さえ"; }
+        if (cell.type === "ASSIGNED") { cls += " assigned"; text = cell.name; }
+      } else if (hlClass) {
+        cls += ` ${hlClass}`;
+        text = hlClass === "fit-ok" ? "案内OK" : "分断注意";
+      }
+      return `<div class="${cls}"><span>${idx + 1}</span><span>${text}</span></div>`;
+    }
+
+    function renderDetailSeat(bIdx, sideKey, cell, idx, total, hlClass) {
+      let cls = "seat-card";
+      let bodyHtml = `<div class="seat-name" style="color:#475569;font-size:13px;">空席</div>`;
+
+      if (cell) {
+        if (cell.type === "HOLD") {
+          cls += " hold";
+          bodyHtml = `<div class="seat-name" style="color:#fcd34d;">🟠 仮押さえ（場所取済）</div>`;
+        } else if (cell.type === "ASSIGNED") {
+          cls += " assigned";
+          const noteBadges = cell.note ? cell.note.split("/").map(n => `<span class="badge">${n.trim()}</span>`).join("") : "";
+          bodyHtml = `
+            <div class="seat-name">${cell.name} <span style="font-size:12px;font-weight:normal;">(${cell.count}名)</span></div>
+            ${noteBadges ? `<div class="seat-badges">${noteBadges}</div>` : ""}
+          `;
+        }
+      } else if (hlClass) {
+        cls += ` ${hlClass}`;
+        bodyHtml = `<div class="seat-name" style="color:${hlClass === 'fit-ok' ? '#6ee7b7' : '#fde047'};font-size:13px;">
+          ${hlClass === 'fit-ok' ? '✅ ここに案内OK' : '⚠️ 残り分断注意'}
+        </div>`;
+      }
+
+      return `
+        <div class="${cls}" onclick="handleSeatClick(${bIdx}, '${sideKey}', ${idx})">
+          <div class="seat-top">
+            <span class="seat-pos-tag">${getPosLabel(idx, total)}</span>
+          </div>
+          ${bodyHtml}
+        </div>
+      `;
+    }
+
+    function renderDock() {
+      const placedIds = getPlacedGuestIds();
+      const totalGuests = state.guests.reduce((a, g) => a + g.count, 0);
+      const unplacedGuests = state.guests.filter(g => !placedIds.has(g.id));
+      const unplacedPeople = unplacedGuests.reduce((a, g) => a + g.count, 0);
+      const totalCap = state.boats.reduce((a, b) => a + b.leftCap + b.rightCap, 0);
+
+      document.getElementById("dockStatus").textContent =
+        `未配置: ${unplacedPeople}名 (${unplacedGuests.length}組) / 予約計: ${totalGuests}名 / 総席数: ${totalCap}席`;
+
+      const listEl = document.getElementById("guestList");
+      if (state.guests.length === 0) {
+        listEl.innerHTML = `<div style="color:var(--text-sub);font-size:12px;padding:10px;">「📷 予約表読込」または「＋ 手動追加」から予約を入れてください</div>`;
+        return;
+      }
+
+      const sorted = [
+        ...state.guests.filter(g => !placedIds.has(g.id)),
+        ...state.guests.filter(g => placedIds.has(g.id))
+      ];
+
+      listEl.innerHTML = sorted.map(g => {
+        const isPlaced = placedIds.has(g.id);
+        const isSelected = state.selectedGuestId === g.id;
+        return `
+          <div class="guest-chip ${isSelected ? 'selected' : ''} ${isPlaced ? 'placed' : ''}" onclick="selectGuest('${g.id}')">
+            <div class="guest-chip-top">
+              <span>${g.name}</span>
+              <span class="guest-count">${g.count}名</span>
+            </div>
+            <div class="guest-bottom-row">
+              <div class="guest-meta">${isPlaced ? '✅ 配置済' : (g.note || '通常予約')}</div>
+              <button class="chip-edit-btn" onclick="openEditGuest(event, '${g.id}')">✎</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function selectGuest(id) {
+      state.holdMode = false;
+      state.selectedGuestId = (state.selectedGuestId === id) ? null : id;
+      renderAll();
+    }
+
+    // 予約編集モーダル制御
+    function openEditGuest(event, id) {
+      event.stopPropagation();
+      const guest = state.guests.find(g => g.id === id);
+      if (!guest) return;
+      document.getElementById("editGuestId").value = guest.id;
+      document.getElementById("editGuestName").value = guest.name;
+      document.getElementById("editGuestCount").value = guest.count;
+      document.getElementById("editGuestNote").value = guest.note || "";
+      openModal("editGuestModal");
+    }
+
+    function stepEditCount(delta) {
+      const inp = document.getElementById("editGuestCount");
+      const val = Math.min(13, Math.max(1, (parseInt(inp.value, 10) || 1) + delta));
+      inp.value = val;
+    }
+
+    function saveEditingGuest() {
+      const id = document.getElementById("editGuestId").value;
+      const newName = document.getElementById("editGuestName").value.trim();
+      const newCount = Math.min(13, Math.max(1, parseInt(document.getElementById("editGuestCount").value, 10) || 1));
+      const newNote = document.getElementById("editGuestNote").value.trim();
+
+      if (!newName) {
+        showToast("名前を入力してください");
+        return;
+      }
+
+      const guest = state.guests.find(g => g.id === id);
+      if (!guest) return;
+
+      const oldCount = guest.count;
+      guest.name = newName;
+      guest.count = newCount;
+      guest.note = newNote;
+
+      // すでに座席に配置済みの場合の連動更新
+      let placedLoc = null;
+      state.boats.forEach((b, bIdx) => {
+        ["leftSeats", "rightSeats"].forEach(sk => {
+          const firstIdx = b[sk].findIndex(c => c && c.type === "ASSIGNED" && c.guestId === id);
+          if (firstIdx !== -1 && !placedLoc) {
+            placedLoc = { bIdx, sk, firstIdx };
+          }
+        });
+      });
+
+      if (placedLoc) {
+        if (oldCount === newCount) {
+          // 名前とメモだけ上書き
+          state.boats.forEach(b => {
+            ["leftSeats", "rightSeats"].forEach(sk => {
+              b[sk].forEach(c => {
+                if (c && c.type === "ASSIGNED" && c.guestId === id) {
+                  c.name = newName;
+                  c.note = newNote;
+                }
+              });
+            });
+          });
+        } else {
+          // 人数が変わった場合は一旦外して同じ場所に入り直すかチェック
+          removeGuestFromBoats(id);
+          const evalRes = evaluatePlacement(placedLoc.bIdx, placedLoc.sk, placedLoc.firstIdx, guest);
+          if (evalRes.valid) {
+            const arr = state.boats[placedLoc.bIdx][placedLoc.sk];
+            for (let i = placedLoc.firstIdx; i < placedLoc.firstIdx + newCount; i++) {
+              arr[i] = {
+                type: "ASSIGNED",
+                guestId: id,
+                name: newName,
+                count: newCount,
+                note: newNote,
+                isHead: i === placedLoc.firstIdx
+              };
+            }
+          } else {
+            showToast(`人数変更により元の席に入りきらないため、未配置に戻しました`);
+          }
+        }
+      }
+
+      saveState();
+      renderAll();
+      closeModal("editGuestModal");
+      showToast(`${newName}様の情報を更新しました`);
+    }
+
+    function deleteEditingGuest() {
+      const id = document.getElementById("editGuestId").value;
+      const guest = state.guests.find(g => g.id === id);
+      if (!guest) return;
+      if (!confirm(`${guest.name}様(${guest.count}名)の予約を削除しますか？`)) return;
+
+      removeGuestFromBoats(id);
+      state.guests = state.guests.filter(g => g.id !== id);
+      if (state.selectedGuestId === id) state.selectedGuestId = null;
+
+      saveState();
+      renderAll();
+      closeModal("editGuestModal");
+      showToast(`${guest.name}様を削除しました`);
+    }
+
+    function renderSetupModal() {
+      const grid = document.getElementById("boatChoiceGrid");
+      const activeNames = state.boats.map(b => b.name);
+      grid.innerHTML = AVAILABLE_BOATS.map(name => {
+        const isOn = activeNames.includes(name);
+        return `<div class="boat-check-btn ${isOn ? 'active' : ''}" onclick="toggleBoatSelection('${name}')">${name}</div>`;
+      }).join("");
+
+      const capDiv = document.getElementById("boatCapSettings");
+      capDiv.innerHTML = state.boats.map((b, idx) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-input);padding:8px 10px;border-radius:8px;margin-bottom:6px;border:1px solid var(--border);">
+          <b>${b.name}</b>
+          <div style="font-size:13px;">
+            左:<b>${b.leftCap}</b>席 / 右:<b>${b.rightCap}</b>席
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function toggleBoatSelection(name) {
+      const idx = state.boats.findIndex(b => b.name === name);
+      if (idx !== -1) {
+        if (state.boats.length <= 1) {
+          showToast("最低1隻は必要です");
+          return;
+        }
+        state.boats.splice(idx, 1);
+      } else {
+        state.boats.push({
+          name,
+          leftCap: 10,
+          rightCap: 10,
+          leftSeats: Array(10).fill(null),
+          rightSeats: Array(10).fill(null)
+        });
+      }
+      saveState();
+      renderSetupModal();
+      renderAll();
+    }
+
+    function resetAllSeats() {
+      if (!confirm("すべての座席の配置と仮押さえをクリアしますか？")) return;
+      state.boats.forEach(b => {
+        b.leftSeats = Array(b.leftCap).fill(null);
+        b.rightSeats = Array(b.rightCap).fill(null);
+      });
+      saveState();
+      renderAll();
+      showToast("座席をすべて空席に戻しました");
+    }
+
+    function addManualGuest() {
+      const name = document.getElementById("newGuestName").value.trim();
+      const count = parseInt(document.getElementById("newGuestCount").value, 10) || 1;
+      const note = document.getElementById("newGuestNote").value.trim();
+      if (!name) {
+        showToast("名前を入力してください");
+        return;
+      }
+      state.guests.push({
+        id: "g_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        name,
+        count,
+        note
+      });
+      document.getElementById("newGuestName").value = "";
+      document.getElementById("newGuestNote").value = "";
+      saveState();
+      renderAll();
+      closeModal("addGuestModal");
+      showToast(`${name}様(${count}名)を追加しました`);
+    }
+
+    async function runGeminiOcr() {
+      const apiKey = localStorage.getItem("gemini_api_key");
+      if (!apiKey) {
+        showToast("先に「⚙ 配船・設定」でGemini APIキーを入力してください");
+        return;
+      }
+      const fileInput = document.getElementById("ocrFileInput");
+      if (!fileInput.files || !fileInput.files[0]) {
+        showToast("予約表の画像を選択してください");
+        return;
+      }
+
+      const targetFish = document.getElementById("targetFishInput").value.trim();
+      const btn = document.getElementById("runOcrBtn");
+      const resBox = document.getElementById("ocrResultBox");
+      btn.disabled = true;
+      btn.textContent = "解析中...";
+      resBox.innerHTML = "画像を読み取って人数を検算しています...";
+
+      try {
+        const base64Data = await fileToBase64(fileInput.files[0]);
+        const prompt = `
+あなたは釣船「山下丸」の手書き予約表を正確に読み取るアシスタントです。
+画像から「${targetFish || "乗合船"}」の予約リストを抽出し、必ず以下のJSON形式のみを出力してください。
+
+【解析ルール】
+1. 取消線が引かれている名前は除外すること。
+2. 仕立船（貸切）ではなく、乗合船の欄を対象にすること。
+3. 名前の前に小さい点（・）が付いている場合は「前日場所取」と判定すること。
+4. 名前の下の略号：「竿+数字」は貸し竿本数、「カラ」は殻付きアサリ、「JK+数字」はライフジャケット、「C」は車、「by」はバイク、「T」は電車。
+5. 行ごとに人数を正確に数え、表に書かれている合計人数（記載トータル）と一致しているか検算すること。
+
+【出力JSONフォーマット】
+{
+  "writtenTotal": 40,
+  "calculatedTotal": 40,
+  "isMatch": true,
+  "note": "検算結果の補足",
+  "guests": [
+    { "name": "赤岸", "count": 3, "hasDot": true, "rod": 0, "kara": false, "rawNote": "前日場所取" }
+  ]
+}`;
+
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: fileInput.files[0].type || "image/jpeg", data: base64Data } }
+              ]
+            }],
+            generationConfig: { response_mime_type: "application/json" }
+          })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || "APIエラー");
+
+        const rawText = data.candidates[0].content.parts[0].text;
+        const parsed = JSON.parse(rawText);
+
+        state.guests = parsed.guests.map((g, idx) => {
+          const notes = [];
+          if (g.hasDot) notes.push("前日場所取");
+          if (g.rod > 0) notes.push(`竿${g.rod}`);
+          if (g.kara) notes.push("カラ");
+          return {
+            id: `ocr_${Date.now()}_${idx}`,
+            name: g.name,
+            count: Number(g.count) || 1,
+            note: notes.join(" / ")
+          };
+        });
+
+        saveState();
+        renderAll();
+
+        const matchMsg = parsed.isMatch
+          ? `<div style="color:#10b981;font-weight:bold;">✅ 検算一致：記載 ${parsed.writtenTotal}名 ＝ 合計 ${parsed.calculatedTotal}名</div>`
+          : `<div style="color:#ef4444;font-weight:bold;">⚠️ 人数不一致：記載 ${parsed.writtenTotal}名 ≠ 合計 ${parsed.calculatedTotal}名（確認してください）</div>`;
+
+        resBox.innerHTML = `${matchMsg}<div style="margin-top:6px;">${parsed.guests.length}組を取り込みました。モーダルを閉じて配置を開始できます。</div>`;
+        showToast("予約表の読み込みが完了しました");
+      } catch (err) {
+        resBox.innerHTML = `<div style="color:#ef4444;">エラー: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "AIで予約表を解析・検算する";
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function prepare32Export() {
+      const boat32 = state.boats.find(b => b.name === "32号船");
+      const area = document.getElementById("exportJsonArea");
+      if (!boat32) {
+        area.value = "本日の配船に「32号船」が含まれていません。";
+        return;
+      }
+      const payload = {
+        date: new Date().toISOString().slice(0, 10),
+        boat: "32号船",
+        left: boat32.leftSeats.map((c, i) => ({
+          seatNo: i + 1,
+          name: c && c.type === "ASSIGNED" ? c.name : "",
+          note: c && c.type === "ASSIGNED" ? c.note : ""
+        })),
+        right: boat32.rightSeats.map((c, i) => ({
+          seatNo: i + 1,
+          name: c && c.type === "ASSIGNED" ? c.name : "",
+          note: c && c.type === "ASSIGNED" ? c.note : ""
+        }))
+      };
+      area.value = JSON.stringify(payload, null, 2);
+    }
+
+    function copy32Export() {
+      const area = document.getElementById("exportJsonArea");
+      area.select();
+      navigator.clipboard.writeText(area.value);
+      showToast("32号船の座席データをコピーしました");
+    }
+
+    function save32ToSharedStorage() {
+      const val = document.getElementById("exportJsonArea").value;
+      localStorage.setItem(SHARED_32_KEY, val);
+      showToast("ブラウザ共有領域に保存しました（釣果アプリ連携用）");
+    }
+
+    function openModal(id) {
+      if (id === "setupModal") renderSetupModal();
+      if (id === "exportModal") prepare32Export();
+      document.getElementById(id).classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    loadState();
+  </script>
+</body>
+</html>
