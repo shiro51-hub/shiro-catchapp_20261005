@@ -321,7 +321,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v1";
+    const STORE_KEY = "yamashitamaru_seat_flow_v2";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [{ name: "32号船", leftCap: 10, rightCap: 10 }];
@@ -368,7 +368,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY);
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v1");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -493,7 +493,6 @@
     function startWithDraft() {
       if (draftBoats.length === 0) { toast("出船する船を1隻以上選んでください"); return; }
 
-      // 既存の船データがあれば同名の船の配置を引き継ぐ（定員が変わった場合は調整）
       const oldMap = new Map(state.boats.map(b => [b.name, b]));
       state.boats = draftBoats.map(b => {
         const lc = Number(b.leftCap) || 10, rc = Number(b.rightCap) || 10;
@@ -530,7 +529,6 @@
       toast("新しい営業日用に初期化しました");
     }
 
-    // パズル判定（定員オーバー時は誤作動しないようガード付き）
     function canFitAll(boatsSnap, unplaced) {
       if (unplaced.length === 0) return true;
       const blocks = [];
@@ -583,7 +581,6 @@
       const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
       if (unplaced.length === 0) return { status: "DONE", unplacedCount: 0 };
 
-      // そもそも総席数が予約人数より少ない場合は「定員オーバー」として別扱いする
       const totalCap = state.boats.reduce((a, b) => a + Number(b.leftCap) + Number(b.rightCap), 0);
       const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
       if (totalGuests > totalCap) {
@@ -611,22 +608,20 @@
       return { status: "FREE", unplacedCount: unplaced.length };
     }
 
-    // 座席ボタンタップ時の処理
+    // 座席ボタンタップ時の処理（配列参照ズレ修正済み）
     function handleSeatClick(bIdx, sk, idx) {
       const boat = state.boats[bIdx];
       if (!boat || !boat[sk]) return;
-      const arr = boat[sk];
       const seatIdx = Number(idx);
-      const cur = arr[seatIdx];
+      const cur = boat[sk][seatIdx];
 
       // 1. 仮押さえモード
       if (state.holdMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
         if (cur && cur.type === "HOLD") {
-          arr[seatIdx] = null;
+          state.boats[bIdx][sk][seatIdx] = null;
           save(); render(); return;
         }
-        // 未配置人数を超えて仮押さえしようとした場合のガード
         const placed = getPlacedIds();
         const unplacedGuestsCnt = state.guests.filter(g => !placed.has(String(g.id))).reduce((a, g) => a + Number(g.count), 0);
         let currentHolds = 0;
@@ -635,7 +630,7 @@
           toast(`⚠️ 未配置の予約人数（${unplacedGuestsCnt}名）以上の仮押さえはできません`);
           return;
         }
-        arr[seatIdx] = { type: "HOLD" };
+        state.boats[bIdx][sk][seatIdx] = { type: "HOLD" };
         save(); render(); return;
       }
 
@@ -652,22 +647,25 @@
         }
 
         const cnt = Number(g.count) || 1;
-        if (cnt > arr.length) {
-          toast(`⚠️ ${g.name}様は${cnt}名のため、この舷（全${arr.length}席）には入りきりません`);
+        const currentLen = state.boats[bIdx][sk].length;
+        if (cnt > currentLen) {
+          toast(`⚠️ ${g.name}様は${cnt}名のため、この舷（全${currentLen}席）には入りきりません`);
           return;
         }
 
         let st = seatIdx;
-        if (st + cnt > arr.length) st = Math.max(0, arr.length - cnt);
+        if (st + cnt > currentLen) st = Math.max(0, currentLen - cnt);
         const ev = evalPlace(bIdx, sk, st, g);
         if (!ev.valid) {
           toast(`⚠️ 他の確定済みのお客様と重なるため配置できません（連続${cnt}席の空きが必要です）`);
           return;
         }
 
+        // 先に既存の配置を消してから、最新の state.boats[bIdx][sk] を取得して書き込む
         removeGuest(g.id);
+        const targetArr = state.boats[bIdx][sk];
         for (let i = st; i < st + cnt; i++) {
-          arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
+          targetArr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
         }
         state.selId = null;
 
@@ -701,7 +699,7 @@
 
       // 4. 仮押さえ席をタップ → 解除
       if (cur && cur.type === "HOLD") {
-        arr[seatIdx] = null;
+        state.boats[bIdx][sk][seatIdx] = null;
         save(); render();
         toast("仮押さえを解除しました");
         return;
@@ -713,7 +711,11 @@
     function removeGuest(id) {
       const targetId = String(id);
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
-        b[sk] = b[sk].map(c => (c && String(c.guestId) === targetId) ? null : c);
+        for (let i = 0; i < b[sk].length; i++) {
+          if (b[sk][i] && String(b[sk][i].guestId) === targetId) {
+            b[sk][i] = null;
+          }
+        }
       }));
     }
 
@@ -1244,7 +1246,6 @@
         state.ocrWrittenTotal = parsed.writtenTotal || null;
         state.selId = null;
 
-        // 読取後、まずは確認画面（step: "verify"）へ移動
         state.step = "verify";
         save(); render();
         closeModal("ocrModal");
