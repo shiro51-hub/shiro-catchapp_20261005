@@ -289,12 +289,12 @@
       box-shadow: inset 0 3px 0 #4ade80;
     }
 
-    /* 操作バー（荷物■ / 店取り● ＋ 1つ前に戻す） */
+    /* 操作バー（荷物■ / 店取り● ＋ 戻す / 進む 2分割） */
     .mode-bar {
       display: flex; flex-direction: column; padding: 8px 10px;
       background: rgba(19, 28, 49, 0.92); border-bottom: 1px solid var(--bd); gap: 7px;
     }
-    .mark-split {
+    .mark-split, .history-split {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;
     }
     .bag-btn {
@@ -313,7 +313,7 @@
       background: var(--shop-bg); border-color: var(--shop-bd); color: var(--shop-tx);
       box-shadow: 0 0 0 1px var(--shop-bd) inset;
     }
-    .undo-btn {
+    .undo-btn, .redo-btn {
       width: 100%; padding: 9px 8px; font-size: 14px; font-weight: 800;
       background: #1e293b; border: 1px solid #475569; color: #e2e8f0;
     }
@@ -386,9 +386,16 @@
     .seat.assigned { background: var(--blue-bg); border-color: #3b82f6; }
     .seat.fit-ok { background: var(--green-bg); border-color: var(--green); }
     .seat.fit-warn { background: #3b2f06; border-color: #eab308; }
-    .s-pos { font-size: 13px; color: var(--sub); font-weight: 700; }
+    .s-pos { font-size: 13px; color: var(--sub); font-weight: 700; width: 100%; }
     .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .s-holder { font-size: 14px; font-weight: 800; margin-top: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-shop-center {
+      width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 2px 0;
+    }
+    .s-shop-dot {
+      font-size: 22px; line-height: 1.1; color: var(--shop-tx);
+    }
     .s-warn-msg { font-size: 12px; font-weight: 800; color: #fde047; line-height: 1.25; margin-top: 2px; }
     .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); margin-right: 4px; margin-top: 2px; }
 
@@ -583,13 +590,16 @@
     <!-- 統一デザインの船選択タブ -->
     <div class="tabs" id="boatTabs"></div>
 
-    <!-- スタッフ操作バー（残り自動確定は予約一覧の上部へ移動済み） -->
+    <!-- スタッフ操作バー（戻す / 進む 左右2分割） -->
     <div class="mode-bar" id="staffModeBar">
       <div class="mark-split">
         <button type="button" id="bagModeBtn" class="bag-btn" onclick="toggleMarkMode('BAG')">■ 荷物：OFF</button>
         <button type="button" id="shopModeBtn" class="shop-btn" onclick="toggleMarkMode('SHOP')">● 店取り：OFF</button>
       </div>
-      <button type="button" id="undoBtn" class="undo-btn" onclick="undoLastAction()" disabled>↩ 1つ前に戻す</button>
+      <div class="history-split">
+        <button type="button" id="undoBtn" class="undo-btn" onclick="undoLastAction()" disabled>↩ 戻す</button>
+        <button type="button" id="redoBtn" class="redo-btn" onclick="redoLastAction()" disabled>↪ 進む</button>
+      </div>
     </div>
   </div>
 
@@ -762,6 +772,7 @@
     let uidCounter = 1;
     let lastOcrImageDataUrl = null;
     let undoStack = [];
+    let redoStack = [];
     let shopLongPressTimer = null;
     let shopLongPressFired = false;
 
@@ -834,14 +845,19 @@
       }
     }
 
-    function pushUndo(actionLabel) {
-      undoStack.push({
-        label: actionLabel,
+    function captureSnapshot(label) {
+      return {
+        label,
         fishData: JSON.parse(JSON.stringify(state.fishData)),
         fishList: [...state.fishList],
         activeFish: state.activeFish
-      });
-      if (undoStack.length > 20) undoStack.shift();
+      };
+    }
+
+    function pushUndo(actionLabel) {
+      undoStack.push(captureSnapshot(actionLabel));
+      if (undoStack.length > 25) undoStack.shift();
+      redoStack = [];
     }
 
     function undoLastAction() {
@@ -850,13 +866,34 @@
         return;
       }
       const prev = undoStack.pop();
+      redoStack.push(captureSnapshot(prev.label));
+      if (redoStack.length > 25) redoStack.shift();
+
       state.fishData = prev.fishData;
       if (Array.isArray(prev.fishList)) state.fishList = prev.fishList;
       if (prev.activeFish) state.activeFish = prev.activeFish;
       state.selId = null;
       state.customSplitMode = false;
       save(); render();
-      toast(`↩ 1つ前に戻しました（${prev.label}）`);
+      toast(`↩ 戻しました（${prev.label}）`);
+    }
+
+    function redoLastAction() {
+      if (redoStack.length === 0) {
+        toast("これ以上進める操作がありません");
+        return;
+      }
+      const next = redoStack.pop();
+      undoStack.push(captureSnapshot(next.label));
+      if (undoStack.length > 25) undoStack.shift();
+
+      state.fishData = next.fishData;
+      if (Array.isArray(next.fishList)) state.fishList = next.fishList;
+      if (next.activeFish) state.activeFish = next.activeFish;
+      state.selId = null;
+      state.customSplitMode = false;
+      save(); render();
+      toast(`↪ 進みました（${next.label}）`);
     }
 
     function makeUniqueId(prefix) {
@@ -1341,6 +1378,7 @@
       state.fishData = { "不明": createEmptyFishSlot("不明") };
       draftBoats = [];
       undoStack = [];
+      redoStack = [];
       closeModal("setupModal");
       save(); render();
       toast("新しい営業日用に初期化しました");
@@ -1939,7 +1977,6 @@
       if (cur.guests.length === 0) {
         listHtml = `<div style="grid-column:1 / -1; font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">「読込」または「＋ 追加」から予約を入れてください</div>`;
       } else {
-        // 前日場所取も区別せず、純粋に人数順（多い順 / 少ない順）で並べる
         const sortFn = (a, b) => {
           return isAsc ? (Number(a.count) - Number(b.count)) : (Number(b.count) - Number(a.count));
         };
@@ -2268,7 +2305,11 @@
 
       const undoBtn = document.getElementById("undoBtn");
       undoBtn.disabled = undoStack.length === 0;
-      undoBtn.textContent = undoStack.length > 0 ? `↩ 1つ前に戻す(${undoStack.length})` : "↩ 1つ前に戻す";
+      undoBtn.textContent = undoStack.length > 0 ? `↩ 戻す(${undoStack.length})` : "↩ 戻す";
+
+      const redoBtn = document.getElementById("redoBtn");
+      redoBtn.disabled = redoStack.length === 0;
+      redoBtn.textContent = redoStack.length > 0 ? `↪ 進む(${redoStack.length})` : "↪ 進む";
 
       let tabsHtml = `<button type="button" class="tab ${cur.view === 'overview' ? 'active' : ''}" onclick="setView('overview')"><span class="tab-ship-label">全体</span><span class="tab-emp-label">${cur.boats.length}隻</span></button>`;
       cur.boats.forEach(b => {
@@ -2525,14 +2566,19 @@
     }
 
     function miniBtnHtml(bi, sk, c, i, h) {
-      let cls = "mini-seat", txt = "空";
+      let cls = "mini-seat", txt = "空", centerOnly = false;
       if (c) {
         if (c.type === "BAG") {
           cls += " bag";
           txt = c.holderName ? `■ ${c.holderName}(${c.holderCount || ""})` : "■ 荷物";
         } else if (c.type === "SHOP" || c.type === "HOLD") {
           cls += " shop";
-          txt = c.holderName ? `● ${c.holderName}(${c.holderCount || ""})` : "● 店取り";
+          if (c.holderName) {
+            txt = `● ${c.holderName}(${c.holderCount || ""})`;
+          } else {
+            txt = "●";
+            centerOnly = true;
+          }
         } else {
           cls += " assigned";
           txt = `${c.name}(${c.count})`;
@@ -2540,6 +2586,9 @@
       } else if (h) {
         cls += " " + h;
         txt = h === "fit-ok" ? "案内OK" : "並び不可";
+      }
+      if (centerOnly) {
+        return `<button type="button" class="${cls}" style="position:relative;" onpointerdown="startSeatPress(${bi},'${sk}',${i})" onpointerup="cancelSeatPress()" onpointerleave="cancelSeatPress()" onpointercancel="cancelSeatPress()" onclick="onSeatClickWrapper(${bi},'${sk}',${i})"><span>${i + 1}</span><span style="position:absolute;left:50%;transform:translateX(-50%);font-size:17px;line-height:1;">●</span><span style="width:14px;"></span></button>`;
       }
       return `<button type="button" class="${cls}" onpointerdown="startSeatPress(${bi},'${sk}',${i})" onpointerup="cancelSeatPress()" onpointerleave="cancelSeatPress()" onpointercancel="cancelSeatPress()" onclick="onSeatClickWrapper(${bi},'${sk}',${i})"><span>${i + 1}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:78%;">${txt}</span></button>`;
     }
@@ -2554,8 +2603,10 @@
           body = `<div class="s-name" style="color:var(--bag-tx);font-size:16px;">■ 荷物</div>${who}`;
         } else if (c.type === "SHOP" || c.type === "HOLD") {
           cls += " shop";
-          const who = c.holderName ? `<div class="s-holder" style="color:#fef3c7;">${c.holderName}様${c.holderCount ? ` (${c.holderCount}名)` : ""} <span style="font-size:11px;opacity:0.85;">(長押し一括確定)</span></div>` : "";
-          body = `<div class="s-name" style="color:var(--shop-tx);font-size:16px;">● 店取り</div>${who}`;
+          const who = c.holderName
+            ? `<div class="s-holder" style="color:#fef3c7;">${c.holderName}様${c.holderCount ? ` (${c.holderCount}名)` : ""} <span style="font-size:11px;opacity:0.85;">(長押し一括確定)</span></div>`
+            : "";
+          body = `<div class="s-shop-center"><div class="s-shop-dot">●</div>${who}</div>`;
         } else {
           cls += " assigned";
           const bdg = c.note ? c.note.split("/").map(n => `<span class="badge">${n.trim()}</span>`).join("") : "";
@@ -2822,6 +2873,7 @@
         state.selId = null;
         draftBoats = [];
         undoStack = [];
+        redoStack = [];
 
         save(); render();
         renderOcrParsedList();
