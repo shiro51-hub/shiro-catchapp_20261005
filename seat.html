@@ -113,6 +113,28 @@
     .verify-ctrl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .verify-ctrl button { padding: 6px 11px; font-size: 16px; }
 
+    /* OCRモーダル下部の読取データ表示エリア */
+    .ocr-result-box {
+      margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--bd);
+    }
+    .ocr-result-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; font-size: 15px; font-weight: 800; color: #93c5fd;
+    }
+    .ocr-result-list {
+      max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+    }
+    .ocr-item-row {
+      background: var(--inp); border: 1px solid var(--bd); border-radius: 8px;
+      padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 14px;
+    }
+    .ocr-item-main { min-width: 0; flex: 1; }
+    .ocr-item-name { font-size: 16px; font-weight: 800; color: #fff; }
+    .ocr-item-sub { font-size: 12px; color: #cbd5e1; margin-top: 2px; }
+    .ocr-item-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .ocr-item-actions button { padding: 5px 9px; font-size: 13px; }
+
     /* 配船指定 */
     .match-box {
       border-radius: 10px; padding: 11px 12px; margin-bottom: 12px; font-size: 15px; font-weight: 800;
@@ -518,7 +540,7 @@
     </div>
   </div>
 
-  <!-- OCR読込モーダル -->
+  <!-- OCR読込モーダル（解析ボタンの下に読み込んだデータを表示） -->
   <div class="modal-bg" id="ocrModal">
     <div class="modal">
       <div class="m-head"><span>📷 予約表の写真読込</span><button type="button" class="modal-close-lg" onclick="closeModal('ocrModal')">✕ 閉じる</button></div>
@@ -526,6 +548,7 @@
       <div class="field"><label>予約表の写真を選択</label><input type="file" id="ocrFile" accept="image/*" /></div>
       <button type="button" class="primary" style="width:100%; padding:13px;" id="ocrBtn" onclick="runOcr()">AIで解析する</button>
       <div id="ocrMsg" style="margin-top:10px; font-size:15px;"></div>
+      <div id="ocrParsedListArea"></div>
     </div>
   </div>
 
@@ -564,7 +587,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v15";
+    const STORE_KEY = "yamashitamaru_seat_flow_v16";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -602,7 +625,7 @@
       ocrImage: null,
       menuCollapsed: false,
       parsedSheetOpen: false,
-      sortMode: "desc", // "desc": 人数が多い順 ▼ / "asc": 人数が少ない順 ▲
+      sortMode: "desc",
       view: "overview",
       markMode: null,
       customSplitMode: false,
@@ -696,7 +719,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v14");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v15");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -849,6 +872,7 @@
       g.count = Math.min(15, Math.max(1, Number(g.count) + delta));
       removeGuest(id);
       save(); render();
+      if (document.getElementById("ocrModal").classList.contains("open")) renderOcrParsedList();
     }
 
     function removeVerifyGuest(id) {
@@ -857,6 +881,7 @@
       if (String(state.selId) === String(id)) state.selId = null;
       if (state.guests.length === 0) state.ocrLoaded = false;
       save(); render();
+      if (document.getElementById("ocrModal").classList.contains("open")) renderOcrParsedList();
       toast("リストから除外しました");
     }
 
@@ -1510,6 +1535,40 @@
       `;
     }
 
+    function renderOcrParsedList() {
+      const area = document.getElementById("ocrParsedListArea");
+      if (!area) return;
+      if (state.guests.length === 0) {
+        area.innerHTML = "";
+        return;
+      }
+      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
+      area.innerHTML = `
+        <div class="ocr-result-box">
+          <div class="ocr-result-head">
+            <span>📄 読み取りデータ（${state.guests.length}組 / 計${totCnt}名${writtenInfo}）</span>
+          </div>
+          <div class="ocr-result-list">
+            ${state.guests.map((g, i) => `
+              <div class="ocr-item-row">
+                <div class="ocr-item-main">
+                  <div class="ocr-item-name">${i + 1}. ${g.name}（${g.count}名）</div>
+                  <div class="ocr-item-sub">${(Number.isInteger(g.row) ? `${g.row + 1}段目` : "")}${g.note ? ` / ${g.note}` : ""}</div>
+                </div>
+                <div class="ocr-item-actions">
+                  <button type="button" onclick="adjustVerifyCount('${g.id}', -1)">−</button>
+                  <button type="button" onclick="adjustVerifyCount('${g.id}', 1)">＋</button>
+                  <button type="button" onclick="openEdit('${g.id}')">✎</button>
+                  <button type="button" class="danger" onclick="removeVerifyGuest('${g.id}')">✕</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     function render() {
       applyBoatBodyTheme();
 
@@ -1999,6 +2058,9 @@
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
       }
+      if (document.getElementById("ocrModal").classList.contains("open")) {
+        renderOcrParsedList();
+      }
       closeModal("addModal"); toast(`${name}様を追加しました`);
     }
 
@@ -2031,6 +2093,9 @@
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
       }
+      if (document.getElementById("ocrModal").classList.contains("open")) {
+        renderOcrParsedList();
+      }
       closeModal("editModal"); toast("変更を保存しました");
     }
 
@@ -2044,6 +2109,9 @@
       save(); render();
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
+      }
+      if (document.getElementById("ocrModal").classList.contains("open")) {
+        renderOcrParsedList();
       }
       closeModal("editModal"); toast("削除しました");
     }
@@ -2161,9 +2229,9 @@
 
         state.step = "verify";
         save(); render();
-        closeModal("ocrModal");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        toast("読み取り完了！内容を確認して確定してください");
+        renderOcrParsedList();
+        msg.innerHTML = `<span style="color:#6ee7b7; font-weight:800;">✅ 読み取り完了（${state.guests.length}組 / 計${state.guests.reduce((a, g) => a + Number(g.count), 0)}名）</span>`;
+        toast("読み取り完了！下に結果を表示しました");
       } catch (e) {
         msg.innerHTML = `<span style="color:#ef4444;">エラー: ${e.message}</span>`;
       } finally {
@@ -2182,6 +2250,10 @@
       }
       if (id === "guestListModal") {
         renderGuestListModal();
+      }
+      if (id === "ocrModal") {
+        document.getElementById("ocrMsg").innerHTML = "";
+        renderOcrParsedList();
       }
       document.getElementById(id).classList.add("open");
     }
