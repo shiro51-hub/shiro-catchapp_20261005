@@ -117,7 +117,8 @@
     /* ステップカード（①読取確認 / ②配船指定） */
     .step-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
     .step-badge { display: inline-block; font-size: 12px; font-weight: 800; background: var(--blue-bg); color: #93c5fd; border: 1px solid #3b82f6; padding: 2px 8px; border-radius: 5px; margin-bottom: 6px; }
-    .w-title { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
+    .w-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .w-title { font-size: 19px; font-weight: 800; margin: 0; }
     .w-sub { font-size: 14px; color: var(--sub); margin-bottom: 12px; }
 
     .empty-ocr-box {
@@ -147,9 +148,14 @@
       margin-bottom: 8px; font-size: 15px; font-weight: 800; color: #93c5fd;
     }
     .ocr-fish-group-title {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
       font-size: 14px; font-weight: 900; color: #7dd3fc;
       background: #0c2340; border: 1px solid #0284c7;
-      padding: 5px 9px; border-radius: 6px; margin: 8px 0 5px;
+      padding: 6px 9px; border-radius: 6px; margin: 8px 0 5px;
+    }
+    .ocr-fish-rename-btn {
+      padding: 3px 8px; font-size: 12px; font-weight: 800;
+      background: #1e293b; border: 1px solid #7dd3fc; color: #e0f2fe; border-radius: 5px;
     }
     .ocr-result-list {
       max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
@@ -476,6 +482,14 @@
     .set-pane { display: none; }
     .set-pane.active { display: block; }
 
+    .preset-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .preset-chip {
+      padding: 6px 10px; font-size: 13px; font-weight: 800; border-radius: 6px;
+      background: var(--inp); border: 1px solid var(--bd); color: #e2e8f0;
+    }
+
     /* モーダル */
     .modal-bg { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.84); display: none; align-items: center; justify-content: center; padding: 8px; }
     .modal-bg.open { display: flex; }
@@ -629,6 +643,26 @@
     </div>
   </div>
 
+  <!-- 釣り物名変更・統合モーダル -->
+  <div class="modal-bg" id="renameFishModal" style="z-index:115;">
+    <div class="modal">
+      <div class="m-head">
+        <span>釣り物（魚種）の変更・統合</span>
+        <button type="button" class="modal-close-lg" onclick="closeModal('renameFishModal')">閉じる</button>
+      </div>
+      <input type="hidden" id="renameFromFish" />
+      <div class="field">
+        <label id="renameFromLabel">現在の釣り物</label>
+        <input type="text" id="renameToFishInput" placeholder="例：カワハギ、アジ、アマダイ" />
+        <div class="preset-chips" id="fishPresetChips"></div>
+      </div>
+      <div style="font-size:13px; color:var(--sub); margin-bottom:12px;">
+        ※ すでに同じ釣り物がある場合は、予約グループをまとめて合流します。
+      </div>
+      <button type="button" class="primary" style="width:100%; padding:13px;" onclick="applyRenameFish()">釣り物を変更する</button>
+    </div>
+  </div>
+
   <!-- 元画像フル確認モーダル -->
   <div class="modal-bg" id="origImgModal" style="z-index:120;">
     <div class="modal" style="max-width:540px; padding:12px;">
@@ -666,11 +700,16 @@
     </div>
   </div>
 
-  <!-- 編集・削除モーダル -->
+  <!-- 編集・削除モーダル（グループごとの釣り物移動に対応） -->
   <div class="modal-bg" id="editModal">
     <div class="modal">
-      <div class="m-head"><span>予約の修正・削除</span><button type="button" class="modal-close-lg" onclick="closeModal('editModal')">閉じる</button></div>
+      <div class="m-head"><span>予約の修正・移動・削除</span><button type="button" class="modal-close-lg" onclick="closeModal('editModal')">閉じる</button></div>
       <input type="hidden" id="editId" />
+      <div class="field">
+        <label>釣り物（魚種）</label>
+        <input type="text" id="editFish" list="editFishDatalist" placeholder="例：カワハギ、アジ" />
+        <datalist id="editFishDatalist"></datalist>
+      </div>
       <div class="field"><label>代表者名</label><input type="text" id="editName" /></div>
       <div class="field">
         <label>人数</label>
@@ -690,6 +729,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
+    const PRESET_FISH = ["カワハギ", "アジ", "アマダイ", "スミイカ", "カサゴ", "マゴチ", "乗合", "不明"];
     const STORE_KEY = "yamashitamaru_seat_flow_v17";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
@@ -716,7 +756,7 @@
 
     function createEmptyFishSlot(fishName) {
       return {
-        fish: fishName || "乗合",
+        fish: fishName || "不明",
         step: "verify",
         ocrWrittenTotal: null,
         view: "overview",
@@ -736,16 +776,16 @@
       customSplitMode: false,
       seatEditMode: false,
       selId: null,
-      activeFish: "乗合",
-      fishList: ["乗合"],
+      activeFish: "不明",
+      fishList: ["不明"],
       fishData: {
-        "乗合": createEmptyFishSlot("乗合")
+        "不明": createEmptyFishSlot("不明")
       }
     };
 
     function getCur() {
       if (!state.fishData[state.activeFish]) {
-        const firstKey = state.fishList[0] || "乗合";
+        const firstKey = state.fishList[0] || "不明";
         if (!state.fishData[firstKey]) {
           state.fishData[firstKey] = createEmptyFishSlot(firstKey);
         }
@@ -766,7 +806,9 @@
     function pushUndo(actionLabel) {
       undoStack.push({
         label: actionLabel,
-        fishData: JSON.parse(JSON.stringify(state.fishData))
+        fishData: JSON.parse(JSON.stringify(state.fishData)),
+        fishList: [...state.fishList],
+        activeFish: state.activeFish
       });
       if (undoStack.length > 20) undoStack.shift();
     }
@@ -778,6 +820,8 @@
       }
       const prev = undoStack.pop();
       state.fishData = prev.fishData;
+      if (Array.isArray(prev.fishList)) state.fishList = prev.fishList;
+      if (prev.activeFish) state.activeFish = prev.activeFish;
       state.selId = null;
       state.customSplitMode = false;
       save(); render();
@@ -965,6 +1009,86 @@
       document.querySelectorAll("#setupModal .set-pane").forEach(p => {
         p.classList.toggle("active", p.id === paneId);
       });
+    }
+
+    function openRenameFishModal(fromFish) {
+      const target = fromFish || state.activeFish || "不明";
+      document.getElementById("renameFromFish").value = target;
+      document.getElementById("renameFromLabel").textContent = `現在の釣り物：「${target}」 → 変更後の釣り物`;
+      const inp = document.getElementById("renameToFishInput");
+      inp.value = target === "不明" || target === "乗合" ? "" : target;
+
+      const chipsEl = document.getElementById("fishPresetChips");
+      chipsEl.innerHTML = PRESET_FISH.map(name => `
+        <button type="button" class="preset-chip" onclick="document.getElementById('renameToFishInput').value='${name}'">${name}</button>
+      `).join("");
+
+      openModal("renameFishModal");
+    }
+
+    function applyRenameFish() {
+      const fromFish = document.getElementById("renameFromFish").value;
+      const toFish = document.getElementById("renameToFishInput").value.trim();
+      if (!toFish) {
+        toast("変更後の釣り物名を入力または選択してください");
+        return;
+      }
+      if (!state.fishData[fromFish]) {
+        closeModal("renameFishModal");
+        return;
+      }
+      if (fromFish === toFish) {
+        closeModal("renameFishModal");
+        toast(`釣り物は「${toFish}」のままです`);
+        return;
+      }
+
+      pushUndo(`釣り物を「${fromFish}」から「${toFish}」へ変更`);
+
+      const srcSlot = state.fishData[fromFish];
+      if (!state.fishData[toFish]) {
+        const newSlot = createEmptyFishSlot(toFish);
+        newSlot.step = srcSlot.step;
+        newSlot.ocrWrittenTotal = srcSlot.ocrWrittenTotal;
+        newSlot.view = srcSlot.view;
+        newSlot.boats = JSON.parse(JSON.stringify(srcSlot.boats || []));
+        newSlot.guests = assignDefault45Rows(srcSlot.guests || []);
+        state.fishData[toFish] = newSlot;
+        const idx = state.fishList.indexOf(fromFish);
+        if (idx >= 0) state.fishList.splice(idx, 1, toFish);
+        else state.fishList.push(toFish);
+      } else {
+        // 既存釣り物へ統合（マージ）
+        const dstSlot = state.fishData[toFish];
+        const baseRow = dstSlot.guests.length > 0
+          ? Math.max(...dstSlot.guests.map(x => Number(x.row) || 0)) + 1
+          : 0;
+        (srcSlot.guests || []).forEach((g, idx) => {
+          dstSlot.guests.push({
+            ...g,
+            row: baseRow + Math.floor(idx / 4),
+            col: idx % 4
+          });
+        });
+        if (!dstSlot.ocrWrittenTotal && srcSlot.ocrWrittenTotal) {
+          dstSlot.ocrWrittenTotal = srcSlot.ocrWrittenTotal;
+        }
+        delete state.fishData[fromFish];
+        state.fishList = state.fishList.filter(f => f !== fromFish);
+      }
+
+      if (state.activeFish === fromFish) {
+        state.activeFish = toFish;
+      }
+      state.selId = null;
+      state.customSplitMode = false;
+
+      closeModal("renameFishModal");
+      save(); render();
+      if (document.getElementById("ocrModal").classList.contains("open")) {
+        renderOcrParsedList();
+      }
+      toast(`釣り物を「${toFish}」に更新しました`);
     }
 
     function switchFish(fishName) {
@@ -1182,9 +1306,9 @@
       state.seatEditMode = false;
       state.selId = null;
       state.markMode = null;
-      state.activeFish = "乗合";
-      state.fishList = ["乗合"];
-      state.fishData = { "乗合": createEmptyFishSlot("乗合") };
+      state.activeFish = "不明";
+      state.fishList = ["不明"];
+      state.fishData = { "不明": createEmptyFishSlot("不明") };
       draftBoats = [];
       undoStack = [];
       closeModal("setupModal");
@@ -1354,7 +1478,6 @@
 
       shopLongPressTimer = setTimeout(() => {
         shopLongPressFired = true;
-        // 名前なしの店取り席の長押しは無反応
         if (!c.holderName || !c.holderId) {
           return;
         }
@@ -1414,7 +1537,6 @@
           return;
         }
 
-        // 「● 店取り」は選択中グループの人数分に上限を制限（「■ 荷物」は制限なし）
         if (state.markMode === "SHOP" && selHolder) {
           const curShopCnt = countShopSeatsForGuest(selHolder.id);
           if (curShopCnt >= holderCount) {
@@ -1772,7 +1894,6 @@
       if (cur.guests.length === 0) {
         listHtml = `<div style="grid-column:1 / -1; font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">「読込」または「＋ 追加」から予約を入れてください</div>`;
       } else {
-        // 「前日場所取」は先頭に出さず、人数順（多い順/少ない順）の一番後ろに配置
         const sortFn = (a, b) => {
           const aPrev = (a.note || "").includes("前日場所取") ? 1 : 0;
           const bPrev = (b.note || "").includes("前日場所取") ? 1 : 0;
@@ -1856,7 +1977,10 @@
         const fTot = fd.guests.reduce((a, g) => a + Number(g.count), 0);
         const writtenInfo = fd.ocrWrittenTotal ? ` / 紙記載:${fd.ocrWrittenTotal}名` : "";
         return `
-          <div class="ocr-fish-group-title">${f}（${fd.guests.length}組 / 計${fTot}名${writtenInfo}）</div>
+          <div class="ocr-fish-group-title">
+            <span>${f}（${fd.guests.length}組 / 計${fTot}名${writtenInfo}）</span>
+            <button type="button" class="ocr-fish-rename-btn" onclick="openRenameFishModal('${f}')">釣り物変更</button>
+          </div>
           ${fd.guests.map((g, i) => `
             <div class="ocr-item-row">
               <div class="ocr-item-main">
@@ -1949,7 +2073,10 @@
         main.innerHTML = `
           <div class="step-card">
             <div class="step-badge">ステップ 1 / 2：予約データの確認【${cur.fish}】</div>
-            <div class="w-title">「${cur.fish}」の予約確認・修正</div>
+            <div class="w-title-row">
+              <div class="w-title">「${cur.fish}」の予約確認・修正</div>
+              <button type="button" style="padding:6px 10px; font-size:13px;" onclick="openRenameFishModal('${cur.fish}')">釣り物名を変更</button>
+            </div>
             <div class="w-sub">内容を確認し、合計人数が合っていれば確定して「${cur.fish}」に出船する船を選んでください。</div>
 
             <div class="verify-summary">
@@ -2416,12 +2543,13 @@
     }
 
     function addGuest() {
-      const fish = (document.getElementById("addFish").value.trim()) || state.activeFish || "乗合";
+      const fish = (document.getElementById("addFish").value.trim()) || state.activeFish || "不明";
       const name = document.getElementById("addName").value.trim();
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("addCount").value, 10) || 1));
       const note = document.getElementById("addNote").value.trim();
       if (!name) { toast("名前を入力してください"); return; }
 
+      pushUndo(`${fish}に${name}様を追加`);
       if (!state.fishData[fish]) {
         state.fishData[fish] = createEmptyFishSlot(fish);
         if (!state.fishList.includes(fish)) state.fishList.push(fish);
@@ -2445,7 +2573,12 @@
     function openEdit(id) {
       const found = findGuestAcrossAllFish(id);
       if (!found) return;
+      const dl = document.getElementById("editFishDatalist");
+      const candidates = [...new Set([...state.fishList, ...PRESET_FISH])];
+      dl.innerHTML = candidates.map(f => `<option value="${f}">`).join("");
+
       document.getElementById("editId").value = found.guest.id;
+      document.getElementById("editFish").value = found.fish;
       document.getElementById("editName").value = found.guest.name;
       document.getElementById("editCount").value = found.guest.count;
       document.getElementById("editNote").value = found.guest.note || "";
@@ -2459,14 +2592,41 @@
 
     function saveEdit() {
       const id = document.getElementById("editId").value;
+      const nextFish = (document.getElementById("editFish").value.trim()) || "不明";
       const name = document.getElementById("editName").value.trim();
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("editCount").value, 10) || 1));
       const note = document.getElementById("editNote").value.trim();
       if (!name) return;
       const found = findGuestAcrossAllFish(id);
       if (!found) return;
-      found.guest.name = name; found.guest.count = count; found.guest.note = note;
+
+      pushUndo(`${name}様の予約修正`);
       removeGuestFromSlot(found.slot, id);
+
+      if (found.fish === nextFish) {
+        found.guest.name = name;
+        found.guest.count = count;
+        found.guest.note = note;
+      } else {
+        // 別の釣り物へグループ単位で移動
+        found.slot.guests = found.slot.guests.filter(x => String(x.id) !== String(id));
+        if (!state.fishData[nextFish]) {
+          state.fishData[nextFish] = createEmptyFishSlot(nextFish);
+          if (!state.fishList.includes(nextFish)) state.fishList.push(nextFish);
+        }
+        const dstSlot = state.fishData[nextFish];
+        const nextRow = dstSlot.guests.length > 0 ? Math.max(...dstSlot.guests.map(x => Number(x.row) || 0)) + 1 : 0;
+        dstSlot.guests.push({
+          ...found.guest,
+          name,
+          count,
+          note,
+          row: nextRow,
+          col: 0
+        });
+        toast(`${name} 様を「${nextFish}」へ移動しました`);
+      }
+
       save(); render();
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
@@ -2474,7 +2634,8 @@
       if (document.getElementById("ocrModal").classList.contains("open")) {
         renderOcrParsedList();
       }
-      closeModal("editModal"); toast("変更を保存しました");
+      closeModal("editModal");
+      if (found.fish === nextFish) toast("変更を保存しました");
     }
 
     function delGuest() {
@@ -2537,7 +2698,7 @@
 
         const prompt = `釣船「山下丸」の手書き予約表画像を解析し、書かれているすべての釣り物（魚種：例 カワハギ、アジ、アマダイ、スミイカ、カサゴ、マゴチ等）ごとに分類してJSONのみで出力してください。
 重要ルール:
-1. 画像に書かれている魚種見出し（カワハギ、アジ、アマダイ、スミイカ、カサゴなど）を自動判別し、魚種ごとに targets 配列の要素として分けること。魚種名が1つしか書かれていない場合も targets の1要素として出力すること。
+1. 画像に書かれている魚種見出し（カワハギ、アジ、アマダイ、スミイカ、カサゴなど。「カワ」「アヂ」「アマ」「スミ」などの略称・崩し字も可能な限り正式名へ補完し、判別できない場合のみ「不明」とすること）を自動判別し、魚種ごとに targets 配列の要素として分けること。魚種名が1つしか書かれていない場合も targets の1要素として出力すること。
 2. 各魚種の枠内では、紙の上から下へ「段（行）」ごとに配列 rows で出力すること。1段目に4組あれば rows[0] に4要素、2段目に5組あれば rows[1] に5要素のように、元の段と左から右の並び順を忠実に再現すること。
 3. 名前の横に人数が書かれていない場合（例: 秋場、小柳、菅澤、長谷川、村田、内藤、杉浦、橋本 など）は必ず count: 1 とすること。
 4. 仕立船の枠や取消線、下部の合計数字メモ（「63 -> 21 22 20」など）は客リストに含めないこと。
@@ -2561,10 +2722,10 @@
 
         const targets = Array.isArray(parsed.targets) && parsed.targets.length > 0
           ? parsed.targets
-          : [{ fish: "乗合", writtenTotal: parsed.writtenTotal || null, rows: parsed.rows || [] }];
+          : [{ fish: "不明", writtenTotal: parsed.writtenTotal || null, rows: parsed.rows || [] }];
 
         targets.forEach(t => {
-          const fishName = String(t.fish || "乗合").trim() || "乗合";
+          const fishName = String(t.fish || "不明").trim() || "不明";
           const flatGuests = [];
           if (Array.isArray(t.rows)) {
             t.rows.forEach((rowArr, rIdx) => {
