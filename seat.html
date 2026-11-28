@@ -134,26 +134,28 @@
       padding: 6px 2px !important; background: #070b14 !important; border: 1px solid #3b82f6 !important; color: #fff !important;
     }
 
-    /* 選択中ガイドバー */
+    /* 選択中ガイドバー（バラバラ配置カスタム切替付き） */
     .selected-banner {
       position: sticky; top: 96px; z-index: 40;
       background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
       border: 2px solid #60a5fa; border-radius: 12px; padding: 11px 12px;
       margin-bottom: 12px; color: #fff;
+      display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+    }
+    .selected-banner-top {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
     }
     .selected-banner-info { font-size: 17px; font-weight: 800; line-height: 1.35; }
     .selected-banner-sub { font-size: 13px; color: #dbeafe; font-weight: 600; }
-
-    /* 確定アラートバナー */
-    .lock-banner {
-      background: linear-gradient(135deg, #451a03, #78350f);
-      border: 2px solid #f59e0b; border-radius: 12px; padding: 13px;
-      margin-bottom: 12px; color: #fef3c7;
+    .custom-split-btn {
+      width: 100%; padding: 9px 10px; font-size: 14px; font-weight: 800;
+      border-radius: 8px; border: 2px solid #93c5fd;
+      background: rgba(15, 23, 42, 0.7); color: #e0f2fe;
     }
-    .lock-banner-title { font-size: 17px; font-weight: 800; color: #fcd34d; margin-bottom: 5px; }
-    .lock-banner-desc { font-size: 15px; margin-bottom: 10px; line-height: 1.45; }
+    .custom-split-btn.on {
+      background: #7c2d12; border-color: #fb923c; color: #ffedd5;
+    }
 
     /* 操作バー（荷物■ / 店取り● の半分幅2分割 ＋ 1つ前に戻す＆残り自動確定） */
     .mode-bar {
@@ -211,17 +213,31 @@
       display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
       font-size: 16px; font-weight: 800; color: var(--sub); margin-bottom: 6px;
     }
-    .mini-seat.bag {
-      background: var(--bag-bg); border-color: var(--bag-bd); color: var(--bag-tx);
-    }
-    .mini-seat.shop {
-      background: var(--shop-bg); border-color: var(--shop-bd); color: var(--shop-tx);
-    }
+    .mini-seat.bag { background: var(--bag-bg); border-color: var(--bag-bd); color: var(--bag-tx); }
+    .mini-seat.shop { background: var(--shop-bg); border-color: var(--shop-bd); color: var(--shop-tx); }
     .mini-seat.assigned { background: var(--blue-bg); border-color: #3b82f6; color: #ffffff; }
     .mini-seat.fit-ok { background: var(--green-bg); border-color: var(--green); color: #6ee7b7; }
     .mini-seat.fit-warn { background: #3f3208; border-color: #eab308; color: #fde047; }
 
-    /* 1隻詳細 */
+    /* 1隻詳細＋場所指定の席増減バー */
+    .seat-edit-toggle {
+      width: 100%; margin-top: 8px; padding: 9px; font-size: 14px; font-weight: 800;
+      background: #0f172a; border: 1px solid #38bdf8; color: #bae6fd;
+    }
+    .seat-edit-toggle.on {
+      background: #1e3a8a; border-color: #60a5fa; color: #fff;
+    }
+    .insert-slot-btn {
+      width: 100%; padding: 5px 4px; margin-bottom: 6px; font-size: 12px; font-weight: 800;
+      background: #064e3b; border: 1px dashed #34d399; color: #a7f3d0; border-radius: 6px;
+    }
+    .seat-row-box { position: relative; margin-bottom: 8px; }
+    .seat-row-box .seat { margin-bottom: 0; }
+    .del-slot-btn {
+      width: 100%; padding: 4px; margin-top: 3px; font-size: 12px; font-weight: 800;
+      background: #450a0a; border: 1px solid #f87171; color: #fecaca; border-radius: 6px;
+    }
+
     .bow-bar {
       text-align: center; font-size: 15px; font-weight: 800; color: #38bdf8;
       padding: 8px; background: #0d172a; border: 1px solid var(--bd); border-radius: 8px; margin: 10px 0;
@@ -261,6 +277,7 @@
       text-align: left;
     }
     .g-row-btn.sel { background: #1e3a8a; border-color: #60a5fa; }
+    .g-row-btn.partial { border-color: #fb923c; background: #1e1b18; }
     .g-row-btn.done { opacity: 0.45; border-style: dashed; }
     .g-row-top { display: flex; align-items: center; gap: 8px; width: 100%; }
     .g-name-txt { font-size: 19px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -305,7 +322,6 @@
       width: 100%; background: var(--inp); border: 1px solid var(--bd); color: var(--tx);
       border-radius: 8px; padding: 11px; font-size: 17px;
     }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--inp); border: 1px solid var(--bd); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
     .toast {
       position: fixed; top: 96px; left: 50%; transform: translateX(-50%); z-index: 200;
       background: #1e293b; border: 1px solid #475569; color: #fff; padding: 11px 18px;
@@ -340,7 +356,7 @@
       </div>
       <div class="action-split">
         <button type="button" id="undoBtn" class="undo-btn" onclick="undoLastAction()" disabled>↩ 1つ前に戻す</button>
-        <button type="button" class="success" style="padding:11px;" onclick="autoAssign(true)">✨ 残り自動確定</button>
+        <button type="button" class="success" style="padding:11px;" onclick="autoAssign()">✨ 残り自動確定</button>
       </div>
     </div>
     <!-- 常時表示の船タブ（全体＋出船する船） -->
@@ -365,13 +381,6 @@
         </div>
       </div>
 
-      <div class="toggle-row" onclick="toggleAutoLock()">
-        <div>
-          <div style="font-size:16px; font-weight:800;">🔒 選択肢ゼロ時の自動確定</div>
-          <div style="font-size:13px; color:var(--sub);">自由選択が不可能になったら自動で席を確定する</div>
-        </div>
-        <button type="button" id="autoLockToggleBtn" class="primary" style="min-width:68px;">OFF</button>
-      </div>
       <div class="field">
         <label>AI解析モデル</label>
         <select id="modelSelect" onchange="saveModel()">
@@ -464,13 +473,13 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v7";
+    const STORE_KEY = "yamashitamaru_seat_flow_v8";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
     let uidCounter = 1;
     let lastOcrImageDataUrl = null;
-    let undoStack = []; // 1つ前に戻す用の履歴スタック
+    let undoStack = [];
 
     function getTodayStr() {
       const d = new Date();
@@ -484,10 +493,11 @@
       ocrWrittenTotal: null,
       ocrImage: null,
       menuCollapsed: false,
-      autoLockEnabled: false,
       sortByCount: true,
       view: "overview",
       markMode: null,
+      customSplitMode: false, // バラバラ配置（カスタム）モード
+      seatEditMode: false,    // 場所指定の席増減モード
       selId: null,
       boats: [],
       guests: []
@@ -509,6 +519,7 @@
       const prev = undoStack.pop();
       state.boats = prev.boats;
       state.selId = null;
+      state.customSplitMode = false;
       save(); render();
       toast(`↩ 1つ前に戻しました（${prev.label}）`);
     }
@@ -537,9 +548,21 @@
       return c && (c.type === "BAG" || c.type === "SHOP" || c.type === "HOLD");
     }
 
+    // 指定ゲストの現在割り当て済み席数を数える
+    function countAssignedSeatsForGuest(guestId) {
+      const targetId = String(guestId);
+      let cnt = 0;
+      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+        b[sk].forEach(c => {
+          if (c && c.type === "ASSIGNED" && String(c.guestId) === targetId) cnt++;
+        });
+      }));
+      return cnt;
+    }
+
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v6");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v7");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -556,7 +579,6 @@
               state.boats = [];
               state.guests = [];
               state.selId = null;
-              state.autoLockEnabled = !!parsed.autoLockEnabled;
               draftBoats = [];
               save();
             } else {
@@ -607,6 +629,8 @@
       if (state.menuCollapsed) {
         state.selId = null;
         state.markMode = null;
+        state.customSplitMode = false;
+        state.seatEditMode = false;
       }
       save(); render();
     }
@@ -629,28 +653,42 @@
 
     function toggleMarkMode(mode) {
       state.markMode = (state.markMode === mode) ? null : mode;
-      if (state.markMode) state.selId = null;
+      if (state.markMode) {
+        state.selId = null;
+        state.customSplitMode = false;
+      }
       render();
       if (state.markMode === "BAG") toast("■ 荷物モードON：荷物が置いてある席をタップしてください");
       else if (state.markMode === "SHOP") toast("● 店取りモードON：お店で確保する席をタップしてください");
       else toast("席マーク入力をOFFにしました");
     }
 
-    function clearSel() { state.selId = null; state.markMode = null; render(); }
+    function toggleCustomSplitMode() {
+      state.customSplitMode = !state.customSplitMode;
+      render();
+      if (state.customSplitMode) {
+        toast("🔀 バラバラ配置ON：1席ずつ好きな場所をタップしてください");
+      } else {
+        toast("連番一括配置に戻しました");
+      }
+    }
+
+    function toggleSeatEditMode() {
+      state.seatEditMode = !state.seatEditMode;
+      if (state.seatEditMode) {
+        state.selId = null;
+        state.markMode = null;
+      }
+      render();
+    }
+
+    function clearSel() {
+      state.selId = null;
+      state.markMode = null;
+      state.customSplitMode = false;
+      render();
+    }
     function setView(v) { state.view = v; render(); }
-
-    function toggleAutoLock() {
-      state.autoLockEnabled = !state.autoLockEnabled;
-      save(); updateAutoLockBtn();
-      toast(state.autoLockEnabled ? "選択肢ゼロ時の自動確定をONにしました" : "選択肢ゼロ時はお知らせバナー表示にしました");
-    }
-
-    function updateAutoLockBtn() {
-      const btn = document.getElementById("autoLockToggleBtn");
-      if (!btn) return;
-      btn.textContent = state.autoLockEnabled ? "ON" : "OFF";
-      btn.className = state.autoLockEnabled ? "success" : "";
-    }
 
     function adjustVerifyCount(id, delta) {
       const g = state.guests.find(x => String(x.id) === String(id));
@@ -747,6 +785,8 @@
       state.ocrImage = null;
       lastOcrImageDataUrl = null;
       state.menuCollapsed = false;
+      state.customSplitMode = false;
+      state.seatEditMode = false;
       state.boats = [];
       state.guests = [];
       state.selId = null;
@@ -758,56 +798,85 @@
       toast("新しい営業日用に初期化しました");
     }
 
+    // 場所指定での座席挿入（index番目に空席を挿入し、後ろを1つずつずらす）
+    function insertSeatAt(bIdx, sk, index) {
+      const b = state.boats[bIdx];
+      if (!b) return;
+      const capKey = sk === "leftSeats" ? "leftCap" : "rightCap";
+      const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
+      if (b[sk].length >= 15) {
+        toast("⚠️ 1舷あたりの最大席数（15席）に達しています");
+        return;
+      }
+      pushUndo(`${b.name} ${sideLabel}${index + 1}番前に1席挿入`);
+      b[sk].splice(index, 0, null);
+      b[capKey] = b[sk].length;
+      save(); render();
+      const posLabel = index >= b[sk].length - 1 ? "オオドモ（最後尾）" : `${index + 1}番の位置`;
+      toast(`＋ ${b.name} ${sideLabel}の${posLabel}に1席追加しました`);
+    }
+
+    // 場所指定での座席削除（index番目の席を削除して後ろを詰める）
+    function deleteSeatAt(bIdx, sk, index) {
+      const b = state.boats[bIdx];
+      if (!b) return;
+      const capKey = sk === "leftSeats" ? "leftCap" : "rightCap";
+      const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
+      if (b[sk].length <= 1) {
+        toast("⚠️ 最低1席は必要です");
+        return;
+      }
+      const target = b[sk][index];
+      if (target && target.type === "ASSIGNED") {
+        toast(`⚠️ ${index + 1}番には ${target.name}様 が座っているため削除できません（先に移動か解除してください）`);
+        return;
+      }
+      if (isMarkSeat(target)) {
+        const mLabel = target.type === "BAG" ? "■ 荷物" : "● 店取り";
+        if (!confirm(`${b.name} ${sideLabel}${index + 1}番には「${mLabel}」が入っています。この席ごと削除して後ろを詰めますか？`)) return;
+      } else {
+        if (!confirm(`${b.name} ${sideLabel}${index + 1}番の席を削除して、後ろの席を1つずつ前へ詰めますか？`)) return;
+      }
+      pushUndo(`${b.name} ${sideLabel}${index + 1}番を削除`);
+      b[sk].splice(index, 1);
+      b[capKey] = b[sk].length;
+      save(); render();
+      toast(`− ${b.name} ${sideLabel}${index + 1}番を削除し、後ろを詰めました`);
+    }
+
     function canFitAll(boatsSnap, unplaced) {
       if (unplaced.length === 0) return true;
-
-      let markedCount = 0;
+      // 荷物・店取りは保護されるため、純粋な空席（null）のみで計算
       const blocks = [];
       boatsSnap.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         let r = 0;
         b[sk].forEach(c => {
-          if (c === null) {
-            r++;
-          } else {
-            if (isMarkSeat(c)) markedCount++;
-            if (r > 0) blocks.push(r);
-            r = 0;
-          }
+          if (c === null) r++;
+          else { if (r > 0) blocks.push(r); r = 0; }
         });
         if (r > 0) blocks.push(r);
       }));
 
       const totalEmpty = blocks.reduce((a, b) => a + b, 0);
       const totalUnplacedNeed = unplaced.reduce((a, g) => a + Number(g.count), 0);
-
-      const netNeed = Math.max(0, totalUnplacedNeed - markedCount);
-      if (totalEmpty < netNeed) return false;
-      if (netNeed === 0) return true;
+      if (totalEmpty < totalUnplacedNeed) return false;
 
       const sorted = [...unplaced].sort((a, b) => Number(b.count) - Number(a.count));
-
-      function bt(i, remBlocks, remMarks) {
+      function bt(i, remBlocks) {
         if (i === sorted.length) return true;
         const need = Number(sorted[i].count);
-
         const tried = new Set();
         for (let k = 0; k < remBlocks.length; k++) {
           if (remBlocks[k] >= need && !tried.has(remBlocks[k])) {
             tried.add(remBlocks[k]);
             const nxt = [...remBlocks];
             nxt[k] -= need;
-            if (bt(i + 1, nxt, remMarks)) return true;
+            if (bt(i + 1, nxt)) return true;
           }
         }
-
-        if (remMarks >= need) {
-          if (bt(i + 1, remBlocks, remMarks - need)) return true;
-        }
-
         return false;
       }
-
-      return bt(0, blocks, markedCount);
+      return bt(0, blocks);
     }
 
     function evalPlace(bIdx, sk, start, guest) {
@@ -832,47 +901,14 @@
         clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
       }
 
-      const placed = new Set();
-      clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
-        boat[s].forEach(c => { if (c && c.type === "ASSIGNED") placed.add(String(c.guestId)); });
-      }));
-      return { valid: true, fits: canFitAll(clone, state.guests.filter(g => !placed.has(String(g.id)))) };
-    }
-
-    function checkRemainingFreedom() {
-      const placed = getPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
-      if (unplaced.length === 0) return { status: "DONE", unplacedCount: 0 };
-
-      const totalCap = state.boats.reduce((a, b) => a + Number(b.leftCap) + Number(b.rightCap), 0);
-      const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
-      if (totalGuests > totalCap) {
-        return { status: "OVER_CAPACITY", overBy: totalGuests - totalCap, unplacedCount: unplaced.length };
-      }
-
-      if (state.markMode) {
-        return { status: "FREE", unplacedCount: unplaced.length };
-      }
-
-      let anyGroupHasZeroChoice = false;
-      let maxChoicesForAnyGroup = 0;
-
-      for (const g of unplaced) {
-        const cnt = Number(g.count) || 1;
-        let gChoices = 0;
-        state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
-          for (let i = 0; i <= b[sk].length - cnt; i++) {
-            const ev = evalPlace(bi, sk, i, g);
-            if (ev.valid && ev.fits) gChoices++;
-          }
+      const unplaced = state.guests.filter(g => {
+        let assigned = 0;
+        clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
+          boat[s].forEach(c => { if (c && c.type === "ASSIGNED" && String(c.guestId) === String(g.id)) assigned++; });
         }));
-        if (gChoices === 0) anyGroupHasZeroChoice = true;
-        if (gChoices > maxChoicesForAnyGroup) maxChoicesForAnyGroup = gChoices;
-      }
-
-      if (anyGroupHasZeroChoice) return { status: "NO_CHOICE_SPLIT", unplacedCount: unplaced.length };
-      if (maxChoicesForAnyGroup <= 1) return { status: "LOCKED_UNIQUE", unplacedCount: unplaced.length };
-      return { status: "FREE", unplacedCount: unplaced.length };
+        return assigned < Number(g.count);
+      });
+      return { valid: true, fits: canFitAll(clone, unplaced) };
     }
 
     function handleSeatClick(bIdx, sk, idx) {
@@ -887,7 +923,6 @@
       // 荷物（BAG）または店取り（SHOP）モード中
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
-        // すでに同じマークが入っている席を消すときは確認ダイアログを表示
         if (cur && cur.type === state.markMode) {
           const label = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
           if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${label}」を解除しますか？`)) return;
@@ -897,21 +932,10 @@
           toast(`${label}を解除しました`);
           return;
         }
-        // 別のマークへ上書きする場合も確認
         if (cur && isMarkSeat(cur) && cur.type !== state.markMode) {
           const oldLabel = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
           const newLabel = state.markMode === "BAG" ? "■ 荷物" : "● 店取り";
           if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${oldLabel}」を「${newLabel}」に変更しますか？`)) return;
-        }
-        if (!cur) {
-          const placed = getPlacedIds();
-          const unplacedGuestsCnt = state.guests.filter(g => !placed.has(String(g.id))).reduce((a, g) => a + Number(g.count), 0);
-          let currentMarks = 0;
-          state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(s => b[s].forEach(c => { if (isMarkSeat(c)) currentMarks++; })));
-          if (currentMarks >= unplacedGuestsCnt) {
-            toast(`⚠️ 未配置の予約人数（${unplacedGuestsCnt}名）以上の席確保はできません`);
-            return;
-          }
         }
         const newLabel = state.markMode === "BAG" ? "■ 荷物" : "● 店取り";
         pushUndo(`${newLabel}の入力`);
@@ -923,9 +947,55 @@
       // お客様選択中
       if (state.selId) {
         const g = state.guests.find(x => String(x.id) === String(state.selId));
-        if (!g) { state.selId = null; render(); return; }
+        if (!g) { state.selId = null; state.customSplitMode = false; render(); return; }
 
-        // 同じお客様の席をタップして解除する場合は確認ダイアログを表示
+        // ★ バラバラ配置（カスタム）モード：1席ずつ個別に入力・解除
+        if (state.customSplitMode) {
+          // すでに本人が入っている席をタップしたら1席だけ外す
+          if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
+            pushUndo(`${g.name}様の1席解除`);
+            state.boats[bIdx][sk][seatIdx] = null;
+            save(); render();
+            const nowCnt = countAssignedSeatsForGuest(g.id);
+            toast(`${g.name}様の1席を解除（現在 ${nowCnt}/${g.count}名）`);
+            return;
+          }
+          // 他のお客様の席は上書き不可
+          if (cur && cur.type === "ASSIGNED") {
+            toast(`⚠️ ${cur.name}様が確定済みの席です`);
+            return;
+          }
+          const alreadyCnt = countAssignedSeatsForGuest(g.id);
+          if (alreadyCnt >= Number(g.count)) {
+            toast(`⚠️ ${g.name}様はすでに全員分（${g.count}名）配置済みです`);
+            return;
+          }
+          if (isMarkSeat(cur)) {
+            const mLabel = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
+            if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${mLabel}」を上書きして ${g.name}様（1名分）を配置しますか？`)) return;
+          }
+          pushUndo(`${g.name}様の個別1席配置`);
+          state.boats[bIdx][sk][seatIdx] = {
+            type: "ASSIGNED",
+            guestId: String(g.id),
+            name: g.name,
+            count: Number(g.count),
+            note: g.note
+          };
+          const afterCnt = alreadyCnt + 1;
+          if (afterCnt >= Number(g.count)) {
+            state.selId = null;
+            state.customSplitMode = false;
+            save(); render();
+            toast(`✅ ${g.name}様（全${g.count}名）のバラバラ配置が完了しました！`);
+          } else {
+            save(); render();
+            toast(`👤 ${g.name}様：${afterCnt}/${g.count}名 配置（残り ${g.count - afterCnt}名）`);
+          }
+          return;
+        }
+
+        // ★ 通常（連番一括）モード
         if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
           if (!confirm(`${g.name}様（${g.count}名）の座席確定を解除しますか？`)) return;
           pushUndo(`${g.name}様の解除`);
@@ -939,7 +1009,7 @@
         const cnt = Number(g.count) || 1;
         const currentLen = state.boats[bIdx][sk].length;
         if (cnt > currentLen) {
-          toast(`⚠️ ${g.name}様は${cnt}名のため、この舷（全${currentLen}席）には入りきりません`);
+          toast(`⚠️ ${g.name}様は${cnt}名のため片舷に入りきりません。上の「🔀 バラバラ配置」をONにして左右に分けてください`);
           return;
         }
 
@@ -947,11 +1017,10 @@
         if (st + cnt > currentLen) st = Math.max(0, currentLen - cnt);
         const ev = evalPlace(bIdx, sk, st, g);
         if (!ev.valid) {
-          toast(`⚠️ 他の確定済みのお客様と重なるため配置できません（連続${cnt}席の空きが必要です）`);
+          toast(`⚠️ 他の確定済みのお客様と重なるため配置できません。分ける場合は上の「🔀 バラバラ配置」をONにしてください`);
           return;
         }
 
-        // 配置先に荷物・店取りが重なる場合は確認ダイアログを出す
         let overlappingMarks = 0;
         for (let i = st; i < st + cnt; i++) {
           if (isMarkSeat(state.boats[bIdx][sk][i])) overlappingMarks++;
@@ -967,35 +1036,25 @@
           targetArr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
         }
         state.selId = null;
-
-        const freedom = checkRemainingFreedom();
-        if (state.autoLockEnabled && (freedom.status === "LOCKED_UNIQUE" || freedom.status === "NO_CHOICE_SPLIT")) {
-          autoAssign(false);
-          save(); render();
-          toast(`🔒 選べなくなったため、残り${freedom.unplacedCount}組の席を自動確定しました！`);
-          return;
-        }
+        state.customSplitMode = false;
 
         save(); render();
-        if (freedom.status === "LOCKED_UNIQUE") {
-          toast(`🔒 ${g.name}様を確定（残り${freedom.unplacedCount}組の配置も確定）`);
-        } else if (freedom.status === "NO_CHOICE_SPLIT") {
-          toast(`⚠️ ${g.name}様を確定（残り客の分断注意）`);
-        } else {
-          toast(`✅ ${g.name}様(${cnt}名)を ${boat.name} ${sideLabel}${st + 1}番〜 に確定`);
-        }
+        toast(`✅ ${g.name}様(${cnt}名)を ${boat.name} ${sideLabel}${st + 1}番〜 に確定`);
         return;
       }
 
       // 通常時（何も選択していない状態）
       if (cur && cur.type === "ASSIGNED") {
         state.selId = String(cur.guestId);
+        const assignedNow = countAssignedSeatsForGuest(cur.guestId);
+        const gObj = state.guests.find(x => String(x.id) === String(cur.guestId));
+        // すでに分割配置されているグループを選んだときは自動でバラバラ配置モードにしておく
+        state.customSplitMode = !!(gObj && assignedNow > 0 && assignedNow < Number(gObj.count));
         render();
         toast(`${cur.name}様を選択中（移動先タップ、または再タップで解除）`);
         return;
       }
 
-      // 荷物・店取りの解除時は必ず確認ダイアログを出す
       if (isMarkSeat(cur)) {
         const label = cur.type === "BAG" ? "■ 荷物" : "● 店取り";
         if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${label}」を解除しますか？`)) return;
@@ -1020,18 +1079,43 @@
       }));
     }
 
-    function autoAssign(showFeedback = true) {
-      const placed = getPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(String(g.id))).sort((a, b) => Number(b.count) - Number(a.count));
-      if (unplaced.length === 0) { if (showFeedback) toast("全員すでに確定済みです"); return; }
+    // ボタンを押したときだけ実行される自動確定（■荷物・●店取りは勝手に消さず保護する）
+    function autoAssign() {
+      const unplaced = state.guests
+        .map(g => ({ ...g, remNeed: Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)) }))
+        .filter(g => g.remNeed > 0)
+        .sort((a, b) => b.remNeed - a.remNeed);
 
-      if (showFeedback) pushUndo("残り自動確定");
+      if (unplaced.length === 0) {
+        toast("全員すでに確定済みです");
+        return;
+      }
 
+      // 純粋な空席（null）のみを集計（BAGとSHOPは保護）
+      let pureEmptyTotal = 0;
+      let protectedMarks = 0;
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
-        for (let i = 0; i < b[sk].length; i++) {
-          if (isMarkSeat(b[sk][i])) b[sk][i] = null;
-        }
+        b[sk].forEach(c => {
+          if (c === null) pureEmptyTotal++;
+          else if (isMarkSeat(c)) protectedMarks++;
+        });
       }));
+
+      const totalNeed = unplaced.reduce((a, g) => a + g.remNeed, 0);
+      if (pureEmptyTotal < totalNeed) {
+        if (protectedMarks > 0) {
+          alert(`⚠️ 空き席が足りません。\n\n未配置の残り人数：${totalNeed}名\n空いている席：${pureEmptyTotal}席\n保護中の「■荷物・●店取り」：${protectedMarks}席\n\n荷物・店取りの席は勝手に消さない設定になっています。先に荷物・店取りの席へお客様を割り当てるか、解除してから再度押してください。`);
+        } else {
+          alert(`⚠️ 船の空き席（${pureEmptyTotal}席）が未配置の人数（${totalNeed}名）より不足しています。座席数を増やすか調整してください。`);
+        }
+        return;
+      }
+
+      if (!confirm(`未配置の残り${unplaced.length}組（計${totalNeed}名）を、空いている席へ自動振り分けしますか？\n（※「■ 荷物」「● 店取り」の席はそのまま保護されます）`)) {
+        return;
+      }
+
+      pushUndo("残り自動確定");
 
       const runs = () => {
         const r = [];
@@ -1045,35 +1129,44 @@
         }));
         return r;
       };
+
       let splits = 0;
       for (const g of unplaced) {
-        const cnt = Number(g.count) || 1;
+        const cnt = g.remNeed;
         const fit = runs().filter(r => r.len >= cnt).sort((a, b) => a.len - b.len);
         if (fit.length > 0) {
           const t = fit[0], arr = state.boats[t.bIdx][t.sk];
-          for (let i = t.st; i < t.st + cnt; i++) arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
+          for (let i = t.st; i < t.st + cnt; i++) {
+            arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: Number(g.count), note: g.note };
+          }
         } else {
           splits++;
           let rem = cnt;
           for (const r of runs().sort((a, b) => b.len - a.len)) {
             if (rem <= 0) break;
             const take = Math.min(r.len, rem), arr = state.boats[r.bIdx][r.sk];
-            for (let i = r.st; i < r.st + take; i++) arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: `${g.name}(分)`, count: cnt, note: g.note };
+            for (let i = r.st; i < r.st + take; i++) {
+              arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: `${g.name}(分)`, count: Number(g.count), note: g.note };
+            }
             rem -= take;
           }
         }
       }
-      if (showFeedback) {
-        save(); render();
-        toast(splits > 0 ? `⚠️ 空き不足のため${splits}組が分断確定になりました` : "✅ 残り全員の座席を自動確定しました！");
-      }
+
+      state.selId = null;
+      state.customSplitMode = false;
+      save(); render();
+      toast(splits > 0 ? `⚠️ 連番空き不足のため${splits}組が分かれて確定しました` : "✅ 残り全員の座席を確定しました！");
     }
 
-    function getPlacedIds() {
+    // 全員分の席が埋まっているお客様のIDセットを返す
+    function getFullyPlacedIds() {
       const ids = new Set();
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
-        b[sk].forEach(c => { if (c && c.type === "ASSIGNED") ids.add(String(c.guestId)); });
-      }));
+      state.guests.forEach(g => {
+        if (countAssignedSeatsForGuest(g.id) >= Number(g.count)) {
+          ids.add(String(g.id));
+        }
+      });
       return ids;
     }
 
@@ -1092,6 +1185,13 @@
       const b = state.boats[bIdx], k = side === "left" ? "leftCap" : "rightCap", sk = side === "left" ? "leftSeats" : "rightSeats";
       const nxt = Number(b[k]) + d;
       if (nxt < 1 || nxt > 15) return;
+      if (d < 0) {
+        const lastSeat = b[sk][b[sk].length - 1];
+        if (lastSeat && lastSeat.type === "ASSIGNED") {
+          toast(`⚠️ 一番後ろに ${lastSeat.name}様 が座っているため減らせません`);
+          return;
+        }
+      }
       pushUndo(`${b.name}の人数変更`);
       b[k] = nxt;
       while (b[sk].length < nxt) b[sk].push(null);
@@ -1113,7 +1213,16 @@
     function selectGuestById(id) {
       state.markMode = null;
       const targetId = String(id);
-      state.selId = (String(state.selId) === targetId) ? null : targetId;
+      if (String(state.selId) === targetId) {
+        state.selId = null;
+        state.customSplitMode = false;
+      } else {
+        state.selId = targetId;
+        const g = state.guests.find(x => String(x.id) === targetId);
+        const curAssigned = g ? countAssignedSeatsForGuest(g.id) : 0;
+        // すでに1名以上配置中で残人数がある場合はバラバラ配置ONで開く
+        state.customSplitMode = !!(g && curAssigned > 0 && curAssigned < Number(g.count));
+      }
       render();
       if (state.selId) {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1300,67 +1409,64 @@
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
 
+      // 選択中バナー（バラバラ配置カスタム切替付き）
       const selG = !state.menuCollapsed ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
       let selBannerHtml = "";
       if (selG) {
+        const assignedNow = countAssignedSeatsForGuest(selG.id);
+        const remNow = Math.max(0, Number(selG.count) - assignedNow);
+        const showCustomBtn = Number(selG.count) >= 2;
         selBannerHtml = `
           <div class="selected-banner">
-            <div>
-              <div class="selected-banner-info">👤 ${selG.name}様 (${selG.count}名) を選択中</div>
-              <div class="selected-banner-sub">▼ 配置したい座席ボタンをタップしてください</div>
+            <div class="selected-banner-top">
+              <div>
+                <div class="selected-banner-info">
+                  👤 ${selG.name}様 (${selG.count}名)
+                  ${state.customSplitMode ? `<span style="font-size:14px; color:#fed7aa;">［残り ${remNow}名］</span>` : ""}
+                </div>
+                <div class="selected-banner-sub">
+                  ${state.customSplitMode
+                    ? "▼ 1席ずつ好きな場所をタップ（左右・別船に分けて配置できます）"
+                    : "▼ 配置したい座席をタップ（横並び一括で入ります）"}
+                </div>
+              </div>
+              <button type="button" onclick="clearSel()" style="padding:8px 12px; font-size:14px; background:rgba(0,0,0,0.35); border-color:#93c5fd; flex-shrink:0;">解除</button>
             </div>
-            <button type="button" onclick="clearSel()" style="padding:8px 12px; font-size:14px; background:rgba(0,0,0,0.35); border-color:#93c5fd;">解除</button>
+            ${showCustomBtn ? `
+              <button type="button" class="custom-split-btn ${state.customSplitMode ? 'on' : ''}" onclick="toggleCustomSplitMode()">
+                ${state.customSplitMode
+                  ? "🔀 バラバラ配置（カスタム）：ON中（押すと連番一括に戻る）"
+                  : "🔀 左右や別席に分ける（バラバラ配置：OFF）"}
+              </button>
+            ` : ""}
           </div>
         `;
       }
 
-      let bannerHtml = "";
-      if (!state.menuCollapsed) {
-        const freedom = checkRemainingFreedom();
-        if (freedom.status === "OVER_CAPACITY") {
-          bannerHtml = `
-            <div class="lock-banner" style="border-color:#ef4444; background:linear-gradient(135deg,#450a0a,#7f1d1d);">
-              <div class="lock-banner-title" style="color:#fca5a5;">⚠️ 予約人数が船の総席数を ${freedom.overBy}名 超えています</div>
-              <div class="lock-banner-desc">自動判定を正しく動かすため、「⚙ 設定」から予約人数または船の席数を調整してください。</div>
-            </div>
-          `;
-        } else if (freedom.status === "LOCKED_UNIQUE") {
-          bannerHtml = `
-            <div class="lock-banner">
-              <div class="lock-banner-title">🔒 自由選択終了（残り${freedom.unplacedCount}組の席が確定しました）</div>
-              <div class="lock-banner-desc">これ以上自由に席を選ぶとグループが分断されます。残りの空き枠に全員を自動確定できます。</div>
-              <button type="button" onclick="autoAssign(true)" class="warning" style="width:100%; padding:13px; font-size:16px;">
-                ✅ 残りの${freedom.unplacedCount}組をこの配置で確定する
-              </button>
-            </div>
-          `;
-        } else if (freedom.status === "NO_CHOICE_SPLIT") {
-          bannerHtml = `
-            <div class="lock-banner" style="border-color:#ef4444; background:linear-gradient(135deg,#450a0a,#7f1d1d);">
-              <div class="lock-banner-title" style="color:#fca5a5;">⚠️ 自由選択終了（空き枠不足・自動調整が必要です）</div>
-              <div class="lock-banner-desc">これ以上お客様が自由に席を選ぶことができません。下のボタンで残りの席を確定させてください。</div>
-              <button type="button" onclick="autoAssign(true)" class="danger" style="width:100%; padding:13px; font-size:16px;">
-                ✨ 残りの${freedom.unplacedCount}組を自動確定する
-              </button>
-            </div>
-          `;
-        }
-      }
-
+      // ハイライト計算
       const hl = {};
       if (selG) {
-        const cnt = Number(selG.count) || 1;
-        state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
-          for (let i = 0; i <= b[sk].length - cnt; i++) {
-            const ev = evalPlace(bi, sk, i, selG);
-            if (ev.valid) {
-              for (let k = i; k < i + cnt; k++) {
-                const key = `${bi}-${sk}-${k}`;
-                if (!hl[key] || ev.fits) hl[key] = ev.fits ? "fit-ok" : "fit-warn";
+        if (state.customSplitMode) {
+          // バラバラ配置時は空いている全席を案内OK表示
+          state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
+            b[sk].forEach((c, i) => {
+              if (c === null) hl[`${bi}-${sk}-${i}`] = "fit-ok";
+            });
+          }));
+        } else {
+          const cnt = Number(selG.count) || 1;
+          state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
+            for (let i = 0; i <= b[sk].length - cnt; i++) {
+              const ev = evalPlace(bi, sk, i, selG);
+              if (ev.valid) {
+                for (let k = i; k < i + cnt; k++) {
+                  const key = `${bi}-${sk}-${k}`;
+                  if (!hl[key] || ev.fits) hl[key] = ev.fits ? "fit-ok" : "fit-warn";
+                }
               }
             }
-          }
-        }));
+          }));
+        }
       }
 
       let seatsSectionHtml = "";
@@ -1392,18 +1498,23 @@
         if (bi === -1) { state.view = "overview"; render(); return; }
         const b = state.boats[bi];
         const capEditBar = state.menuCollapsed ? "" : `
-          <div style="display:flex;gap:8px;align-items:center;background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--bd);">
-            <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">左舷</div>
-              <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
-                <button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'left',-1)">−</button><b>${b.leftCap}</b><button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'left',1)">＋</button>
+          <div style="background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--bd);">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">左舷</div>
+                <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
+                  <button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'left',-1)">−</button><b>${b.leftCap}</b><button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'left',1)">＋</button>
+                </div>
+              </div>
+              <button type="button" style="padding:9px;font-size:14px;" onclick="swapCaps(${bi})">⇄<br>入替</button>
+              <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">右舷</div>
+                <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
+                  <button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'right',-1)">−</button><b>${b.rightCap}</b><button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'right',1)">＋</button>
+                </div>
               </div>
             </div>
-            <button type="button" style="padding:9px;font-size:14px;" onclick="swapCaps(${bi})">⇄<br>入替</button>
-            <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">右舷</div>
-              <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
-                <button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'right',-1)">−</button><b>${b.rightCap}</b><button type="button" style="padding:5px 12px;font-size:18px;" onclick="changeCap(${bi},'right',1)">＋</button>
-              </div>
-            </div>
+            <button type="button" class="seat-edit-toggle ${state.seatEditMode ? 'on' : ''}" onclick="toggleSeatEditMode()">
+              ${state.seatEditMode ? "✅ 場所指定の席増減：ON（終了する）" : "🪑 途中に席を増やす・消す（場所指定）"}
+            </button>
           </div>
         `;
         seatsSectionHtml = `
@@ -1411,10 +1522,10 @@
           <div class="bow-bar">▲ ミヨシ（船首） ▲</div>
           <div class="hull">
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">左 舷</div>
-              ${b.leftSeats.map((c, i) => seatBtnHtml(bi, "leftSeats", c, i, b.leftCap, hl[`${bi}-leftSeats-${i}`])).join("")}
+              ${renderSideSeatsColumn(bi, "leftSeats", b.leftSeats, b.leftCap, hl)}
             </div>
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">右 舷</div>
-              ${b.rightSeats.map((c, i) => seatBtnHtml(bi, "rightSeats", c, i, b.rightCap, hl[`${bi}-rightSeats-${i}`])).join("")}
+              ${renderSideSeatsColumn(bi, "rightSeats", b.rightSeats, b.rightCap, hl)}
             </div>
           </div>
           <div class="bow-bar">▼ オオドモ（船尾） ▼</div>
@@ -1423,10 +1534,10 @@
 
       let guestSectionHtml = "";
       if (!state.menuCollapsed) {
-        const placed = getPlacedIds();
+        const placed = getFullyPlacedIds();
         const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
         const placedList = state.guests.filter(g => placed.has(String(g.id)));
-        const unpCnt = unplaced.reduce((a, g) => a + Number(g.count), 0);
+        const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
         const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
 
         let guestListHtml = "";
@@ -1443,18 +1554,25 @@
           const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
 
           guestListHtml = allSorted.map(g => {
-            const isP = placed.has(String(g.id)), isS = String(state.selId) === String(g.id);
+            const assignedNow = countAssignedSeatsForGuest(g.id);
+            const isP = assignedNow >= Number(g.count);
+            const isPartial = assignedNow > 0 && !isP;
+            const isS = String(state.selId) === String(g.id);
             const hasDot = (g.note || "").includes("前日場所取");
-            const boatName = isP ? getGuestAssignedBoats(g.id) : "";
+            const boatName = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
             return `
               <div class="g-row-wrap">
-                <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''}" onclick="selectGuestById('${g.id}')">
+                <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''} ${isPartial ? 'partial' : ''}" onclick="selectGuestById('${g.id}')">
                   <div class="g-row-top">
                     <span class="g-name-txt">${g.name}</span>
                     <span class="g-cnt">${g.count}名</span>
                   </div>
                   <div class="g-meta ${hasDot ? 'dot-mark' : ''}">
-                    ${isP ? `✅ 座席確定済み（${boatName}）` : (g.note || '通常予約')}
+                    ${isP
+                      ? `✅ 座席確定済み（${boatName}）`
+                      : (isPartial
+                        ? `⏳ 分割配置中（${assignedNow}/${g.count}名配置済み・${boatName}）`
+                        : (g.note || '通常予約'))}
                   </div>
                 </button>
                 <button type="button" onclick="openEdit('${g.id}')" style="padding:0 14px; font-size:15px; flex-shrink:0;">✎ 修正</button>
@@ -1480,7 +1598,27 @@
         `;
       }
 
-      main.innerHTML = selBannerHtml + bannerHtml + seatsSectionHtml + guestSectionHtml;
+      main.innerHTML = selBannerHtml + seatsSectionHtml + guestSectionHtml;
+    }
+
+    function renderSideSeatsColumn(bi, sk, seatsArr, tot, hl) {
+      const editMode = !state.menuCollapsed && state.seatEditMode;
+      let html = "";
+      seatsArr.forEach((c, i) => {
+        if (editMode) {
+          html += `<button type="button" class="insert-slot-btn" onclick="insertSeatAt(${bi},'${sk}',${i})">＋ ${i + 1}番の前に1席挿入</button>`;
+        }
+        html += `<div class="seat-row-box">`;
+        html += seatBtnHtml(bi, sk, c, i, tot, hl[`${bi}-${sk}-${i}`]);
+        if (editMode) {
+          html += `<button type="button" class="del-slot-btn" onclick="deleteSeatAt(${bi},'${sk}',${i})">− ${i + 1}番を削除して詰める</button>`;
+        }
+        html += `</div>`;
+      });
+      if (editMode) {
+        html += `<button type="button" class="insert-slot-btn" onclick="insertSeatAt(${bi},'${sk}',${seatsArr.length})">＋ オオドモ（最後尾）に1席追加</button>`;
+      }
+      return html;
     }
 
     function miniBtnHtml(bi, sk, c, i, h) {
@@ -1529,14 +1667,15 @@
         return;
       }
 
-      const placed = getPlacedIds();
+      const placed = getFullyPlacedIds();
       const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
-      const placedCnt = state.guests.filter(g => placed.has(String(g.id))).reduce((a, g) => a + Number(g.count), 0);
+      const placedCnt = state.guests.reduce((a, g) => a + Math.min(Number(g.count), countAssignedSeatsForGuest(g.id)), 0);
       const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
 
       const rowsHtml = state.guests.map((g, idx) => {
+        const assignedNow = countAssignedSeatsForGuest(g.id);
         const isDone = placed.has(String(g.id));
-        const boatLabel = isDone ? getGuestAssignedBoats(g.id) : "";
+        const boatLabel = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
         return `
           <div class="sheet-row ${isDone ? 'done-row' : ''}">
             <div class="sheet-idx">${idx + 1}.</div>
@@ -1544,7 +1683,7 @@
               <div class="sheet-name-line">
                 <span style="font-size:18px; font-weight:800;" class="${isDone ? 'strike-name' : ''}">${g.name}</span>
                 <span style="font-size:16px; font-weight:800; color:#93c5fd;">${g.count}名</span>
-                ${isDone && boatLabel ? `<span class="boat-tag">${boatLabel}</span>` : ""}
+                ${boatLabel ? `<span class="boat-tag">${boatLabel}${!isDone ? `(${assignedNow}/${g.count})` : ""}</span>` : ""}
               </div>
               ${g.note ? `<div class="sheet-note">${g.note}</div>` : ""}
             </div>
@@ -1725,7 +1864,6 @@
 
     function openModal(id) {
       if (id === "setupModal") {
-        updateAutoLockBtn();
         const b32 = state.boats.find(b => b.name === "32号船");
         document.getElementById("expArea").value = b32 ? JSON.stringify({
           date: getTodayStr(), boat: "32号船",
