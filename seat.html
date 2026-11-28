@@ -68,6 +68,26 @@
       width: 100%; padding: 11px 4px; font-size: 16px; font-weight: 800;
     }
 
+    /* 釣り物（魚種）切り替えバー（複数魚種がある場合に自動表示） */
+    .fish-bar {
+      display: flex; align-items: center; gap: 6px; overflow-x: auto;
+      background: #0b1324; border-bottom: 2px solid #1e3a8a;
+      padding: 6px 8px;
+    }
+    .fish-tab {
+      flex: 1; min-width: 96px; padding: 8px 8px; border-radius: 8px;
+      background: var(--inp); border: 2px solid var(--bd);
+      color: var(--sub); font-size: 16px; font-weight: 900;
+      flex-direction: column; line-height: 1.2;
+    }
+    .fish-tab.active {
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+      border-color: #7dd3fc; color: #ffffff;
+    }
+    .fish-tab-sub {
+      font-size: 11px; font-weight: 700; opacity: 0.9; margin-top: 2px;
+    }
+
     button {
       background: var(--panel); color: var(--tx); border: 1px solid var(--bd);
       border-radius: 9px; padding: 10px 11px; font-size: 15px; font-weight: 700;
@@ -121,8 +141,13 @@
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 8px; font-size: 15px; font-weight: 800; color: #93c5fd;
     }
+    .ocr-fish-group-title {
+      font-size: 14px; font-weight: 900; color: #7dd3fc;
+      background: #0c2340; border: 1px solid #0284c7;
+      padding: 5px 9px; border-radius: 7px; margin: 8px 0 5px;
+    }
     .ocr-result-list {
-      max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+      max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
     }
     .ocr-item-row {
       background: var(--inp); border: 1px solid var(--bd); border-radius: 8px;
@@ -144,10 +169,13 @@
     .match-box.warn { border-color: var(--shop-bd); background: var(--shop-bg); color: #fcd34d; }
     .boat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
     .b-pick {
-      width: 100%; padding: 14px 6px; border-radius: 10px; border: 2px solid var(--bd);
+      width: 100%; padding: 12px 6px; border-radius: 10px; border: 2px solid var(--bd);
       background: var(--inp); color: var(--sub); font-size: 17px; font-weight: 800;
+      flex-direction: column; line-height: 1.2;
     }
     .b-pick.on { background: var(--blue-bg); border-color: #3b82f6; color: #fff; }
+    .b-pick.in-other-fish { border-color: #64748b; background: #0a0f1d; color: #cbd5e1; }
+    .b-pick-used { font-size: 11px; color: #fcd34d; font-weight: 700; margin-top: 2px; }
     .w-boat-row {
       background: var(--inp); border: 1px solid var(--bd); border-radius: 10px;
       padding: 11px; margin-bottom: 10px;
@@ -456,6 +484,9 @@
     </div>
   </header>
 
+  <!-- 複数釣り物（カワハギ・アジ・アマダイ等）が検出された時の切り替えタブ -->
+  <div class="fish-bar" id="fishTabsBar" style="display:none;"></div>
+
   <div id="topBars" style="display:none;">
     <!-- スタッフ操作バー（メニュー収納時は非表示） -->
     <div class="mode-bar" id="staffModeBar">
@@ -485,7 +516,7 @@
     <div class="modal modal-wide">
       <div class="m-head">
         <div class="m-head-left">
-          <span style="font-size:19px;">📋 予約一覧</span>
+          <span style="font-size:19px;" id="guestModalTitle">📋 予約一覧</span>
           <button type="button" class="warning" id="modalOrigImgBtn" onclick="openOrigImage()" style="padding:8px 11px; font-size:14px;">🖼 元画像</button>
         </div>
         <button type="button" class="modal-close-lg" onclick="closeModal('guestListModal')">✕ 閉じる</button>
@@ -540,13 +571,15 @@
     </div>
   </div>
 
-  <!-- OCR読込モーダル（解析ボタンの下に読み込んだデータを表示） -->
+  <!-- OCR読込モーダル（対象魚種入力を廃止し、画像から全釣り物を自動判別） -->
   <div class="modal-bg" id="ocrModal">
     <div class="modal">
       <div class="m-head"><span>📷 予約表の写真読込</span><button type="button" class="modal-close-lg" onclick="closeModal('ocrModal')">✕ 閉じる</button></div>
-      <div class="field"><label>対象魚種（ヒント）</label><input type="text" id="fishInput" value="カワハギ" /></div>
+      <div style="font-size:14px; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">
+        予約表に書かれている釣り物（カワハギ・アジ・アマダイ・スミイカ・カサゴ等）をAIが画像から自動判別し、魚種ごとにまとめて読み取ります。
+      </div>
       <div class="field"><label>予約表の写真を選択</label><input type="file" id="ocrFile" accept="image/*" /></div>
-      <button type="button" class="primary" style="width:100%; padding:13px;" id="ocrBtn" onclick="runOcr()">AIで解析する</button>
+      <button type="button" class="primary" style="width:100%; padding:13px;" id="ocrBtn" onclick="runOcr()">AIで自動判別して解析する</button>
       <div id="ocrMsg" style="margin-top:10px; font-size:15px;"></div>
       <div id="ocrParsedListArea"></div>
     </div>
@@ -556,6 +589,7 @@
   <div class="modal-bg" id="addModal">
     <div class="modal">
       <div class="m-head"><span>＋ 予約グループ追加</span><button type="button" class="modal-close-lg" onclick="closeModal('addModal')">✕ 閉じる</button></div>
+      <div class="field"><label>釣り物（魚種）</label><input type="text" id="addFish" placeholder="例：カワハギ" /></div>
       <div class="field"><label>代表者名</label><input type="text" id="addName" placeholder="例：井部" /></div>
       <div class="field"><label>人数</label><input type="number" id="addCount" value="1" min="1" max="15" /></div>
       <div class="field"><label>メモ（前日場所取 / 竿 / カラ）</label><input type="text" id="addNote" /></div>
@@ -587,7 +621,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v16";
+    const STORE_KEY = "yamashitamaru_seat_flow_v17";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -609,36 +643,59 @@
       return "";
     }
 
-    function applyBoatBodyTheme() {
-      document.body.className = "";
-      if (state.step === "seats" && state.view !== "overview") {
-        const code = getBoatCode(state.view);
-        if (code) document.body.classList.add(`theme-${code}`);
-      }
+    function createEmptyFishSlot(fishName) {
+      return {
+        fish: fishName || "乗合",
+        step: "verify",
+        ocrWrittenTotal: null,
+        view: "overview",
+        boats: [],
+        guests: []
+      };
     }
 
     let state = {
       savedDate: getTodayStr(),
-      step: "verify",
       ocrLoaded: false,
-      ocrWrittenTotal: null,
       ocrImage: null,
       menuCollapsed: false,
       parsedSheetOpen: false,
       sortMode: "desc",
-      view: "overview",
       markMode: null,
       customSplitMode: false,
       seatEditMode: false,
       selId: null,
-      boats: [],
-      guests: []
+      activeFish: "乗合",
+      fishList: ["乗合"],
+      fishData: {
+        "乗合": createEmptyFishSlot("乗合")
+      }
     };
+
+    function getCur() {
+      if (!state.fishData[state.activeFish]) {
+        const firstKey = state.fishList[0] || "乗合";
+        if (!state.fishData[firstKey]) {
+          state.fishData[firstKey] = createEmptyFishSlot(firstKey);
+        }
+        state.activeFish = firstKey;
+      }
+      return state.fishData[state.activeFish];
+    }
+
+    function applyBoatBodyTheme() {
+      document.body.className = "";
+      const cur = getCur();
+      if (cur.step === "seats" && cur.view !== "overview") {
+        const code = getBoatCode(cur.view);
+        if (code) document.body.classList.add(`theme-${code}`);
+      }
+    }
 
     function pushUndo(actionLabel) {
       undoStack.push({
         label: actionLabel,
-        boats: JSON.parse(JSON.stringify(state.boats))
+        fishData: JSON.parse(JSON.stringify(state.fishData))
       });
       if (undoStack.length > 20) undoStack.shift();
     }
@@ -649,7 +706,7 @@
         return;
       }
       const prev = undoStack.pop();
-      state.boats = prev.boats;
+      state.fishData = prev.fishData;
       state.selId = null;
       state.customSplitMode = false;
       save(); render();
@@ -707,9 +764,10 @@
     }
 
     function countAssignedSeatsForGuest(guestId) {
+      const cur = getCur();
       const targetId = String(guestId);
       let cnt = 0;
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+      cur.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         b[sk].forEach(c => {
           if (c && c.type === "ASSIGNED" && String(c.guestId) === targetId) cnt++;
         });
@@ -717,49 +775,76 @@
       return cnt;
     }
 
+    function migrateOldSingleFishState(parsed) {
+      const fishName = "カワハギ";
+      const slot = createEmptyFishSlot(fishName);
+      slot.step = parsed.step || "verify";
+      slot.ocrWrittenTotal = parsed.ocrWrittenTotal || null;
+      slot.view = parsed.view || "overview";
+      slot.boats = parsed.boats || [];
+      slot.guests = normalizeGuests(parsed.guests || []);
+      return {
+        savedDate: getTodayStr(),
+        ocrLoaded: slot.guests.length > 0 || Boolean(parsed.ocrLoaded),
+        ocrImage: parsed.ocrImage || null,
+        menuCollapsed: Boolean(parsed.menuCollapsed),
+        parsedSheetOpen: Boolean(parsed.parsedSheetOpen),
+        sortMode: parsed.sortMode || "desc",
+        markMode: null,
+        customSplitMode: false,
+        seatEditMode: false,
+        selId: null,
+        activeFish: fishName,
+        fishList: [fishName],
+        fishData: { [fishName]: slot }
+      };
+    }
+
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v15");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v16");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const hasData = (parsed.guests && parsed.guests.length > 0) || (parsed.boats && parsed.boats.length > 0 && parsed.step === "seats");
+          const isNewFormat = Boolean(parsed.fishData && Array.isArray(parsed.fishList));
+          const hasData = isNewFormat
+            ? parsed.fishList.some(f => {
+                const fd = parsed.fishData[f];
+                return fd && ((fd.guests && fd.guests.length > 0) || (fd.boats && fd.boats.length > 0 && fd.step === "seats"));
+              })
+            : ((parsed.guests && parsed.guests.length > 0) || (parsed.boats && parsed.boats.length > 0 && parsed.step === "seats"));
+
+          let useRestored = true;
           if (parsed.savedDate && parsed.savedDate !== today && hasData) {
             const parts = parsed.savedDate.split("-");
             const label = parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : parsed.savedDate;
-            const doReset = confirm(`📅 前日（${label}）のデータが残っています。\nリセットして新しく始めますか？\n\n・OK：すべて消去して新しく始める\n・キャンセル：前日のデータをそのまま使う`);
-            if (doReset) {
-              state.savedDate = today;
-              state.step = "verify";
-              state.ocrLoaded = false;
-              state.ocrImage = null;
-              state.boats = [];
-              state.guests = [];
-              state.selId = null;
-              draftBoats = [];
-              save();
-            } else {
-              state = { ...state, ...parsed, savedDate: today };
-              if (parsed.sortByCount === false) state.sortMode = "asc";
-              else if (!parsed.sortMode) state.sortMode = "desc";
-              state.guests = normalizeGuests(state.guests);
-              if (state.guests.length > 0) state.ocrLoaded = true;
-              if (state.ocrImage) lastOcrImageDataUrl = state.ocrImage;
-              if (state.boats && state.boats.length > 0) {
-                draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
-              }
-              save();
-            }
-          } else {
+            useRestored = !confirm(`📅 前日（${label}）のデータが残っています。\nリセットして新しく始めますか？\n\n・OK：すべて消去して新しく始める\n・キャンセル：前日のデータをそのまま使う`);
+          }
+
+          if (!useRestored) {
+            state.savedDate = today;
+            save();
+          } else if (isNewFormat) {
             state = { ...state, ...parsed, savedDate: today };
-            if (parsed.sortByCount === false) state.sortMode = "asc";
-            else if (!parsed.sortMode) state.sortMode = "desc";
-            state.guests = normalizeGuests(state.guests);
-            if (state.guests.length > 0) state.ocrLoaded = true;
+            state.fishList.forEach(f => {
+              if (state.fishData[f]) {
+                state.fishData[f].guests = normalizeGuests(state.fishData[f].guests);
+              }
+            });
             if (state.ocrImage) lastOcrImageDataUrl = state.ocrImage;
-            if (state.boats && state.boats.length > 0) {
-              draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
+            const cur = getCur();
+            if (cur.boats && cur.boats.length > 0) {
+              draftBoats = cur.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
             }
+            save();
+          } else {
+            state = migrateOldSingleFishState(parsed);
+            if (state.ocrImage) lastOcrImageDataUrl = state.ocrImage;
+            const cur = getCur();
+            if (cur.boats && cur.boats.length > 0) {
+              draftBoats = cur.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
+            }
+            save();
           }
         } catch (e) {}
       }
@@ -785,6 +870,19 @@
       clearTimeout(t._tm); t._tm = setTimeout(() => t.style.display = "none", 3200);
     }
 
+    function switchFish(fishName) {
+      if (!state.fishData[fishName]) return;
+      state.activeFish = fishName;
+      state.selId = null;
+      state.markMode = null;
+      state.customSplitMode = false;
+      state.seatEditMode = false;
+      const cur = getCur();
+      draftBoats = (cur.boats || []).map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
+      save(); render();
+      toast(`🐟 「${fishName}」に切り替えました`);
+    }
+
     function toggleMenuCollapse() {
       state.menuCollapsed = !state.menuCollapsed;
       if (state.menuCollapsed) {
@@ -802,14 +900,15 @@
     }
 
     function goStep(stepName) {
+      const cur = getCur();
       if (stepName === "boats") {
-        if (state.boats.length > 0) {
-          draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
+        if (cur.boats.length > 0) {
+          draftBoats = cur.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
         } else {
           draftBoats = [];
         }
       }
-      state.step = stepName;
+      cur.step = stepName;
       state.menuCollapsed = false;
       closeModal("setupModal");
       save(); render();
@@ -824,12 +923,13 @@
     }
 
     function toggleMarkMode(mode) {
+      const cur = getCur();
       state.markMode = (state.markMode === mode) ? null : mode;
       if (state.markMode) {
         state.customSplitMode = false;
       }
       render();
-      const selG = state.guests.find(x => String(x.id) === String(state.selId));
+      const selG = cur.guests.find(x => String(x.id) === String(state.selId));
       if (state.markMode === "BAG") {
         toast(selG ? `■ 荷物モードON（${selG.name}様 ${selG.count}名）：席をタップしてください` : "■ 荷物モードON：荷物が置いてある席をタップしてください");
       } else if (state.markMode === "SHOP") {
@@ -864,40 +964,59 @@
       state.customSplitMode = false;
       render();
     }
-    function setView(v) { state.view = v; render(); }
+    function setView(v) {
+      const cur = getCur();
+      cur.view = v;
+      render();
+    }
+
+    function findGuestAcrossAllFish(id) {
+      const targetId = String(id);
+      for (const f of state.fishList) {
+        const fd = state.fishData[f];
+        if (!fd) continue;
+        const g = fd.guests.find(x => String(x.id) === targetId);
+        if (g) return { fish: f, slot: fd, guest: g };
+      }
+      return null;
+    }
 
     function adjustVerifyCount(id, delta) {
-      const g = state.guests.find(x => String(x.id) === String(id));
-      if (!g) return;
-      g.count = Math.min(15, Math.max(1, Number(g.count) + delta));
-      removeGuest(id);
+      const found = findGuestAcrossAllFish(id);
+      if (!found) return;
+      found.guest.count = Math.min(15, Math.max(1, Number(found.guest.count) + delta));
+      removeGuestFromSlot(found.slot, id);
       save(); render();
       if (document.getElementById("ocrModal").classList.contains("open")) renderOcrParsedList();
     }
 
     function removeVerifyGuest(id) {
-      removeGuest(id);
-      state.guests = state.guests.filter(g => String(g.id) !== String(id));
+      const found = findGuestAcrossAllFish(id);
+      if (!found) return;
+      removeGuestFromSlot(found.slot, id);
+      found.slot.guests = found.slot.guests.filter(g => String(g.id) !== String(id));
       if (String(state.selId) === String(id)) state.selId = null;
-      if (state.guests.length === 0) state.ocrLoaded = false;
+      const anyGuests = state.fishList.some(f => state.fishData[f] && state.fishData[f].guests.length > 0);
+      if (!anyGuests) state.ocrLoaded = false;
       save(); render();
       if (document.getElementById("ocrModal").classList.contains("open")) renderOcrParsedList();
       toast("リストから除外しました");
     }
 
     function confirmVerifiedGuests() {
-      if (state.guests.length === 0) {
+      const cur = getCur();
+      if (cur.guests.length === 0) {
         toast("予約客が1組もありません。予約表を読み込むか追加してください");
         return;
       }
-      if (state.boats.length > 0) {
-        draftBoats = state.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
+      if (cur.boats.length > 0) {
+        draftBoats = cur.boats.map(b => ({ name: b.name, leftCap: Number(b.leftCap), rightCap: Number(b.rightCap) }));
       } else {
         draftBoats = [];
       }
-      state.step = "boats";
+      cur.step = "boats";
       save(); render();
-      toast("予約人数を確定しました。出船する船と人数を指定してください");
+      toast(`「${cur.fish}」の予約人数を確定しました。出船する船と人数を指定してください`);
     }
 
     function toggleDraftBoat(name) {
@@ -909,8 +1028,8 @@
 
     function changeDraftCap(idx, side, d) {
       const key = side === "left" ? "leftCap" : "rightCap";
-      const cur = Number(draftBoats[idx][key]) || 0;
-      draftBoats[idx][key] = Math.min(15, Math.max(0, cur + d));
+      const curVal = Number(draftBoats[idx][key]) || 0;
+      draftBoats[idx][key] = Math.min(15, Math.max(0, curVal + d));
       render();
     }
 
@@ -922,6 +1041,7 @@
     }
 
     function startWithDraft() {
+      const cur = getCur();
       if (draftBoats.length === 0) {
         toast("出船する船を1隻以上選んでください");
         return;
@@ -932,8 +1052,8 @@
         return;
       }
 
-      const oldMap = new Map(state.boats.map(b => [b.name, b]));
-      state.boats = draftBoats.map(b => {
+      const oldMap = new Map(cur.boats.map(b => [b.name, b]));
+      cur.boats = draftBoats.map(b => {
         const lc = Number(b.leftCap), rc = Number(b.rightCap);
         const old = oldMap.get(b.name);
         if (old) {
@@ -948,28 +1068,26 @@
         return { name: b.name, leftCap: lc, rightCap: rc, leftSeats: Array(lc).fill(null), rightSeats: Array(rc).fill(null) };
       });
 
-      undoStack = [];
-      state.step = "seats";
-      state.view = "overview";
+      cur.step = "seats";
+      cur.view = "overview";
       save(); render();
-      toast("配船を確定し、座席表を開始しました");
+      toast(`「${cur.fish}」の配船を確定し、座席表を開始しました`);
     }
 
     function resetAllNewDay() {
-      if (!confirm("予約一覧と座席をすべて消去して、新しい日の画面に戻りますか？")) return;
-      state.step = "verify";
+      if (!confirm("すべての釣り物の予約一覧と座席を消去して、新しい日の画面に戻りますか？")) return;
       state.ocrLoaded = false;
-      state.ocrWrittenTotal = null;
       state.ocrImage = null;
       lastOcrImageDataUrl = null;
       state.menuCollapsed = false;
       state.parsedSheetOpen = false;
       state.customSplitMode = false;
       state.seatEditMode = false;
-      state.boats = [];
-      state.guests = [];
       state.selId = null;
       state.markMode = null;
+      state.activeFish = "乗合";
+      state.fishList = ["乗合"];
+      state.fishData = { "乗合": createEmptyFishSlot("乗合") };
       draftBoats = [];
       undoStack = [];
       closeModal("setupModal");
@@ -978,7 +1096,8 @@
     }
 
     function insertSeatAt(bIdx, sk, index) {
-      const b = state.boats[bIdx];
+      const cur = getCur();
+      const b = cur.boats[bIdx];
       if (!b) return;
       const capKey = sk === "leftSeats" ? "leftCap" : "rightCap";
       const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
@@ -995,7 +1114,8 @@
     }
 
     function deleteSeatAt(bIdx, sk, index) {
-      const b = state.boats[bIdx];
+      const cur = getCur();
+      const b = cur.boats[bIdx];
       if (!b) return;
       const capKey = sk === "leftSeats" ? "leftCap" : "rightCap";
       const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
@@ -1087,7 +1207,8 @@
     }
 
     function evalPlace(bIdx, sk, start, guest) {
-      const b = state.boats[bIdx];
+      const cur = getCur();
+      const b = cur.boats[bIdx];
       if (!b || !b[sk]) return { valid: false };
       const arr = b[sk];
       const st = Number(start);
@@ -1100,7 +1221,7 @@
         }
       }
 
-      const clone = JSON.parse(JSON.stringify(state.boats));
+      const clone = JSON.parse(JSON.stringify(cur.boats));
       clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
         boat[s] = boat[s].map(c => (c && c.type === "ASSIGNED" && String(c.guestId) === String(guest.id)) ? null : c);
       }));
@@ -1108,7 +1229,7 @@
         clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
       }
 
-      const unplaced = state.guests
+      const unplaced = cur.guests
         .map(g => {
           let assigned = 0;
           clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
@@ -1125,7 +1246,8 @@
     function handleSeatClick(bIdx, sk, idx) {
       if (state.menuCollapsed) return;
 
-      const boat = state.boats[bIdx];
+      const curSlot = getCur();
+      const boat = curSlot.boats[bIdx];
       if (!boat || !boat[sk]) return;
       const seatIdx = Number(idx);
       const cur = boat[sk][seatIdx];
@@ -1133,7 +1255,7 @@
 
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
-        const selHolder = state.guests.find(x => String(x.id) === String(state.selId));
+        const selHolder = curSlot.guests.find(x => String(x.id) === String(state.selId));
         const holderName = selHolder ? selHolder.name : "";
         const holderCount = selHolder ? Number(selHolder.count) : 0;
 
@@ -1141,7 +1263,7 @@
           const oldDesc = formatMarkLabel(cur);
           if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${oldDesc}」を解除しますか？`)) return;
           pushUndo(`${oldDesc}の解除`);
-          state.boats[bIdx][sk][seatIdx] = null;
+          curSlot.boats[bIdx][sk][seatIdx] = null;
           save(); render();
           toast(`${oldDesc}を解除しました`);
           return;
@@ -1159,20 +1281,20 @@
           holderCount
         };
         pushUndo(`${formatMarkLabel(newMark)}の入力`);
-        state.boats[bIdx][sk][seatIdx] = newMark;
+        curSlot.boats[bIdx][sk][seatIdx] = newMark;
         save(); render();
         toast(`✅ ${boat.name} ${sideLabel}${seatIdx + 1}番に「${formatMarkLabel(newMark)}」を記録`);
         return;
       }
 
       if (state.selId) {
-        const g = state.guests.find(x => String(x.id) === String(state.selId));
+        const g = curSlot.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; state.customSplitMode = false; render(); return; }
 
         if (state.customSplitMode) {
           if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
             pushUndo(`${g.name}様の1席解除`);
-            state.boats[bIdx][sk][seatIdx] = null;
+            curSlot.boats[bIdx][sk][seatIdx] = null;
             save(); render();
             const nowCnt = countAssignedSeatsForGuest(g.id);
             toast(`${g.name}様の1席を解除（現在 ${nowCnt}/${g.count}名）`);
@@ -1192,7 +1314,7 @@
             if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${mLabel}」を上書きして ${g.name}様（1名分）を配置しますか？`)) return;
           }
           pushUndo(`${g.name}様の個別1席配置`);
-          state.boats[bIdx][sk][seatIdx] = {
+          curSlot.boats[bIdx][sk][seatIdx] = {
             type: "ASSIGNED",
             guestId: String(g.id),
             name: g.name,
@@ -1223,7 +1345,7 @@
         }
 
         const cnt = Number(g.count) || 1;
-        const currentLen = state.boats[bIdx][sk].length;
+        const currentLen = curSlot.boats[bIdx][sk].length;
         if (cnt > currentLen) {
           toast(`⚠️ ${g.name}様は${cnt}名のため片舷に入りきりません。上の「🔀 バラバラ配置」をONにして左右に分けてください`);
           return;
@@ -1239,7 +1361,7 @@
 
         let overlappingMarks = 0;
         for (let i = st; i < st + cnt; i++) {
-          if (isMarkSeat(state.boats[bIdx][sk][i])) overlappingMarks++;
+          if (isMarkSeat(curSlot.boats[bIdx][sk][i])) overlappingMarks++;
         }
         if (overlappingMarks > 0) {
           if (!confirm(`この場所には「荷物」または「店取り」が${overlappingMarks}席含まれています。上書きして ${g.name}様(${cnt}名) を配置しますか？`)) return;
@@ -1247,7 +1369,7 @@
 
         pushUndo(`${g.name}様の配置`);
         removeGuest(g.id);
-        const targetArr = state.boats[bIdx][sk];
+        const targetArr = curSlot.boats[bIdx][sk];
         for (let i = st; i < st + cnt; i++) {
           targetArr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: cnt, note: g.note };
         }
@@ -1262,7 +1384,7 @@
       if (cur && cur.type === "ASSIGNED") {
         state.selId = String(cur.guestId);
         const assignedNow = countAssignedSeatsForGuest(cur.guestId);
-        const gObj = state.guests.find(x => String(x.id) === String(cur.guestId));
+        const gObj = curSlot.guests.find(x => String(x.id) === String(cur.guestId));
         state.customSplitMode = !!(gObj && assignedNow > 0 && assignedNow < Number(gObj.count));
         render();
         toast(`${cur.name}様を選択中（移動先タップ、または再タップで解除）`);
@@ -1273,7 +1395,7 @@
         const label = formatMarkLabel(cur);
         if (!confirm(`${boat.name} ${sideLabel}${seatIdx + 1}番の「${label}」を解除しますか？`)) return;
         pushUndo(`${label}の解除`);
-        state.boats[bIdx][sk][seatIdx] = null;
+        curSlot.boats[bIdx][sk][seatIdx] = null;
         save(); render();
         toast(`${label}を解除しました`);
         return;
@@ -1291,9 +1413,9 @@
       return base;
     }
 
-    function removeGuest(id) {
+    function removeGuestFromSlot(slot, id) {
       const targetId = String(id);
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+      (slot.boats || []).forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         for (let i = 0; i < b[sk].length; i++) {
           if (b[sk][i] && b[sk][i].type === "ASSIGNED" && String(b[sk][i].guestId) === targetId) {
             b[sk][i] = null;
@@ -1302,8 +1424,13 @@
       }));
     }
 
+    function removeGuest(id) {
+      removeGuestFromSlot(getCur(), id);
+    }
+
     function autoAssign() {
-      const unplaced = state.guests
+      const cur = getCur();
+      const unplaced = cur.guests
         .map(g => ({ ...g, remNeed: Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)) }))
         .filter(g => g.remNeed > 0)
         .sort((a, b) => b.remNeed - a.remNeed);
@@ -1315,7 +1442,7 @@
 
       let pureEmptyTotal = 0;
       let protectedMarks = 0;
-      state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
+      cur.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         b[sk].forEach(c => {
           if (c === null) pureEmptyTotal++;
           else if (isMarkSeat(c)) protectedMarks++;
@@ -1332,15 +1459,15 @@
         return;
       }
 
-      if (!confirm(`未配置の残り${unplaced.length}組（計${totalNeed}名）を、空いている席へ自動振り分けしますか？\n（※「■ 荷物」「● 店取り」の席はそのまま保護されます）`)) {
+      if (!confirm(`「${cur.fish}」の未配置残り${unplaced.length}組（計${totalNeed}名）を、空いている席へ自動振り分けしますか？\n（※「■ 荷物」「● 店取り」の席はそのまま保護されます）`)) {
         return;
       }
 
-      pushUndo("残り自動確定");
+      pushUndo(`${cur.fish} 残り自動確定`);
 
       const runs = () => {
         const r = [];
-        state.boats.forEach((b, bIdx) => ["leftSeats", "rightSeats"].forEach(sk => {
+        cur.boats.forEach((b, bIdx) => ["leftSeats", "rightSeats"].forEach(sk => {
           let st = -1;
           b[sk].forEach((c, i) => {
             if (c === null) { if (st === -1) st = i; }
@@ -1356,7 +1483,7 @@
         const cnt = g.remNeed;
         const fit = runs().filter(r => r.len >= cnt).sort((a, b) => a.len - b.len);
         if (fit.length > 0) {
-          const t = fit[0], arr = state.boats[t.bIdx][t.sk];
+          const t = fit[0], arr = cur.boats[t.bIdx][t.sk];
           for (let i = t.st; i < t.st + cnt; i++) {
             arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: g.name, count: Number(g.count), note: g.note };
           }
@@ -1365,7 +1492,7 @@
           let rem = cnt;
           for (const r of runs().sort((a, b) => b.len - a.len)) {
             if (rem <= 0) break;
-            const take = Math.min(r.len, rem), arr = state.boats[r.bIdx][r.sk];
+            const take = Math.min(r.len, rem), arr = cur.boats[r.bIdx][r.sk];
             for (let i = r.st; i < r.st + take; i++) {
               arr[i] = { type: "ASSIGNED", guestId: String(g.id), name: `${g.name}(分)`, count: Number(g.count), note: g.note };
             }
@@ -1381,8 +1508,9 @@
     }
 
     function getFullyPlacedIds() {
+      const cur = getCur();
       const ids = new Set();
-      state.guests.forEach(g => {
+      cur.guests.forEach(g => {
         if (countAssignedSeatsForGuest(g.id) >= Number(g.count)) {
           ids.add(String(g.id));
         }
@@ -1391,9 +1519,10 @@
     }
 
     function getGuestAssignedBoats(guestId) {
+      const cur = getCur();
       const targetId = String(guestId);
       const names = [];
-      state.boats.forEach(b => {
+      cur.boats.forEach(b => {
         const found = b.leftSeats.some(c => c && c.type === "ASSIGNED" && String(c.guestId) === targetId)
           || b.rightSeats.some(c => c && c.type === "ASSIGNED" && String(c.guestId) === targetId);
         if (found) names.push(b.name.replace("船", ""));
@@ -1402,7 +1531,8 @@
     }
 
     function changeCap(bIdx, side, d) {
-      const b = state.boats[bIdx], k = side === "left" ? "leftCap" : "rightCap", sk = side === "left" ? "leftSeats" : "rightSeats";
+      const cur = getCur();
+      const b = cur.boats[bIdx], k = side === "left" ? "leftCap" : "rightCap", sk = side === "left" ? "leftSeats" : "rightSeats";
       const nxt = Number(b[k]) + d;
       if (nxt < 1 || nxt > 15) return;
       if (d < 0) {
@@ -1420,7 +1550,8 @@
     }
 
     function swapCaps(bIdx) {
-      const b = state.boats[bIdx], tmp = Number(b.leftCap);
+      const cur = getCur();
+      const b = cur.boats[bIdx], tmp = Number(b.leftCap);
       pushUndo(`${b.name}の左右入替`);
       b.leftCap = Number(b.rightCap); b.rightCap = tmp;
       while (b.leftSeats.length < b.leftCap) b.leftSeats.push(null);
@@ -1435,13 +1566,14 @@
         toast("メニューを開くと座席の割り当てができます");
         return;
       }
+      const cur = getCur();
       const targetId = String(id);
       if (String(state.selId) === targetId && !state.markMode) {
         state.selId = null;
         state.customSplitMode = false;
       } else {
         state.selId = targetId;
-        const g = state.guests.find(x => String(x.id) === targetId);
+        const g = cur.guests.find(x => String(x.id) === targetId);
         const curAssigned = g ? countAssignedSeatsForGuest(g.id) : 0;
         state.customSplitMode = !state.markMode && !!(g && curAssigned > 0 && curAssigned < Number(g.count));
       }
@@ -1449,7 +1581,7 @@
       render();
       if (state.selId) {
         window.scrollTo({ top: 0, behavior: "smooth" });
-        const g = state.guests.find(x => String(x.id) === String(state.selId));
+        const g = cur.guests.find(x => String(x.id) === String(state.selId));
         if (g) {
           if (state.markMode) {
             const mTxt = state.markMode === "BAG" ? "■ 荷物" : "● 店取り";
@@ -1462,20 +1594,22 @@
     }
 
     function renderGuestListModal() {
+      const cur = getCur();
+      document.getElementById("guestModalTitle").textContent = `📋 ${cur.fish} 予約一覧`;
       const body = document.getElementById("guestListModalBody");
       const origBtn = document.getElementById("modalOrigImgBtn");
       const hasImg = !!(lastOcrImageDataUrl || state.ocrImage);
       origBtn.style.opacity = hasImg ? "1" : "0.45";
 
       const placed = getFullyPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
-      const placedList = state.guests.filter(g => placed.has(String(g.id)));
+      const unplaced = cur.guests.filter(g => !placed.has(String(g.id)));
+      const placedList = cur.guests.filter(g => placed.has(String(g.id)));
       const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
-      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const totCnt = cur.guests.reduce((a, g) => a + Number(g.count), 0);
       const isAsc = state.sortMode === "asc";
 
       let listHtml = "";
-      if (state.guests.length === 0) {
+      if (cur.guests.length === 0) {
         listHtml = `<div style="grid-column:1 / -1; font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">「📷 読込」または「＋ 追加」から予約を入れてください</div>`;
       } else {
         const sortFn = (a, b) => {
@@ -1518,7 +1652,7 @@
 
       const addBtnHtml = state.menuCollapsed
         ? ""
-        : `<button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>`;
+        : `<button type="button" style="padding:7px 11px; font-size:14px;" onclick="openAddModalForFish('${cur.fish}')">＋ 追加</button>`;
 
       body.innerHTML = `
         <div class="gs-head">
@@ -1538,40 +1672,76 @@
     function renderOcrParsedList() {
       const area = document.getElementById("ocrParsedListArea");
       if (!area) return;
-      if (state.guests.length === 0) {
+      const activeFishList = state.fishList.filter(f => state.fishData[f] && state.fishData[f].guests.length > 0);
+      if (activeFishList.length === 0) {
         area.innerHTML = "";
         return;
       }
-      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
-      const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
+      const grandTotal = activeFishList.reduce((sum, f) => sum + state.fishData[f].guests.reduce((a, g) => a + Number(g.count), 0), 0);
+      const grandGroups = activeFishList.reduce((sum, f) => sum + state.fishData[f].guests.length, 0);
+
+      const groupsHtml = activeFishList.map(f => {
+        const fd = state.fishData[f];
+        const fTot = fd.guests.reduce((a, g) => a + Number(g.count), 0);
+        const writtenInfo = fd.ocrWrittenTotal ? ` / 紙記載:${fd.ocrWrittenTotal}名` : "";
+        return `
+          <div class="ocr-fish-group-title">🐟 ${f}（${fd.guests.length}組 / 計${fTot}名${writtenInfo}）</div>
+          ${fd.guests.map((g, i) => `
+            <div class="ocr-item-row">
+              <div class="ocr-item-main">
+                <div class="ocr-item-name">${i + 1}. ${g.name}（${g.count}名）</div>
+                <div class="ocr-item-sub">${(Number.isInteger(g.row) ? `${g.row + 1}段目` : "")}${g.note ? ` / ${g.note}` : ""}</div>
+              </div>
+              <div class="ocr-item-actions">
+                <button type="button" onclick="adjustVerifyCount('${g.id}', -1)">−</button>
+                <button type="button" onclick="adjustVerifyCount('${g.id}', 1)">＋</button>
+                <button type="button" onclick="openEdit('${g.id}')">✎</button>
+                <button type="button" class="danger" onclick="removeVerifyGuest('${g.id}')">✕</button>
+              </div>
+            </div>
+          `).join("")}
+        `;
+      }).join("");
+
       area.innerHTML = `
         <div class="ocr-result-box">
           <div class="ocr-result-head">
-            <span>📄 読み取りデータ（${state.guests.length}組 / 計${totCnt}名${writtenInfo}）</span>
+            <span>📄 読み取りデータ（全${activeFishList.length}魚種・${grandGroups}組 / 計${grandTotal}名）</span>
           </div>
-          <div class="ocr-result-list">
-            ${state.guests.map((g, i) => `
-              <div class="ocr-item-row">
-                <div class="ocr-item-main">
-                  <div class="ocr-item-name">${i + 1}. ${g.name}（${g.count}名）</div>
-                  <div class="ocr-item-sub">${(Number.isInteger(g.row) ? `${g.row + 1}段目` : "")}${g.note ? ` / ${g.note}` : ""}</div>
-                </div>
-                <div class="ocr-item-actions">
-                  <button type="button" onclick="adjustVerifyCount('${g.id}', -1)">−</button>
-                  <button type="button" onclick="adjustVerifyCount('${g.id}', 1)">＋</button>
-                  <button type="button" onclick="openEdit('${g.id}')">✎</button>
-                  <button type="button" class="danger" onclick="removeVerifyGuest('${g.id}')">✕</button>
-                </div>
-              </div>
-            `).join("")}
-          </div>
+          <div class="ocr-result-list">${groupsHtml}</div>
         </div>
       `;
     }
 
+    function renderFishTabsBar() {
+      const bar = document.getElementById("fishTabsBar");
+      const validFish = state.fishList.filter(f => state.fishData[f]);
+      if (validFish.length <= 1 && (!state.ocrLoaded && (!state.fishData[validFish[0]] || state.fishData[validFish[0]].guests.length === 0))) {
+        bar.style.display = "none";
+        return;
+      }
+      bar.style.display = "flex";
+      bar.innerHTML = validFish.map(f => {
+        const fd = state.fishData[f];
+        const tot = (fd.guests || []).reduce((a, g) => a + Number(g.count), 0);
+        const boatsTxt = (fd.boats && fd.boats.length > 0)
+          ? fd.boats.map(b => b.name.replace("船", "")).join("・")
+          : (fd.step === "verify" ? "確認中" : "船未定");
+        const isAct = state.activeFish === f;
+        return `
+          <button type="button" class="fish-tab ${isAct ? 'active' : ''}" onclick="switchFish('${f}')">
+            <span>🐟 ${f} (${tot}名)</span>
+            <span class="fish-tab-sub">${boatsTxt}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
     function render() {
       applyBoatBodyTheme();
+      renderFishTabsBar();
 
+      const cur = getCur();
       const topBars = document.getElementById("topBars");
       const main = document.getElementById("main");
       const staffHeaderBtns = document.getElementById("staffHeaderBtns");
@@ -1581,21 +1751,21 @@
       menuToggleBtn.className = state.menuCollapsed ? "menu-toggle-btn collapsed" : "menu-toggle-btn";
       staffHeaderBtns.style.display = state.menuCollapsed ? "none" : "grid";
 
-      if (state.step === "verify") {
+      if (cur.step === "verify") {
         topBars.style.display = "none";
 
-        if (!state.ocrLoaded && state.guests.length === 0) {
+        if (!state.ocrLoaded && cur.guests.length === 0) {
           main.innerHTML = `
             <div class="step-card">
               <div class="step-badge">ステップ 1 / 2：予約表の読込</div>
               <div class="empty-ocr-box">
                 <div class="empty-ocr-msg">予約表を読み込んでください</div>
-                <div class="empty-ocr-sub">手書きの予約表を撮影・選択すると、AIが自動で人数と名前を読み取ります。</div>
+                <div class="empty-ocr-sub">手書きの予約表を撮影・選択すると、書かれている釣り物（カワハギ・アジ・アマダイ等）と人数・名前をAIが自動で振り分けます。</div>
                 <button type="button" class="primary" style="width:100%; padding:16px; font-size:18px;" onclick="openModal('ocrModal')">
                   📷 予約表の写真を選択して読み込む
                 </button>
               </div>
-              <button type="button" style="width:100%; padding:13px; font-size:15px;" onclick="openModal('addModal')">
+              <button type="button" style="width:100%; padding:13px; font-size:15px;" onclick="openAddModalForFish('${cur.fish}')">
                 ＋ 写真を使わず手入力で1組ずつ追加する
               </button>
             </div>
@@ -1603,23 +1773,23 @@
           return;
         }
 
-        const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
-        const writtenInfo = state.ocrWrittenTotal ? `（予約表の記載合計：${state.ocrWrittenTotal}名）` : "";
+        const totCnt = cur.guests.reduce((a, g) => a + Number(g.count), 0);
+        const writtenInfo = cur.ocrWrittenTotal ? `（予約表の記載合計：${cur.ocrWrittenTotal}名）` : "";
         main.innerHTML = `
           <div class="step-card">
-            <div class="step-badge">ステップ 1 / 2：予約データの確認</div>
-            <div class="w-title">📋 読み取った予約の確認・修正</div>
-            <div class="w-sub">別枠や間違いがあれば「除外」や人数変更で調整し、合計人数を確認してから確定してください。</div>
+            <div class="step-badge">ステップ 1 / 2：予約データの確認【${cur.fish}】</div>
+            <div class="w-title">📋 「${cur.fish}」の予約確認・修正</div>
+            <div class="w-sub">内容を確認し、合計人数が合っていれば確定して「${cur.fish}」に出船する船を選んでください。</div>
 
             <div class="verify-summary">
               <div>
-                <div style="font-size:14px; color:#93c5fd; font-weight:700;">現在の予約合計 ${writtenInfo}</div>
-                <div style="font-size:24px; font-weight:800; color:#fff;">${totCnt} 名 <span style="font-size:16px; color:var(--sub);">（${state.guests.length} 組）</span></div>
+                <div style="font-size:14px; color:#93c5fd; font-weight:700;">「${cur.fish}」予約合計 ${writtenInfo}</div>
+                <div style="font-size:24px; font-weight:800; color:#fff;">${totCnt} 名 <span style="font-size:16px; color:var(--sub);">（${cur.guests.length} 組）</span></div>
               </div>
-              <button type="button" onclick="openModal('addModal')">＋ 1組追加</button>
+              <button type="button" onclick="openAddModalForFish('${cur.fish}')">＋ 1組追加</button>
             </div>
 
-            ${state.guests.map(g => `
+            ${cur.guests.map(g => `
               <div class="verify-row">
                 <div class="verify-info" onclick="openEdit('${g.id}')">
                   <div class="verify-name">${g.name} <span style="font-size:13px; color:#38bdf8; font-weight:600;">✎</span></div>
@@ -1635,42 +1805,51 @@
             `).join("")}
 
             <button type="button" class="success" style="width:100%; padding:15px; font-size:18px; margin-top:12px;" onclick="confirmVerifiedGuests()">
-              ✅ この内容（計${totCnt}名）で確定して船を選ぶ ▶
+              ✅ 「${cur.fish}」（計${totCnt}名）を確定して船を選ぶ ▶
             </button>
           </div>
         `;
         return;
       }
 
-      if (state.step === "boats") {
+      if (cur.step === "boats") {
         topBars.style.display = "none";
         const totalCap = draftBoats.reduce((a, b) => a + (Number(b.leftCap) || 0) + (Number(b.rightCap) || 0), 0);
-        const totalGuests = state.guests.reduce((a, g) => a + Number(g.count), 0);
+        const totalGuests = cur.guests.reduce((a, g) => a + Number(g.count), 0);
         const diff = totalCap - totalGuests;
 
         let matchClass = "match-box";
-        let matchText = `予約合計：${totalGuests}名 ／ 選択した船の席数合計：${totalCap}席`;
+        let matchText = `「${cur.fish}」予約合計：${totalGuests}名 ／ 選択した船の席数合計：${totalCap}席`;
         if (draftBoats.length === 0) {
-          matchText = `予約合計：${totalGuests}名 ／ 出船する船を選択してください`;
+          matchText = `「${cur.fish}」予約合計：${totalGuests}名 ／ 出船する船を選択してください`;
         } else if (totalGuests > 0) {
           if (diff === 0) {
             matchClass += " ok";
-            matchText = `✅ ぴったり一致！ 予約 ${totalGuests}名 ＝ 船の席数 ${totalCap}席`;
+            matchText = `✅ ぴったり一致！ ${cur.fish} ${totalGuests}名 ＝ 船の席数 ${totalCap}席`;
           } else if (diff > 0) {
             matchClass += " ok";
-            matchText = `予約 ${totalGuests}名 ／ 船の席数 ${totalCap}席（空き余裕 ${diff}席）`;
+            matchText = `${cur.fish} ${totalGuests}名 ／ 船の席数 ${totalCap}席（空き余裕 ${diff}席）`;
           } else {
             matchClass += " warn";
-            matchText = `⚠️ 席数が ${Math.abs(diff)}席 足りません（予約 ${totalGuests}名 ＞ 船の席数 ${totalCap}席）`;
+            matchText = `⚠️ 席数が ${Math.abs(diff)}席 足りません（${cur.fish} ${totalGuests}名 ＞ 船の席数 ${totalCap}席）`;
           }
         }
+
+        const otherFishBoatMap = new Map();
+        state.fishList.forEach(f => {
+          if (f === state.activeFish) return;
+          const fd = state.fishData[f];
+          if (fd && fd.boats) {
+            fd.boats.forEach(b => otherFishBoatMap.set(b.name, f));
+          }
+        });
 
         const canStart = draftBoats.length > 0 && draftBoats.every(b => (Number(b.leftCap) || 0) > 0 && (Number(b.rightCap) || 0) > 0);
 
         main.innerHTML = `
           <div class="step-card">
-            <div class="step-badge">ステップ 2 / 2：配船と人数指定</div>
-            <div class="w-title">🚢 出船する船と人数を指定</div>
+            <div class="step-badge">ステップ 2 / 2：配船と人数指定【${cur.fish}】</div>
+            <div class="w-title">🚢 「${cur.fish}」に出船する船を指定</div>
             <div class="w-sub">出船する船をタップして選び、各船の左舷・右舷の人数を入力してください。</div>
 
             <div class="${matchClass}">${matchText}</div>
@@ -1678,7 +1857,13 @@
             <div class="boat-grid">
               ${BOAT_LIST.map(n => {
                 const on = draftBoats.some(b => b.name === n);
-                return `<button type="button" class="b-pick ${on ? 'on' : ''}" onclick="toggleDraftBoat('${n}')">${n}</button>`;
+                const usedBy = otherFishBoatMap.get(n);
+                return `
+                  <button type="button" class="b-pick ${on ? 'on' : (usedBy ? 'in-other-fish' : '')}" onclick="toggleDraftBoat('${n}')">
+                    <span>${n}</span>
+                    ${usedBy ? `<span class="b-pick-used">${usedBy}で使用中</span>` : ""}
+                  </button>
+                `;
               }).join("")}
             </div>
 
@@ -1691,7 +1876,7 @@
               const rc = Number(b.rightCap) || 0;
               return `
                 <div class="w-boat-row">
-                  <div class="w-boat-top"><span>${b.name}</span><span style="font-size:16px;color:#38bdf8;">計 ${lc + rc}名枠</span></div>
+                  <div class="w-boat-top"><span>${b.name}（${cur.fish}）</span><span style="font-size:16px;color:#38bdf8;">計 ${lc + rc}名枠</span></div>
                   <div class="w-caps">
                     <div class="w-cap-box">
                       <div style="font-size:14px;color:var(--sub);">左舷</div>
@@ -1717,7 +1902,7 @@
             <div style="display:flex; gap:8px; margin-top:14px;">
               <button type="button" style="padding:14px 12px;" onclick="goStep('verify')">◀ 予約確認</button>
               <button type="button" class="primary" style="flex:1; padding:15px; font-size:18px;" ${canStart ? "" : "disabled"} onclick="startWithDraft()">
-                ✅ この配船で座席表を開始する
+                ✅ 「${cur.fish}」の座席表を開始する
               </button>
             </div>
           </div>
@@ -1742,23 +1927,23 @@
       undoBtn.disabled = undoStack.length === 0;
       undoBtn.textContent = undoStack.length > 0 ? `↩ 1つ前に戻す(${undoStack.length})` : "↩ 1つ前に戻す";
 
-      let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')"><span class="tab-ship-label">全体</span><span class="tab-emp-label">${state.boats.length}隻</span></button>`;
-      state.boats.forEach(b => {
+      let tabsHtml = `<button type="button" class="tab ${cur.view === 'overview' ? 'active' : ''}" onclick="setView('overview')"><span class="tab-ship-label">全体</span><span class="tab-emp-label">${cur.boats.length}隻</span></button>`;
+      cur.boats.forEach(b => {
         const emp = b.leftSeats.filter(x => !x).length + b.rightSeats.filter(x => !x).length;
         const code = getBoatCode(b.name);
         const tCls = code ? `t-${code}` : "";
-        tabsHtml += `<button type="button" class="tab ${tCls} ${state.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')"><span class="tab-ship-label">${b.name}</span><span class="tab-emp-label">空${emp}</span></button>`;
+        tabsHtml += `<button type="button" class="tab ${tCls} ${cur.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')"><span class="tab-ship-label">${b.name}</span><span class="tab-emp-label">空${emp}</span></button>`;
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
 
       const placed = getFullyPlacedIds();
-      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
+      const unplaced = cur.guests.filter(g => !placed.has(String(g.id)));
       const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
-      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const totCnt = cur.guests.reduce((a, g) => a + Number(g.count), 0);
       const quickBtn = document.getElementById("quickGuestBtn");
-      quickBtn.textContent = `📋 予約一覧（未配置 ${unpCnt}名 / 計${totCnt}名）`;
+      quickBtn.textContent = `📋 ${cur.fish} 予約一覧（未配置 ${unpCnt}名 / 計${totCnt}名）`;
 
-      const selG = !state.menuCollapsed ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
+      const selG = !state.menuCollapsed ? cur.guests.find(g => String(g.id) === String(state.selId)) : null;
       let selBannerHtml = "";
       if (selG) {
         const assignedNow = countAssignedSeatsForGuest(selG.id);
@@ -1795,14 +1980,14 @@
       const hl = {};
       if (selG && !state.markMode) {
         if (state.customSplitMode) {
-          state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
+          cur.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
             b[sk].forEach((c, i) => {
               if (c === null) hl[`${bi}-${sk}-${i}`] = "fit-ok";
             });
           }));
         } else {
           const cnt = Number(selG.count) || 1;
-          state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
+          cur.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
             for (let i = 0; i <= b[sk].length - cnt; i++) {
               const ev = evalPlace(bi, sk, i, selG);
               if (ev.valid) {
@@ -1817,15 +2002,15 @@
       }
 
       let seatsSectionHtml = "";
-      if (state.view === "overview") {
-        seatsSectionHtml = state.boats.map((b, bi) => {
+      if (cur.view === "overview") {
+        seatsSectionHtml = cur.boats.map((b, bi) => {
           const le = b.leftSeats.filter(x => !x).length, re = b.rightSeats.filter(x => !x).length;
           const code = getBoatCode(b.name);
           const cardCls = code ? `card-${code}` : "";
           return `
             <div class="ov-card ${cardCls}">
               <div class="ov-head">
-                <b style="font-size:19px;">🚢 ${b.name}</b>
+                <b style="font-size:19px;">🚢 ${b.name}【${cur.fish}】</b>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span style="font-size:14px;color:var(--sub);">左空:<b style="color:#38bdf8;">${le}</b>/${b.leftCap} 右空:<b style="color:#38bdf8;">${re}</b>/${b.rightCap}</span>
                   <button type="button" style="padding:5px 9px; font-size:13px;" onclick="setView('${b.name}')">詳細▶</button>
@@ -1843,9 +2028,9 @@
           `;
         }).join("");
       } else {
-        const bi = state.boats.findIndex(b => b.name === state.view);
-        if (bi === -1) { state.view = "overview"; render(); return; }
-        const b = state.boats[bi];
+        const bi = cur.boats.findIndex(b => b.name === cur.view);
+        if (bi === -1) { cur.view = "overview"; render(); return; }
+        const b = cur.boats[bi];
         const capEditBar = state.menuCollapsed ? "" : `
           <div style="background:rgba(19, 28, 49, 0.9);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);">
             <div style="display:flex;gap:8px;align-items:center;">
@@ -1868,7 +2053,7 @@
         `;
         seatsSectionHtml = `
           ${capEditBar}
-          <div class="bow-bar">▲ ${b.name} ミヨシ（船首） ▲</div>
+          <div class="bow-bar">▲ ${b.name}【${cur.fish}】ミヨシ（船首） ▲</div>
           <div class="hull">
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">左 舷</div>
               ${renderSideSeatsColumn(bi, "leftSeats", b.leftSeats, b.leftCap, hl)}
@@ -1877,7 +2062,7 @@
               ${renderSideSeatsColumn(bi, "rightSeats", b.rightSeats, b.rightCap, hl)}
             </div>
           </div>
-          <div class="bow-bar">▼ ${b.name} オオドモ（船尾） ▼</div>
+          <div class="bow-bar">▼ ${b.name}【${cur.fish}】オオドモ（船尾） ▼</div>
         `;
       }
 
@@ -1890,15 +2075,16 @@
     }
 
     function buildParsedSheetAccordionHtml() {
-      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const cur = getCur();
+      const totCnt = cur.guests.reduce((a, g) => a + Number(g.count), 0);
       const placed = getFullyPlacedIds();
-      const placedCnt = state.guests.reduce((a, g) => a + Math.min(Number(g.count), countAssignedSeatsForGuest(g.id)), 0);
-      const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
+      const placedCnt = cur.guests.reduce((a, g) => a + Math.min(Number(g.count), countAssignedSeatsForGuest(g.id)), 0);
+      const writtenInfo = cur.ocrWrittenTotal ? ` / 紙記載:${cur.ocrWrittenTotal}名` : "";
       const arrow = state.parsedSheetOpen ? "▲ 閉じる" : "▼ 開く";
 
       let bodyHtml = "";
       if (state.parsedSheetOpen) {
-        if (state.guests.length === 0) {
+        if (cur.guests.length === 0) {
           bodyHtml = `
             <div class="accordion-body">
               <div style="text-align:center; padding:16px 10px; color:var(--sub); font-size:14px;">
@@ -1908,7 +2094,7 @@
           `;
         } else {
           const rowMap = new Map();
-          state.guests.forEach((g, idx) => {
+          cur.guests.forEach((g, idx) => {
             const r = Number.isInteger(g.row) && g.row >= 0 ? g.row : 0;
             const c = Number.isInteger(g.col) && g.col >= 0 ? g.col : idx;
             if (!rowMap.has(r)) rowMap.set(r, []);
@@ -1945,7 +2131,7 @@
             <div class="accordion-body">
               <div class="sheet-summary">
                 <div>
-                  <div style="font-size:12px; color:var(--sub);">段ごと横並び表示（全${state.guests.length}組${writtenInfo}・縦横スクロール可）</div>
+                  <div style="font-size:12px; color:var(--sub);">【${cur.fish}】段ごと横並び表示（全${cur.guests.length}組${writtenInfo}）</div>
                   <div style="font-size:16px; font-weight:800; color:#fff;">合計 ${totCnt}名 <span style="font-size:13px; color:#6ee7b7;">（確定済 ${placedCnt}名 / 残 ${totCnt - placedCnt}名）</span></div>
                 </div>
                 <button type="button" class="warning" style="padding:6px 10px; font-size:12px;" onclick="openOrigImage()">🖼 元画像</button>
@@ -1961,7 +2147,7 @@
       return `
         <div class="parsed-sheet-accordion" id="parsedSheetSection">
           <button type="button" class="accordion-trigger-btn" onclick="toggleParsedSheetAccordion()">
-            <span>📄 解析した予約表（${state.guests.length}組 / 計${totCnt}名）</span>
+            <span>📄 解析した予約表【${cur.fish}】（${cur.guests.length}組 / 計${totCnt}名）</span>
             <span style="font-size:13px; color:#38bdf8;">${arrow}</span>
           </button>
           ${bodyHtml}
@@ -2045,13 +2231,26 @@
       openModal("origImgModal");
     }
 
+    function openAddModalForFish(fishName) {
+      document.getElementById("addFish").value = fishName || state.activeFish || "カワハギ";
+      openModal("addModal");
+    }
+
     function addGuest() {
+      const fish = (document.getElementById("addFish").value.trim()) || state.activeFish || "乗合";
       const name = document.getElementById("addName").value.trim();
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("addCount").value, 10) || 1));
       const note = document.getElementById("addNote").value.trim();
       if (!name) { toast("名前を入力してください"); return; }
-      const nextRow = state.guests.length > 0 ? Math.max(...state.guests.map(x => Number(x.row) || 0)) + 1 : 0;
-      state.guests.push({ id: makeUniqueId("add"), name, count, note, row: nextRow, col: 0 });
+
+      if (!state.fishData[fish]) {
+        state.fishData[fish] = createEmptyFishSlot(fish);
+        if (!state.fishList.includes(fish)) state.fishList.push(fish);
+      }
+      const targetSlot = state.fishData[fish];
+      const nextRow = targetSlot.guests.length > 0 ? Math.max(...targetSlot.guests.map(x => Number(x.row) || 0)) + 1 : 0;
+      targetSlot.guests.push({ id: makeUniqueId("add"), name, count, note, row: nextRow, col: 0 });
+      state.activeFish = fish;
       state.ocrLoaded = true;
       document.getElementById("addName").value = ""; document.getElementById("addNote").value = "";
       save(); render();
@@ -2061,16 +2260,16 @@
       if (document.getElementById("ocrModal").classList.contains("open")) {
         renderOcrParsedList();
       }
-      closeModal("addModal"); toast(`${name}様を追加しました`);
+      closeModal("addModal"); toast(`【${fish}】に ${name}様を追加しました`);
     }
 
     function openEdit(id) {
-      const g = state.guests.find(x => String(x.id) === String(id));
-      if (!g) return;
-      document.getElementById("editId").value = g.id;
-      document.getElementById("editName").value = g.name;
-      document.getElementById("editCount").value = g.count;
-      document.getElementById("editNote").value = g.note || "";
+      const found = findGuestAcrossAllFish(id);
+      if (!found) return;
+      document.getElementById("editId").value = found.guest.id;
+      document.getElementById("editName").value = found.guest.name;
+      document.getElementById("editCount").value = found.guest.count;
+      document.getElementById("editNote").value = found.guest.note || "";
       openModal("editModal");
     }
 
@@ -2085,10 +2284,10 @@
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("editCount").value, 10) || 1));
       const note = document.getElementById("editNote").value.trim();
       if (!name) return;
-      const g = state.guests.find(x => String(x.id) === String(id));
-      if (!g) return;
-      g.name = name; g.count = count; g.note = note;
-      removeGuest(id);
+      const found = findGuestAcrossAllFish(id);
+      if (!found) return;
+      found.guest.name = name; found.guest.count = count; found.guest.note = note;
+      removeGuestFromSlot(found.slot, id);
       save(); render();
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
@@ -2102,25 +2301,19 @@
     function delGuest() {
       const id = document.getElementById("editId").value;
       if (!confirm("この予約を削除しますか？")) return;
-      removeGuest(id);
-      state.guests = state.guests.filter(g => String(g.id) !== String(id));
-      if (String(state.selId) === String(id)) state.selId = null;
-      if (state.guests.length === 0) state.ocrLoaded = false;
-      save(); render();
+      removeVerifyGuest(id);
       if (document.getElementById("guestListModal").classList.contains("open")) {
         renderGuestListModal();
       }
-      if (document.getElementById("ocrModal").classList.contains("open")) {
-        renderOcrParsedList();
-      }
-      closeModal("editModal"); toast("削除しました");
+      closeModal("editModal");
     }
 
     function resetSeatsOnly() {
-      if (!confirm("全座席を空に戻しますか？")) return;
-      pushUndo("全座席リセット");
-      state.boats.forEach(b => { b.leftSeats = Array(Number(b.leftCap)).fill(null); b.rightSeats = Array(Number(b.rightCap)).fill(null); });
-      save(); render(); closeModal("setupModal"); toast("座席をリセットしました");
+      const cur = getCur();
+      if (!confirm(`「${cur.fish}」の全座席を空に戻しますか？`)) return;
+      pushUndo(`${cur.fish} 全座席リセット`);
+      cur.boats.forEach(b => { b.leftSeats = Array(Number(b.leftCap)).fill(null); b.rightSeats = Array(Number(b.rightCap)).fill(null); });
+      save(); render(); closeModal("setupModal"); toast(`「${cur.fish}」の座席をリセットしました`);
     }
 
     function createCompressedDataUrl(file) {
@@ -2151,7 +2344,6 @@
       if (!key) { toast("先に⚙設定からAPIキーを入力してください"); return; }
       const f = document.getElementById("ocrFile").files[0];
       if (!f) { toast("画像を選択してください"); return; }
-      const fish = document.getElementById("fishInput").value.trim();
       const model = document.getElementById("modelSelect").value || "gemini-4-hydrogen";
       const btn = document.getElementById("ocrBtn"), msg = document.getElementById("ocrMsg");
       btn.disabled = true; btn.textContent = `${model} で解析中...`;
@@ -2164,14 +2356,15 @@
           createCompressedDataUrl(f)
         ]);
 
-        const prompt = `釣船「山下丸」の手書き予約表から「${fish || "乗合船"}」の予約を読み取りJSONのみで出力してください。
+        const prompt = `釣船「山下丸」の手書き予約表画像を解析し、書かれているすべての釣り物（魚種：例 カワハギ、アジ、アマダイ、スミイカ、カサゴ、マゴチ等）ごとに分類してJSONのみで出力してください。
 重要ルール:
-1. 紙の上から下へ「段（行）」ごとに配列rowsで出力すること。1段目に4組あればrows[0]に4要素、2段目に5組あればrows[1]に5要素のように、元の段と左から右の並び順を忠実に再現すること。
-2. 名前の横に人数が書かれていない場合（例: 秋場、小柳、菅澤、長谷川、村田、内藤、杉浦、橋本 など）は必ず count: 1 とすること。
-3. 上部の別枠・仕立船（線が引かれている枠など）や、取消線、下部の合計数字メモ（「63 -> 21 22 20」など）は客リストに含めないこと。
-4. 名前の前の点(・)は hasDot: true、竿+数字は rod（数値）、カラは kara: true とすること。
-5. 紙に合計人数が書かれていれば writtenTotal に入れること。
-出力形式:{"writtenTotal":63,"rows":[[{"name":"井部","count":6,"hasDot":false,"rod":2,"kara":false}]]}`;
+1. 画像に書かれている魚種見出し（カワハギ、アジ、アマダイ、スミイカ、カサゴなど）を自動判別し、魚種ごとに targets 配列の要素として分けること。魚種名が1つしか書かれていない場合も targets の1要素として出力すること。
+2. 各魚種の枠内では、紙の上から下へ「段（行）」ごとに配列 rows で出力すること。1段目に4組あれば rows[0] に4要素、2段目に5組あれば rows[1] に5要素のように、元の段と左から右の並び順を忠実に再現すること。
+3. 名前の横に人数が書かれていない場合（例: 秋場、小柳、菅澤、長谷川、村田、内藤、杉浦、橋本 など）は必ず count: 1 とすること。
+4. 仕立船の枠や取消線、下部の合計数字メモ（「63 -> 21 22 20」など）は客リストに含めないこと。
+5. 名前の前の点(・)は hasDot: true、竿+数字は rod（数値）、カラは kara: true とすること。
+6. その魚種の枠に合計人数が書かれていれば writtenTotal に入れること。
+出力形式:{"targets":[{"fish":"カワハギ","writtenTotal":42,"rows":[[{"name":"井部","count":6,"hasDot":false,"rod":2,"kara":false}]]},{"fish":"アジ","writtenTotal":15,"rows":[[{"name":"佐藤","count":3,"hasDot":false,"rod":0,"kara":false}]]}]}`;
 
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -2184,66 +2377,89 @@
         if (!resp.ok) throw new Error(data.error?.message || `APIエラー (${resp.status})`);
         const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
 
-        const flatGuests = [];
-        if (Array.isArray(parsed.rows) && parsed.rows.length > 0) {
-          parsed.rows.forEach((rowArr, rIdx) => {
-            if (!Array.isArray(rowArr)) return;
-            rowArr.forEach((g, cIdx) => {
-              if (!g || !g.name) return;
-              const n = [];
-              if (g.hasDot) n.push("前日場所取");
-              if (Number(g.rod) > 0) n.push(`竿${g.rod}`);
-              if (g.kara) n.push("カラ");
-              flatGuests.push({
-                id: makeUniqueId("ocr"),
-                name: String(g.name || "").trim(),
-                count: Math.min(15, Math.max(1, parseInt(g.count, 10) || 1)),
-                note: n.join(" / "),
-                row: rIdx,
-                col: cIdx
+        const newFishData = {};
+        const newFishList = [];
+
+        const targets = Array.isArray(parsed.targets) && parsed.targets.length > 0
+          ? parsed.targets
+          : [{ fish: "乗合", writtenTotal: parsed.writtenTotal || null, rows: parsed.rows || [] }];
+
+        targets.forEach(t => {
+          const fishName = String(t.fish || "乗合").trim() || "乗合";
+          const flatGuests = [];
+          if (Array.isArray(t.rows)) {
+            t.rows.forEach((rowArr, rIdx) => {
+              if (!Array.isArray(rowArr)) return;
+              rowArr.forEach((g, cIdx) => {
+                if (!g || !g.name) return;
+                const n = [];
+                if (g.hasDot) n.push("前日場所取");
+                if (Number(g.rod) > 0) n.push(`竿${g.rod}`);
+                if (g.kara) n.push("カラ");
+                flatGuests.push({
+                  id: makeUniqueId("ocr"),
+                  name: String(g.name || "").trim(),
+                  count: Math.min(15, Math.max(1, parseInt(g.count, 10) || 1)),
+                  note: n.join(" / "),
+                  row: rIdx,
+                  col: cIdx
+                });
               });
             });
-          });
-        } else if (Array.isArray(parsed.guests)) {
-          const fallbackList = parsed.guests.map(g => {
-            const n = [];
-            if (g.hasDot) n.push("前日場所取");
-            if (Number(g.rod) > 0) n.push(`竿${g.rod}`);
-            if (g.kara) n.push("カラ");
-            return {
-              id: makeUniqueId("ocr"),
-              name: String(g.name || "").trim(),
-              count: Math.min(15, Math.max(1, parseInt(g.count, 10) || 1)),
-              note: n.join(" / ")
-            };
-          });
-          flatGuests.push(...assignDefault45Rows(fallbackList));
+          }
+          if (flatGuests.length === 0) return;
+
+          if (!newFishData[fishName]) {
+            const slot = createEmptyFishSlot(fishName);
+            slot.ocrWrittenTotal = t.writtenTotal || null;
+            slot.guests = flatGuests;
+            newFishData[fishName] = slot;
+            newFishList.push(fishName);
+          } else {
+            const existing = newFishData[fishName];
+            const rowOffset = existing.guests.length > 0 ? Math.max(...existing.guests.map(x => x.row)) + 1 : 0;
+            flatGuests.forEach(fg => existing.guests.push({ ...fg, row: fg.row + rowOffset }));
+          }
+        });
+
+        if (newFishList.length === 0) {
+          throw new Error("予約データが見つかりませんでした。画像を確認してください。");
         }
 
-        state.guests = flatGuests;
+        state.fishData = newFishData;
+        state.fishList = newFishList;
+        state.activeFish = newFishList[0];
         state.ocrLoaded = true;
-        state.ocrWrittenTotal = parsed.writtenTotal || null;
         lastOcrImageDataUrl = previewUrl;
         state.ocrImage = previewUrl;
         state.selId = null;
+        draftBoats = [];
+        undoStack = [];
 
-        state.step = "verify";
         save(); render();
         renderOcrParsedList();
-        msg.innerHTML = `<span style="color:#6ee7b7; font-weight:800;">✅ 読み取り完了（${state.guests.length}組 / 計${state.guests.reduce((a, g) => a + Number(g.count), 0)}名）</span>`;
-        toast("読み取り完了！下に結果を表示しました");
+
+        const totalGroups = newFishList.reduce((s, f) => s + newFishData[f].guests.length, 0);
+        const totalPeople = newFishList.reduce((s, f) => s + newFishData[f].guests.reduce((a, g) => a + Number(g.count), 0), 0);
+        msg.innerHTML = `<span style="color:#6ee7b7; font-weight:800;">✅ 読み取り完了（${newFishList.join("・")} ／ 計${totalGroups}組・${totalPeople}名）</span>`;
+        toast(`読み取り完了！${newFishList.length}魚種を自動分類しました`);
       } catch (e) {
         msg.innerHTML = `<span style="color:#ef4444;">エラー: ${e.message}</span>`;
       } finally {
-        btn.disabled = false; btn.textContent = "AIで解析する";
+        btn.disabled = false; btn.textContent = "AIで自動判別して解析する";
       }
     }
 
     function openModal(id) {
       if (id === "setupModal") {
-        const b32 = state.boats.find(b => b.name === "32号船");
+        let b32 = null;
+        let b32Fish = "";
+        for (const f of state.fishList) {
+          const found = (state.fishData[f]?.boats || []).find(b => b.name === "32号船");
+          if (found) { b32 = found; b32Fish = f; break; }
+        }
         document.getElementById("expArea").value = b32 ? JSON.stringify({
-          date: getTodayStr(), boat: "32号船",
+          date: getTodayStr(), boat: "32号船", fish: b32Fish,
           left: b32.leftSeats.map((c, i) => ({ seatNo: i + 1, name: c && c.type === "ASSIGNED" ? c.name : "", note: c && c.type === "ASSIGNED" ? c.note : "" })),
           right: b32.rightSeats.map((c, i) => ({ seatNo: i + 1, name: c && c.type === "ASSIGNED" ? c.name : "", note: c && c.type === "ASSIGNED" ? c.note : "" }))
         }, null, 2) : "本日の配船に32号船がありません";
