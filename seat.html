@@ -23,8 +23,14 @@
       background: var(--bg); color: var(--tx);
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif;
       font-size: 18px; line-height: 1.45;
+      transition: background-color 0.2s ease;
     }
     body { padding-bottom: 48px; }
+
+    /* 船ごとのデッキカラーテーマ（画面全体の背景トーン） */
+    body.theme-32 { background: #08243e; }
+    body.theme-31 { background: #331124; }
+    body.theme-27, body.theme-25 { background: #102a18; }
 
     /* ヘッダー（2段構成＋右上メニュー開閉ボタン） */
     header {
@@ -189,23 +195,51 @@
       background: #1e293b; border: 1px solid #64748b; color: #f8fafc;
     }
 
-    /* 常時表示の船タブ（全体＋出船する船） */
+    /* 常時表示の船タブ（エリアサイズは維持しつつ、船名のフォントサイズを最大化） */
     .tabs {
       display: flex; overflow-x: auto; background: #0d1526;
-      border-bottom: 1px solid var(--bd); padding: 6px 8px; gap: 6px;
+      border-bottom: 1px solid var(--bd); padding: 5px 8px; gap: 6px;
     }
     .tab {
-      flex: 1; min-width: 78px; padding: 10px 6px; border-radius: 8px;
+      flex: 1; min-width: 82px; padding: 7px 3px; border-radius: 8px;
       background: var(--card); border: 1px solid var(--bd); text-align: center;
-      font-size: 15px; font-weight: 700; color: var(--sub); flex-direction: column; line-height: 1.25;
+      color: var(--sub); flex-direction: column; line-height: 1.15;
+    }
+    .tab-ship-label {
+      font-size: 19px; font-weight: 900; letter-spacing: -0.02em; display: block;
+    }
+    .tab-emp-label {
+      font-size: 12px; font-weight: 700; display: block; margin-top: 1px;
     }
     .tab.active { background: var(--blue); border-color: #60a5fa; color: #fff; }
+    .tab.active.t-32 { background: #0284c7; border-color: #7dd3fc; color: #fff; }
+    .tab.active.t-31 { background: #db2777; border-color: #f9a8d4; color: #fff; }
+    .tab.active.t-27, .tab.active.t-25 { background: #16a34a; border-color: #86efac; color: #fff; }
 
-    /* 全体俯瞰（1マス縦幅48px） */
-    .ov-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+    /* 船タブ直下の大きな「📋 予約一覧」常設ボタン */
+    .quick-guest-bar {
+      padding: 7px 10px; background: rgba(7, 11, 20, 0.72);
+      border-bottom: 1px solid var(--bd);
+    }
+    .quick-guest-btn {
+      width: 100%; padding: 13px 12px; font-size: 18px; font-weight: 900;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      border: 2px solid #60a5fa; color: #ffffff; border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    /* 全体俯瞰（船ごとのデッキ色を枠・見出しに反映） */
+    .ov-card {
+      background: rgba(19, 28, 49, 0.92); border: 2px solid var(--bd);
+      border-radius: 12px; padding: 12px; margin-bottom: 14px;
+    }
+    .ov-card.card-32 { background: rgba(11, 45, 78, 0.88); border-color: #38bdf8; }
+    .ov-card.card-31 { background: rgba(66, 22, 47, 0.88); border-color: #f472b6; }
+    .ov-card.card-27, .ov-card.card-25 { background: rgba(19, 54, 30, 0.88); border-color: #4ade80; }
+
     .ov-head {
       display: flex; justify-content: space-between; align-items: center;
-      padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--bd);
+      padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.16);
     }
     .mini-hull { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .mini-seat {
@@ -240,11 +274,11 @@
 
     .bow-bar {
       text-align: center; font-size: 15px; font-weight: 800; color: #38bdf8;
-      padding: 8px; background: #0d172a; border: 1px solid var(--bd); border-radius: 8px; margin: 10px 0;
+      padding: 8px; background: rgba(13, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin: 10px 0;
     }
     .hull { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .seat {
-      width: 100%; min-height: 68px; border-radius: 10px; background: var(--inp); border: 2px solid #263552;
+      width: 100%; min-height: 68px; border-radius: 10px; background: rgba(15, 23, 42, 0.92); border: 2px solid #263552;
       padding: 8px 10px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
       margin-bottom: 8px; text-align: left;
     }
@@ -297,25 +331,24 @@
       padding: 10px 12px 14px; border-top: 1px solid var(--bd);
     }
 
-    /* 元画像の行・列位置そのままの横並び表（横スクロール対応） */
+    /* 段ごとの実際の組数そのまま横並び表示（空マスなし・横スクロール対応） */
     .layout-scroll-wrap {
       width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
       border: 1px solid var(--bd); border-radius: 10px; background: var(--inp);
       padding: 6px;
+      display: flex; flex-direction: column; gap: 5px;
     }
-    .layout-grid-table {
-      border-collapse: collapse; width: max-content; min-width: 100%;
-      font-size: 12px; line-height: 1.3;
+    .layout-flex-row {
+      display: flex; flex-direction: row; flex-wrap: nowrap; gap: 5px;
+      width: max-content;
     }
-    .layout-grid-table td {
-      border: 1px solid #263552; padding: 6px 8px; vertical-align: top;
-      min-width: 96px; max-width: 150px; background: #131c31;
+    .layout-cell {
+      border: 1px solid #263552; border-radius: 6px; padding: 6px 8px;
+      min-width: 92px; max-width: 148px; background: #131c31;
+      flex-shrink: 0; cursor: pointer;
     }
-    .layout-grid-table td.empty-slot {
-      background: #090e1a; color: #334155; text-align: center; font-size: 11px;
-    }
-    .layout-grid-table td.done-slot {
-      background: #0a1222;
+    .layout-cell.done-slot {
+      background: #0a1222; border-color: #1e293b;
     }
     .cell-guest-name {
       font-size: 13px; font-weight: 800; color: #ffffff; word-break: break-all;
@@ -336,6 +369,10 @@
     .boat-tag {
       display: inline-block; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px;
       background: #1e3a8a; border: 1px solid #3b82f6; color: #93c5fd; margin-top: 3px;
+    }
+    .sheet-summary {
+      background: var(--inp); border: 1px solid var(--bd); border-radius: 10px;
+      padding: 9px 11px; margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
 
     /* モーダル */
@@ -372,7 +409,7 @@
       </div>
       <button type="button" id="menuToggleBtn" class="menu-toggle-btn" onclick="toggleMenuCollapse()">メニュー ▲</button>
     </div>
-    <!-- 2段目ボタン：左＝読込、真ん中＝設定、右＝予約一覧（メニュー収納時は非表示） -->
+    <!-- 2段目ボタン：左＝読込、中＝設定、右＝予約一覧（メニュー収納時は非表示） -->
     <div class="h-btns" id="staffHeaderBtns">
       <button type="button" onclick="openModal('ocrModal')">📷 読込</button>
       <button type="button" onclick="openModal('setupModal')">⚙ 設定</button>
@@ -392,15 +429,19 @@
         <button type="button" class="success" style="padding:11px;" onclick="autoAssign()">✨ 残り自動確定</button>
       </div>
     </div>
-    <!-- 常時表示の船タブ（全体＋出船する船） -->
+    <!-- 常時表示の船タブ（船名フォント最大化） -->
     <div class="tabs" id="boatTabs"></div>
+    <!-- 船タブ直下の大きな「📋 予約一覧」常設ボタン（メニュー収納時も表示） -->
+    <div class="quick-guest-bar" id="quickGuestBar">
+      <button type="button" class="quick-guest-btn" id="quickGuestBtn" onclick="openModal('guestListModal')">📋 予約一覧</button>
+    </div>
   </div>
 
   <div class="container" id="main"></div>
 
   <div class="toast" id="toast"></div>
 
-  <!-- 右上ボタンからすぐ開ける「予約一覧」モーダル（元画像ボタンをタイトル横に配置＋大きな閉じるボタン） -->
+  <!-- 「予約一覧」モーダル（元画像ボタンをタイトル横に配置＋大きな閉じるボタン） -->
   <div class="modal-bg" id="guestListModal">
     <div class="modal">
       <div class="m-head">
@@ -506,7 +547,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v12";
+    const STORE_KEY = "yamashitamaru_seat_flow_v13";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -519,6 +560,24 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
+    // 船ごとのデッキカラークラス取得
+    function getBoatCode(boatName) {
+      if (!boatName) return "";
+      if (boatName.includes("32")) return "32";
+      if (boatName.includes("31")) return "31";
+      if (boatName.includes("27")) return "27";
+      if (boatName.includes("25")) return "25";
+      return "";
+    }
+
+    function applyBoatBodyTheme() {
+      document.body.className = "";
+      if (state.step === "seats" && state.view !== "overview") {
+        const code = getBoatCode(state.view);
+        if (code) document.body.classList.add(`theme-${code}`);
+      }
+    }
+
     let state = {
       savedDate: getTodayStr(),
       step: "verify",
@@ -526,7 +585,7 @@
       ocrWrittenTotal: null,
       ocrImage: null,
       menuCollapsed: false,
-      parsedSheetOpen: false, // 下部「解析した予約表」は初期状態で閉じ、タップで開く
+      parsedSheetOpen: false,
       sortByCount: true,
       view: "overview",
       markMode: null,
@@ -597,7 +656,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v11");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v12");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -881,7 +940,7 @@
         return;
       }
       if (isMarkSeat(target)) {
-        const mLabel = target.type === "BAG" ? "■ 荷物" : "● 店取り";
+        const mLabel = formatMarkLabel(target);
         if (!confirm(`${b.name} ${sideLabel}${index + 1}番には「${mLabel}」が入っています。この席ごと削除して後ろを詰めますか？`)) return;
       } else {
         if (!confirm(`${b.name} ${sideLabel}${index + 1}番の席を削除して、後ろの席を1つずつ前へ詰めますか？`)) return;
@@ -1003,7 +1062,6 @@
       const cur = boat[sk][seatIdx];
       const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
 
-      // 荷物（BAG）または店取り（SHOP）モード中
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
         const selHolder = state.guests.find(x => String(x.id) === String(state.selId));
@@ -1038,7 +1096,6 @@
         return;
       }
 
-      // お客様選択中
       if (state.selId) {
         const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; state.customSplitMode = false; render(); return; }
@@ -1153,7 +1210,7 @@
         return;
       }
 
-      toast("右上の「📋 予約一覧」からお名前を選んでから席をタップしてください");
+      toast("上の「📋 予約一覧」からお名前を選んでから席をタップしてください");
     }
 
     function formatMarkLabel(c) {
@@ -1305,6 +1362,10 @@
     }
 
     function selectGuestFromModal(id) {
+      if (state.menuCollapsed) {
+        toast("メニューを開くと座席の割り当てができます");
+        return;
+      }
       const targetId = String(id);
       if (String(state.selId) === targetId && !state.markMode) {
         state.selId = null;
@@ -1363,6 +1424,9 @@
           const isS = String(state.selId) === String(g.id);
           const hasDot = (g.note || "").includes("前日場所取");
           const boatName = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
+          const editBtnHtml = state.menuCollapsed
+            ? ""
+            : `<button type="button" onclick="openEdit('${g.id}')" style="padding:0 12px; font-size:14px; flex-shrink:0;">✎ 修正</button>`;
           return `
             <div class="g-row-wrap">
               <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''} ${isPartial ? 'partial' : ''}" onclick="selectGuestFromModal('${g.id}')">
@@ -1378,28 +1442,34 @@
                       : (g.note || '通常予約'))}
                 </div>
               </button>
-              <button type="button" onclick="openEdit('${g.id}')" style="padding:0 12px; font-size:14px; flex-shrink:0;">✎ 修正</button>
+              ${editBtnHtml}
             </div>
           `;
         }).join("");
       }
 
+      const addBtnHtml = state.menuCollapsed
+        ? ""
+        : `<button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>`;
+
       body.innerHTML = `
         <div class="gs-head">
           <div class="gs-title">未配置 ${unpCnt}名/${unplaced.length}組 ・ 計${totCnt}名</div>
-          <button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
+          ${addBtnHtml}
         </div>
         <div class="gs-controls">
           <button type="button" style="flex:1; padding:8px; font-size:14px;" onclick="toggleSortOrder()">
             ${state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順"}
           </button>
-          <button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel(); renderGuestListModal();">選択解除</button>
+          ${state.menuCollapsed ? "" : `<button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel(); renderGuestListModal();">選択解除</button>`}
         </div>
         <div class="g-list">${listHtml}</div>
       `;
     }
 
     function render() {
+      applyBoatBodyTheme();
+
       const topBars = document.getElementById("topBars");
       const main = document.getElementById("main");
       const staffHeaderBtns = document.getElementById("staffHeaderBtns");
@@ -1570,12 +1640,23 @@
       undoBtn.disabled = undoStack.length === 0;
       undoBtn.textContent = undoStack.length > 0 ? `↩ 1つ前に戻す(${undoStack.length})` : "↩ 1つ前に戻す";
 
-      let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')">全体(${state.boats.length}隻)</button>`;
+      // 船タブ（枠サイズそのまま・フォント最大化＋船ごとのテーマ色）
+      let tabsHtml = `<button type="button" class="tab ${state.view === 'overview' ? 'active' : ''}" onclick="setView('overview')"><span class="tab-ship-label">全体</span><span class="tab-emp-label">${state.boats.length}隻</span></button>`;
       state.boats.forEach(b => {
         const emp = b.leftSeats.filter(x => !x).length + b.rightSeats.filter(x => !x).length;
-        tabsHtml += `<button type="button" class="tab ${state.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')">${b.name}<span style="font-size:13px;">空${emp}</span></button>`;
+        const code = getBoatCode(b.name);
+        const tCls = code ? `t-${code}` : "";
+        tabsHtml += `<button type="button" class="tab ${tCls} ${state.view === b.name ? 'active' : ''}" onclick="setView('${b.name}')"><span class="tab-ship-label">${b.name}</span><span class="tab-emp-label">空${emp}</span></button>`;
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
+
+      // タブ直下の大きな「📋 予約一覧」常設ボタン更新
+      const placed = getFullyPlacedIds();
+      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
+      const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
+      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const quickBtn = document.getElementById("quickGuestBtn");
+      quickBtn.textContent = `📋 予約一覧（未配置 ${unpCnt}名 / 計${totCnt}名）`;
 
       const selG = !state.menuCollapsed ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
       let selBannerHtml = "";
@@ -1639,10 +1720,12 @@
       if (state.view === "overview") {
         seatsSectionHtml = state.boats.map((b, bi) => {
           const le = b.leftSeats.filter(x => !x).length, re = b.rightSeats.filter(x => !x).length;
+          const code = getBoatCode(b.name);
+          const cardCls = code ? `card-${code}` : "";
           return `
-            <div class="ov-card">
+            <div class="ov-card ${cardCls}">
               <div class="ov-head">
-                <b style="font-size:18px;">🚢 ${b.name}</b>
+                <b style="font-size:19px;">🚢 ${b.name}</b>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span style="font-size:14px;color:var(--sub);">左空:<b style="color:#38bdf8;">${le}</b>/${b.leftCap} 右空:<b style="color:#38bdf8;">${re}</b>/${b.rightCap}</span>
                   <button type="button" style="padding:5px 9px; font-size:13px;" onclick="setView('${b.name}')">詳細▶</button>
@@ -1664,7 +1747,7 @@
         if (bi === -1) { state.view = "overview"; render(); return; }
         const b = state.boats[bi];
         const capEditBar = state.menuCollapsed ? "" : `
-          <div style="background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--bd);">
+          <div style="background:rgba(19, 28, 49, 0.9);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);">
             <div style="display:flex;gap:8px;align-items:center;">
               <div style="flex:1;text-align:center;"><div style="font-size:13px;color:var(--sub);">左舷</div>
                 <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:4px;font-size:19px;">
@@ -1685,7 +1768,7 @@
         `;
         seatsSectionHtml = `
           ${capEditBar}
-          <div class="bow-bar">▲ ミヨシ（船首） ▲</div>
+          <div class="bow-bar">▲ ${b.name} ミヨシ（船首） ▲</div>
           <div class="hull">
             <div><div style="text-align:center;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;">左 舷</div>
               ${renderSideSeatsColumn(bi, "leftSeats", b.leftSeats, b.leftCap, hl)}
@@ -1694,11 +1777,10 @@
               ${renderSideSeatsColumn(bi, "rightSeats", b.rightSeats, b.rightCap, hl)}
             </div>
           </div>
-          <div class="bow-bar">▼ オオドモ（船尾） ▼</div>
+          <div class="bow-bar">▼ ${b.name} オオドモ（船尾） ▼</div>
         `;
       }
 
-      // 船の座席表の下に「解析した予約表」をタップ開閉アコーディオンで配置
       let parsedSheetSectionHtml = "";
       if (!state.menuCollapsed) {
         parsedSheetSectionHtml = buildParsedSheetAccordionHtml();
@@ -1707,7 +1789,7 @@
       main.innerHTML = selBannerHtml + seatsSectionHtml + parsedSheetSectionHtml;
     }
 
-    // 元画像の行・列位置そのままの横並び表（横スクロール対応）＋タップ開閉式
+    // 段ごとの実際の組数そのまま横並び表示（1段目4組なら4組、2段目5組なら5組だけ横並び）
     function buildParsedSheetAccordionHtml() {
       const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
       const placed = getFullyPlacedIds();
@@ -1726,60 +1808,47 @@
             </div>
           `;
         } else {
-          // 行・列位置マップ作成
+          // 段（row）ごとにグループ化し、列（col）順で並べる（空マスは一切作らない）
           const rowMap = new Map();
-          let maxCol = 0;
           state.guests.forEach((g, idx) => {
             const r = Number.isInteger(g.row) && g.row >= 0 ? g.row : idx;
-            const c = Number.isInteger(g.col) && g.col >= 0 ? g.col : 0;
-            if (!rowMap.has(r)) rowMap.set(r, new Map());
-            const colMap = rowMap.get(r);
-            let targetCol = c;
-            while (colMap.has(targetCol)) targetCol++;
-            colMap.set(targetCol, g);
-            if (targetCol > maxCol) maxCol = targetCol;
+            const c = Number.isInteger(g.col) && g.col >= 0 ? g.col : idx;
+            if (!rowMap.has(r)) rowMap.set(r, []);
+            rowMap.get(r).push({ ...g, _sortCol: c, _origIdx: idx });
           });
 
           const sortedRows = [...rowMap.keys()].sort((a, b) => a - b);
-          const tableRowsHtml = sortedRows.map(rIdx => {
-            const colMap = rowMap.get(rIdx);
-            let tds = "";
-            for (let cIdx = 0; cIdx <= maxCol; cIdx++) {
-              const g = colMap.get(cIdx);
-              if (!g) {
-                tds += `<td class="empty-slot">-</td>`;
-              } else {
-                const assignedNow = countAssignedSeatsForGuest(g.id);
-                const isDone = placed.has(String(g.id));
-                const boatLabel = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
-                tds += `
-                  <td class="${isDone ? 'done-slot' : ''}" onclick="openEdit('${g.id}')">
-                    <div>
-                      <span class="cell-guest-name ${isDone ? 'strike-name' : ''}">${g.name}</span>
-                      <span class="cell-guest-cnt">${g.count}名</span>
-                    </div>
-                    ${g.note ? `<div class="cell-guest-note">${g.note}</div>` : ""}
-                    ${boatLabel ? `<span class="boat-tag">${boatLabel}${!isDone ? `(${assignedNow}/${g.count})` : ""}</span>` : ""}
-                  </td>
-                `;
-              }
-            }
-            return `<tr>${tds}</tr>`;
+          const flexRowsHtml = sortedRows.map(rIdx => {
+            const rowGuests = rowMap.get(rIdx).sort((a, b) => (a._sortCol - b._sortCol) || (a._origIdx - b._origIdx));
+            const cellsHtml = rowGuests.map(g => {
+              const assignedNow = countAssignedSeatsForGuest(g.id);
+              const isDone = placed.has(String(g.id));
+              const boatLabel = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
+              return `
+                <div class="layout-cell ${isDone ? 'done-slot' : ''}" onclick="openEdit('${g.id}')">
+                  <div>
+                    <span class="cell-guest-name ${isDone ? 'strike-name' : ''}">${g.name}</span>
+                    <span class="cell-guest-cnt">${g.count}名</span>
+                  </div>
+                  ${g.note ? `<div class="cell-guest-note">${g.note}</div>` : ""}
+                  ${boatLabel ? `<span class="boat-tag">${boatLabel}${!isDone ? `(${assignedNow}/${g.count})` : ""}</span>` : ""}
+                </div>
+              `;
+            }).join("");
+            return `<div class="layout-flex-row">${cellsHtml}</div>`;
           }).join("");
 
           bodyHtml = `
             <div class="accordion-body">
               <div class="sheet-summary">
                 <div>
-                  <div style="font-size:12px; color:var(--sub);">元画像の位置配置（全${state.guests.length}組${writtenInfo}・左右スクロール可）</div>
+                  <div style="font-size:12px; color:var(--sub);">段ごとの並び再現（全${state.guests.length}組${writtenInfo}・横スクロール可）</div>
                   <div style="font-size:16px; font-weight:800; color:#fff;">合計 ${totCnt}名 <span style="font-size:13px; color:#6ee7b7;">（確定済 ${placedCnt}名 / 残 ${totCnt - placedCnt}名）</span></div>
                 </div>
                 <button type="button" class="warning" style="padding:6px 10px; font-size:12px;" onclick="openOrigImage()">🖼 元画像</button>
               </div>
               <div class="layout-scroll-wrap">
-                <table class="layout-grid-table">
-                  <tbody>${tableRowsHtml}</tbody>
-                </table>
+                ${flexRowsHtml}
               </div>
             </div>
           `;
@@ -1989,7 +2058,7 @@
 2. 名前の横に人数が書かれていない場合（例: 秋場、小柳、菅澤、長谷川、村田、内藤、杉浦、橋本 など）は必ず count: 1 とすること。
 3. 上部の別枠・仕立船（線が引かれている枠など）や、取消線、下部の合計数字メモ（「63 -> 21 22 20」など）は客リストに含めないこと。
 4. 名前の前の点(・)は hasDot: true、竿+数字は rod（数値）、カラは kara: true とすること。
-5. 元画像での位置を再現するため、上から何行目かを row（0始まり整数）、その行の左から何番目かを col（0始まり整数）で出力すること。
+5. 元画像での位置を再現するため、上から何段目かを row（0始まり整数）、その段の左から何番目かを col（0始まり整数）で出力すること。1段目に4組あればcolは0〜3、2段目に5組あればcolは0〜4とすること。
 6. 紙に合計人数が書かれていれば writtenTotal に入れること。
 出力形式:{"writtenTotal":63,"guests":[{"name":"井部","count":6,"hasDot":false,"rod":2,"kara":false,"row":0,"col":0}]}`;
 
