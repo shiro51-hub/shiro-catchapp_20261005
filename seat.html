@@ -1469,7 +1469,7 @@
       return { valid: true, fits: canFitAll(clone, unplaced) };
     }
 
-    // 「● 店取り」席の長押し（名前あり＝確認後本席確定／名前なし＝無反応）
+    // 「● 店取り」席の長押し：同一グループ（holderId）の店取り席をまとめて一括本席確定
     function startSeatPress(bIdx, sk, idx) {
       shopLongPressFired = false;
       clearTimeout(shopLongPressTimer);
@@ -1483,23 +1483,38 @@
 
       shopLongPressTimer = setTimeout(() => {
         shopLongPressFired = true;
+        // 名前なしの店取り席の長押しは無反応
         if (!c.holderName || !c.holderId) {
           return;
         }
         const g = curSlot.guests.find(x => String(x.id) === String(c.holderId));
         if (!g) return;
-        const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
-        if (confirm(`${c.holderName} 様の席（${boat.name} ${sideLabel}${idx + 1}番）で確定していいですか？`)) {
-          pushUndo(`${c.holderName}様の店取り席を本席確定`);
-          curSlot.boats[bIdx][sk][idx] = {
-            type: "ASSIGNED",
-            guestId: String(g.id),
-            name: g.name,
-            count: Number(g.count),
-            note: g.note
-          };
+
+        // 同じグループ（holderId）の全店取り席を収集
+        const targets = [];
+        curSlot.boats.forEach((bObj, bi) => ["leftSeats", "rightSeats"].forEach(sKey => {
+          bObj[sKey].forEach((seatObj, si) => {
+            if (isShopSeat(seatObj) && String(seatObj.holderId) === String(g.id)) {
+              targets.push({ bi, sk: sKey, si });
+            }
+          });
+        }));
+
+        if (targets.length === 0) return;
+
+        if (confirm(`${g.name} 様の店取り（${targets.length}席分）をまとめて本席確定していいですか？`)) {
+          pushUndo(`${g.name}様の店取り${targets.length}席を一括確定`);
+          targets.forEach(t => {
+            curSlot.boats[t.bi][t.sk][t.si] = {
+              type: "ASSIGNED",
+              guestId: String(g.id),
+              name: g.name,
+              count: Number(g.count),
+              note: g.note
+            };
+          });
           save(); render();
-          toast(`${g.name} 様の席を確定しました`);
+          toast(`${g.name} 様の席（${targets.length}席）をまとめて確定しました`);
         }
       }, 600);
     }
@@ -2514,7 +2529,7 @@
           body = `<div class="s-name" style="color:var(--bag-tx);font-size:16px;">■ 荷物</div>${who}`;
         } else if (c.type === "SHOP" || c.type === "HOLD") {
           cls += " shop";
-          const who = c.holderName ? `<div class="s-holder" style="color:#fef3c7;">${c.holderName}様${c.holderCount ? ` (${c.holderCount}名)` : ""} <span style="font-size:11px;opacity:0.85;">(長押し確定)</span></div>` : "";
+          const who = c.holderName ? `<div class="s-holder" style="color:#fef3c7;">${c.holderName}様${c.holderCount ? ` (${c.holderCount}名)` : ""} <span style="font-size:11px;opacity:0.85;">(長押し一括確定)</span></div>` : "";
           body = `<div class="s-name" style="color:var(--shop-tx);font-size:16px;">● 店取り</div>${who}`;
         } else {
           cls += " assigned";
