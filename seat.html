@@ -679,7 +679,7 @@
     <div class="modal">
       <div class="m-head"><span>予約表の写真読込</span><button type="button" class="modal-close-lg" onclick="closeModal('ocrModal')">閉じる</button></div>
       <div style="font-size:14px; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">
-        予約表に書かれている釣り物（カワハギ・アジ・アマダイ・スミイカ・カサゴ等）をAIが画像から自動判別し、魚種ごとにまとめて読み取ります。
+        予約表に書かれている釣り物（カワハギ・アジ・アマダイ・スミイカ・カサゴ等、「皮」一文字はカワハギ）をAIが画像から自動判別し、魚種ごとにまとめて読み取ります。
       </div>
       <div class="field"><label>予約表の写真を選択</label><input type="file" id="ocrFile" accept="image/*" /></div>
       <button type="button" class="primary" style="width:100%; padding:13px;" id="ocrBtn" onclick="runOcr()">AIで自動判別して解析する</button>
@@ -752,6 +752,12 @@
       if (boatName.includes("27")) return "27";
       if (boatName.includes("25")) return "25";
       return "";
+    }
+
+    function normalizeFishLabel(raw) {
+      const s = String(raw || "不明").trim() || "不明";
+      if (s === "皮" || s === "カワ") return "カワハギ";
+      return s;
     }
 
     function createEmptyFishSlot(fishName) {
@@ -1028,7 +1034,7 @@
 
     function applyRenameFish() {
       const fromFish = document.getElementById("renameFromFish").value;
-      const toFish = document.getElementById("renameToFishInput").value.trim();
+      const toFish = normalizeFishLabel(document.getElementById("renameToFishInput").value);
       if (!toFish) {
         toast("変更後の釣り物名を入力または選択してください");
         return;
@@ -1058,7 +1064,6 @@
         if (idx >= 0) state.fishList.splice(idx, 1, toFish);
         else state.fishList.push(toFish);
       } else {
-        // 既存釣り物へ統合（マージ）
         const dstSlot = state.fishData[toFish];
         const baseRow = dstSlot.guests.length > 0
           ? Math.max(...dstSlot.guests.map(x => Number(x.row) || 0)) + 1
@@ -2055,7 +2060,7 @@
               <div class="step-badge">ステップ 1 / 2：予約表の読込</div>
               <div class="empty-ocr-box">
                 <div class="empty-ocr-msg">予約表を読み込んでください</div>
-                <div class="empty-ocr-sub">手書きの予約表を撮影・選択すると、書かれている釣り物（カワハギ・アジ・アマダイ等）と人数・名前をAIが自動で振り分けます。</div>
+                <div class="empty-ocr-sub">手書きの予約表を撮影・選択すると、書かれている釣り物（カワハギ・アジ・アマダイ等、「皮」一文字はカワハギ）と人数・名前をAIが自動で振り分けます。</div>
                 <button type="button" class="primary" style="width:100%; padding:15px; font-size:17px;" onclick="openModal('ocrModal')">
                   予約表の写真を選択して読み込む
                 </button>
@@ -2543,7 +2548,7 @@
     }
 
     function addGuest() {
-      const fish = (document.getElementById("addFish").value.trim()) || state.activeFish || "不明";
+      const fish = normalizeFishLabel(document.getElementById("addFish").value || state.activeFish || "不明");
       const name = document.getElementById("addName").value.trim();
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("addCount").value, 10) || 1));
       const note = document.getElementById("addNote").value.trim();
@@ -2592,7 +2597,7 @@
 
     function saveEdit() {
       const id = document.getElementById("editId").value;
-      const nextFish = (document.getElementById("editFish").value.trim()) || "不明";
+      const nextFish = normalizeFishLabel(document.getElementById("editFish").value);
       const name = document.getElementById("editName").value.trim();
       const count = Math.min(15, Math.max(1, parseInt(document.getElementById("editCount").value, 10) || 1));
       const note = document.getElementById("editNote").value.trim();
@@ -2608,7 +2613,6 @@
         found.guest.count = count;
         found.guest.note = note;
       } else {
-        // 別の釣り物へグループ単位で移動
         found.slot.guests = found.slot.guests.filter(x => String(x.id) !== String(id));
         if (!state.fishData[nextFish]) {
           state.fishData[nextFish] = createEmptyFishSlot(nextFish);
@@ -2698,7 +2702,10 @@
 
         const prompt = `釣船「山下丸」の手書き予約表画像を解析し、書かれているすべての釣り物（魚種：例 カワハギ、アジ、アマダイ、スミイカ、カサゴ、マゴチ等）ごとに分類してJSONのみで出力してください。
 重要ルール:
-1. 画像に書かれている魚種見出し（カワハギ、アジ、アマダイ、スミイカ、カサゴなど。「カワ」「アヂ」「アマ」「スミ」などの略称・崩し字も可能な限り正式名へ補完し、判別できない場合のみ「不明」とすること）を自動判別し、魚種ごとに targets 配列の要素として分けること。魚種名が1つしか書かれていない場合も targets の1要素として出力すること。
+1. 画像に書かれている魚種見出し（カワハギ、アジ、アマダイ、スミイカ、カサゴなど）を自動判別し、魚種ごとに targets 配列の要素として分けること。
+   - 漢字一文字で「皮」と書かれている場合は、必ず「カワハギ」に変換すること。
+   - 「カワ」「アヂ」「アマ」「スミ」などの略称・崩し字も可能な限り正式名（カワハギ、アジ、アマダイ、スミイカ等）へ補完し、判別できない場合のみ「不明」とすること。
+   - 魚種名が1つしか書かれていない場合も targets の1要素として出力すること。
 2. 各魚種の枠内では、紙の上から下へ「段（行）」ごとに配列 rows で出力すること。1段目に4組あれば rows[0] に4要素、2段目に5組あれば rows[1] に5要素のように、元の段と左から右の並び順を忠実に再現すること。
 3. 名前の横に人数が書かれていない場合（例: 秋場、小柳、菅澤、長谷川、村田、内藤、杉浦、橋本 など）は必ず count: 1 とすること。
 4. 仕立船の枠や取消線、下部の合計数字メモ（「63 -> 21 22 20」など）は客リストに含めないこと。
@@ -2725,7 +2732,7 @@
           : [{ fish: "不明", writtenTotal: parsed.writtenTotal || null, rows: parsed.rows || [] }];
 
         targets.forEach(t => {
-          const fishName = String(t.fish || "不明").trim() || "不明";
+          const fishName = normalizeFishLabel(t.fish);
           const flatGuests = [];
           if (Array.isArray(t.rows)) {
             t.rows.forEach((rowArr, rIdx) => {
