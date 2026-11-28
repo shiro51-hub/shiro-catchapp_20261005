@@ -479,7 +479,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v10";
+    const STORE_KEY = "yamashitamaru_seat_flow_v11";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -567,7 +567,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v9");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v10");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -853,38 +853,75 @@
       toast(`− ${b.name} ${sideLabel}${index + 1}番を削除し、後ろを詰めました`);
     }
 
+    // 荷物（■）・店取り（●）を未配置客の枠として含め、左右・分割配置も許容した空き判定
     function canFitAll(boatsSnap, unplaced) {
-      if (unplaced.length === 0) return true;
+      if (!unplaced || unplaced.length === 0) return true;
+
+      let markedSlots = 0;
       const blocks = [];
       boatsSnap.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
-        let r = 0;
+        let run = 0;
         b[sk].forEach(c => {
-          if (c === null) r++;
-          else { if (r > 0) blocks.push(r); r = 0; }
+          if (c === null) {
+            run++;
+          } else {
+            if (isMarkSeat(c)) markedSlots++;
+            if (run > 0) { blocks.push(run); run = 0; }
+          }
         });
-        if (r > 0) blocks.push(r);
+        if (run > 0) blocks.push(run);
       }));
 
       const totalEmpty = blocks.reduce((a, b) => a + b, 0);
-      const totalUnplacedNeed = unplaced.reduce((a, g) => a + Number(g.count), 0);
-      if (totalEmpty < totalUnplacedNeed) return false;
+      const totalUnplacedNeed = unplaced.reduce((a, g) => a + Number(g.count || 0), 0);
 
-      const sorted = [...unplaced].sort((a, b) => Number(b.count) - Number(a.count));
-      function bt(i, remBlocks) {
-        if (i === sorted.length) return true;
-        const need = Number(sorted[i].count);
-        const tried = new Set();
+      // 未配置の残り人数から、確保済みの荷物・店取り席数を差し引いた「実質必要枠」
+      const netNeed = Math.max(0, totalUnplacedNeed - markedSlots);
+      if (totalEmpty < netNeed) return false;
+      if (netNeed === 0) return true;
+
+      // まずは大きなグループから連番ブロックへ優先配置（左右や別席への1席分割も許容）
+      const sorted = [...unplaced].sort((a, b) => Number(b.count || 0) - Number(a.count || 0));
+
+      function tryAssign(idx, remBlocks, remMarks) {
+        if (idx === sorted.length) return true;
+        const need = Number(sorted[idx].count || 1);
+
+        // 1. 連番のままブロックに収まる場合
+        const triedSizes = new Set();
         for (let k = 0; k < remBlocks.length; k++) {
-          if (remBlocks[k] >= need && !tried.has(remBlocks[k])) {
-            tried.add(remBlocks[k]);
-            const nxt = [...remBlocks];
-            nxt[k] -= need;
-            if (bt(i + 1, nxt)) return true;
+          if (remBlocks[k] >= need && !triedSizes.has(remBlocks[k])) {
+            triedSizes.add(remBlocks[k]);
+            const nextBlocks = [...remBlocks];
+            nextBlocks[k] -= need;
+            if (tryAssign(idx + 1, nextBlocks, remMarks)) return true;
           }
         }
+
+        // 2. 荷物・店取り枠を充当できる場合（残る不足分があれば空き席と組み合わせて分割配置可能か確認）
+        const markCover = Math.min(need, remMarks);
+        const remAfterMark = need - markCover;
+        const availEmpty = remBlocks.reduce((a, b) => a + b, 0);
+        if (availEmpty >= remAfterMark) {
+          if (remAfterMark === 0) {
+            if (tryAssign(idx + 1, remBlocks, remMarks - markCover)) return true;
+          } else {
+            // 空きブロックから必要席数を差し引いて次へ（左右・別席への分割を許容）
+            const nextBlocks = [...remBlocks].sort((a, b) => b - a);
+            let leftToFill = remAfterMark;
+            for (let k = 0; k < nextBlocks.length && leftToFill > 0; k++) {
+              const take = Math.min(nextBlocks[k], leftToFill);
+              nextBlocks[k] -= take;
+              leftToFill -= take;
+            }
+            if (leftToFill === 0 && tryAssign(idx + 1, nextBlocks, remMarks - markCover)) return true;
+          }
+        }
+
         return false;
       }
-      return bt(0, blocks);
+
+      return tryAssign(0, blocks, markedSlots);
     }
 
     function evalPlace(bIdx, sk, start, guest) {
@@ -909,13 +946,17 @@
         clone[bIdx][sk][i] = { type: "ASSIGNED", guestId: String(guest.id) };
       }
 
-      const unplaced = state.guests.filter(g => {
-        let assigned = 0;
-        clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
-          boat[s].forEach(c => { if (c && c.type === "ASSIGNED" && String(c.guestId) === String(g.id)) assigned++; });
-        }));
-        return assigned < Number(g.count);
-      });
+      const unplaced = state.guests
+        .map(g => {
+          let assigned = 0;
+          clone.forEach(boat => ["leftSeats", "rightSeats"].forEach(s => {
+            boat[s].forEach(c => { if (c && c.type === "ASSIGNED" && String(c.guestId) === String(g.id)) assigned++; });
+          }));
+          const rem = Math.max(0, Number(g.count || 1) - assigned);
+          return rem > 0 ? { ...g, count: rem } : null;
+        })
+        .filter(Boolean);
+
       return { valid: true, fits: canFitAll(clone, unplaced) };
     }
 
