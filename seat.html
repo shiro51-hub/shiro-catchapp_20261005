@@ -53,7 +53,7 @@
       background: #064e3b; border-color: #10b981; color: #6ee7b7;
     }
 
-    /* 2段目操作ボタン群：左＝読込、中＝設定、右＝予約表 */
+    /* 2段目操作ボタン群：左＝読込、中＝設定、右＝予約一覧 */
     .h-btns {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%;
       margin-top: 8px;
@@ -257,21 +257,17 @@
     .s-name { font-size: 17px; font-weight: 800; color: #fff; margin-top: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .badge { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); margin-right: 4px; margin-top: 2px; }
 
-    /* 予約一覧セクション（メニュー展開時表示） */
-    .guest-section {
-      background: #070b14; border: 2px solid var(--bd); border-radius: 14px;
-      padding: 12px; margin-top: 16px;
-    }
+    /* 予約一覧モーダル内リスト */
     .gs-head {
       display: flex; justify-content: space-between; align-items: center;
       gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
     }
-    .gs-title { font-size: 17px; font-weight: 800; color: #38bdf8; }
+    .gs-title { font-size: 16px; font-weight: 800; color: #38bdf8; }
     .gs-controls { display: flex; gap: 6px; margin-bottom: 10px; }
     .g-list { display: flex; flex-direction: column; gap: 8px; }
     .g-row-wrap { display: flex; align-items: stretch; gap: 6px; }
     .g-row-btn {
-      flex: 1; min-width: 0; background: var(--card); border: 2px solid var(--bd);
+      flex: 1; min-width: 0; background: var(--inp); border: 2px solid var(--bd);
       border-radius: 12px; padding: 12px;
       display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
       text-align: left;
@@ -285,7 +281,11 @@
     .g-meta { font-size: 14px; color: #cbd5e1; margin-top: 4px; }
     .g-meta.dot-mark { color: #fcd34d; font-weight: 700; }
 
-    /* 予約表ビュー（忠実一括表示＋横棒＆号数表示） */
+    /* 座席表の下に配置する「解析した予約表（読取一覧）」セクション */
+    .parsed-sheet-section {
+      background: #070b14; border: 2px solid var(--bd); border-radius: 14px;
+      padding: 12px; margin-top: 16px;
+    }
     .sheet-summary {
       background: var(--inp); border: 1px solid var(--bd); border-radius: 10px;
       padding: 10px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -339,11 +339,11 @@
       </div>
       <button type="button" id="menuToggleBtn" class="menu-toggle-btn" onclick="toggleMenuCollapse()">メニュー ▲</button>
     </div>
-    <!-- 2段目ボタン：左＝読込、真ん中＝設定、右＝予約表（メニュー収納時は非表示） -->
+    <!-- 2段目ボタン：左＝読込、真ん中＝設定、右＝予約一覧（メニュー収納時は非表示） -->
     <div class="h-btns" id="staffHeaderBtns">
       <button type="button" onclick="openModal('ocrModal')">📷 読込</button>
       <button type="button" onclick="openModal('setupModal')">⚙ 設定</button>
-      <button type="button" class="primary" onclick="openModal('sheetModal')">📄 予約表</button>
+      <button type="button" class="primary" onclick="openModal('guestListModal')">📋 予約一覧</button>
     </div>
   </header>
 
@@ -366,6 +366,20 @@
   <div class="container" id="main"></div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- 右上ボタンからすぐ開ける「予約一覧」モーダル（元画像ボタン付き） -->
+  <div class="modal-bg" id="guestListModal">
+    <div class="modal">
+      <div class="m-head">
+        <span>📋 予約一覧</span>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="warning" id="modalOrigImgBtn" onclick="openOrigImage()" style="padding:7px 10px; font-size:14px;">🖼 元画像</button>
+          <button type="button" onclick="closeModal('guestListModal')" style="padding:7px 10px; font-size:14px;">閉じる</button>
+        </div>
+      </div>
+      <div id="guestListModalBody"></div>
+    </div>
+  </div>
 
   <!-- 設定モーダル（32号船連携・配船・API設定） -->
   <div class="modal-bg" id="setupModal">
@@ -402,26 +416,12 @@
     </div>
   </div>
 
-  <!-- 予約表ビューモーダル（忠実一括表示＋横棒＆号数＋ワンタップ元画像） -->
-  <div class="modal-bg" id="sheetModal">
-    <div class="modal">
-      <div class="m-head">
-        <span>📄 予約表（読取一覧）</span>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="warning" id="openOrigImgBtn" onclick="openOrigImage()" style="padding:7px 10px; font-size:14px;">🖼 元画像</button>
-          <button type="button" onclick="closeModal('sheetModal')" style="padding:7px 10px; font-size:14px;">閉じる</button>
-        </div>
-      </div>
-      <div id="sheetModalBody"></div>
-    </div>
-  </div>
-
   <!-- 元画像フル確認モーダル -->
   <div class="modal-bg" id="origImgModal" style="z-index:120;">
     <div class="modal" style="max-width:540px; padding:12px;">
       <div class="m-head">
         <span>🖼 読み込んだ予約表（元画像）</span>
-        <button type="button" class="primary" onclick="closeModal('origImgModal')">一覧へ戻る</button>
+        <button type="button" class="primary" onclick="closeModal('origImgModal')">戻る</button>
       </div>
       <div id="origImgContainer" style="text-align:center;"></div>
     </div>
@@ -473,7 +473,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v8";
+    const STORE_KEY = "yamashitamaru_seat_flow_v9";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -496,8 +496,8 @@
       sortByCount: true,
       view: "overview",
       markMode: null,
-      customSplitMode: false, // バラバラ配置（カスタム）モード
-      seatEditMode: false,    // 場所指定の席増減モード
+      customSplitMode: false,
+      seatEditMode: false,
       selId: null,
       boats: [],
       guests: []
@@ -548,7 +548,6 @@
       return c && (c.type === "BAG" || c.type === "SHOP" || c.type === "HOLD");
     }
 
-    // 指定ゲストの現在割り当て済み席数を数える
     function countAssignedSeatsForGuest(guestId) {
       const targetId = String(guestId);
       let cnt = 0;
@@ -562,7 +561,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v7");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v8");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -649,7 +648,13 @@
       save(); render();
     }
 
-    function toggleSortOrder() { state.sortByCount = !state.sortByCount; save(); render(); }
+    function toggleSortOrder() {
+      state.sortByCount = !state.sortByCount;
+      save(); render();
+      if (document.getElementById("guestListModal").classList.contains("open")) {
+        renderGuestListModal();
+      }
+    }
 
     function toggleMarkMode(mode) {
       state.markMode = (state.markMode === mode) ? null : mode;
@@ -798,7 +803,6 @@
       toast("新しい営業日用に初期化しました");
     }
 
-    // 場所指定での座席挿入（index番目に空席を挿入し、後ろを1つずつずらす）
     function insertSeatAt(bIdx, sk, index) {
       const b = state.boats[bIdx];
       if (!b) return;
@@ -816,7 +820,6 @@
       toast(`＋ ${b.name} ${sideLabel}の${posLabel}に1席追加しました`);
     }
 
-    // 場所指定での座席削除（index番目の席を削除して後ろを詰める）
     function deleteSeatAt(bIdx, sk, index) {
       const b = state.boats[bIdx];
       if (!b) return;
@@ -846,7 +849,6 @@
 
     function canFitAll(boatsSnap, unplaced) {
       if (unplaced.length === 0) return true;
-      // 荷物・店取りは保護されるため、純粋な空席（null）のみで計算
       const blocks = [];
       boatsSnap.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
         let r = 0;
@@ -920,7 +922,6 @@
       const cur = boat[sk][seatIdx];
       const sideLabel = sk === "leftSeats" ? "左舷" : "右舷";
 
-      // 荷物（BAG）または店取り（SHOP）モード中
       if (state.markMode) {
         if (cur && cur.type === "ASSIGNED") { toast("確定済みの席です"); return; }
         if (cur && cur.type === state.markMode) {
@@ -944,14 +945,11 @@
         return;
       }
 
-      // お客様選択中
       if (state.selId) {
         const g = state.guests.find(x => String(x.id) === String(state.selId));
         if (!g) { state.selId = null; state.customSplitMode = false; render(); return; }
 
-        // ★ バラバラ配置（カスタム）モード：1席ずつ個別に入力・解除
         if (state.customSplitMode) {
-          // すでに本人が入っている席をタップしたら1席だけ外す
           if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
             pushUndo(`${g.name}様の1席解除`);
             state.boats[bIdx][sk][seatIdx] = null;
@@ -960,7 +958,6 @@
             toast(`${g.name}様の1席を解除（現在 ${nowCnt}/${g.count}名）`);
             return;
           }
-          // 他のお客様の席は上書き不可
           if (cur && cur.type === "ASSIGNED") {
             toast(`⚠️ ${cur.name}様が確定済みの席です`);
             return;
@@ -995,7 +992,6 @@
           return;
         }
 
-        // ★ 通常（連番一括）モード
         if (cur && cur.type === "ASSIGNED" && String(cur.guestId) === String(g.id)) {
           if (!confirm(`${g.name}様（${g.count}名）の座席確定を解除しますか？`)) return;
           pushUndo(`${g.name}様の解除`);
@@ -1043,12 +1039,10 @@
         return;
       }
 
-      // 通常時（何も選択していない状態）
       if (cur && cur.type === "ASSIGNED") {
         state.selId = String(cur.guestId);
         const assignedNow = countAssignedSeatsForGuest(cur.guestId);
         const gObj = state.guests.find(x => String(x.id) === String(cur.guestId));
-        // すでに分割配置されているグループを選んだときは自動でバラバラ配置モードにしておく
         state.customSplitMode = !!(gObj && assignedNow > 0 && assignedNow < Number(gObj.count));
         render();
         toast(`${cur.name}様を選択中（移動先タップ、または再タップで解除）`);
@@ -1065,7 +1059,7 @@
         return;
       }
 
-      toast("下の「予約一覧」からお名前を選んでから席をタップしてください");
+      toast("右上の「📋 予約一覧」からお名前を選んでから席をタップしてください");
     }
 
     function removeGuest(id) {
@@ -1079,7 +1073,6 @@
       }));
     }
 
-    // ボタンを押したときだけ実行される自動確定（■荷物・●店取りは勝手に消さず保護する）
     function autoAssign() {
       const unplaced = state.guests
         .map(g => ({ ...g, remNeed: Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)) }))
@@ -1091,7 +1084,6 @@
         return;
       }
 
-      // 純粋な空席（null）のみを集計（BAGとSHOPは保護）
       let pureEmptyTotal = 0;
       let protectedMarks = 0;
       state.boats.forEach(b => ["leftSeats", "rightSeats"].forEach(sk => {
@@ -1159,7 +1151,6 @@
       toast(splits > 0 ? `⚠️ 連番空き不足のため${splits}組が分かれて確定しました` : "✅ 残り全員の座席を確定しました！");
     }
 
-    // 全員分の席が埋まっているお客様のIDセットを返す
     function getFullyPlacedIds() {
       const ids = new Set();
       state.guests.forEach(g => {
@@ -1210,7 +1201,8 @@
       save(); render(); toast("左右の定員を入れ替えました");
     }
 
-    function selectGuestById(id) {
+    // 右上「予約一覧」モーダルからお客様を選んだらモーダルを閉じて即座席表へ戻す
+    function selectGuestFromModal(id) {
       state.markMode = null;
       const targetId = String(id);
       if (String(state.selId) === targetId) {
@@ -1220,15 +1212,83 @@
         state.selId = targetId;
         const g = state.guests.find(x => String(x.id) === targetId);
         const curAssigned = g ? countAssignedSeatsForGuest(g.id) : 0;
-        // すでに1名以上配置中で残人数がある場合はバラバラ配置ONで開く
         state.customSplitMode = !!(g && curAssigned > 0 && curAssigned < Number(g.count));
       }
+      closeModal("guestListModal");
       render();
       if (state.selId) {
         window.scrollTo({ top: 0, behavior: "smooth" });
         const g = state.guests.find(x => String(x.id) === String(state.selId));
-        if (g) toast(`👤 ${g.name}様(${g.count}名)を選択：上の座席をタップしてください`);
+        if (g) toast(`👤 ${g.name}様(${g.count}名)を選択：座席をタップしてください`);
       }
+    }
+
+    function renderGuestListModal() {
+      const body = document.getElementById("guestListModalBody");
+      const origBtn = document.getElementById("modalOrigImgBtn");
+      const hasImg = !!(lastOcrImageDataUrl || state.ocrImage);
+      origBtn.style.opacity = hasImg ? "1" : "0.45";
+
+      const placed = getFullyPlacedIds();
+      const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
+      const placedList = state.guests.filter(g => placed.has(String(g.id)));
+      const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
+      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+
+      let listHtml = "";
+      if (state.guests.length === 0) {
+        listHtml = `<div style="font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">「📷 読込」または「＋ 追加」から予約を入れてください</div>`;
+      } else {
+        const sortFn = (a, b) => {
+          if (!state.sortByCount) return 0;
+          const aDot = (a.note || "").includes("前日場所取") ? 1 : 0;
+          const bDot = (b.note || "").includes("前日場所取") ? 1 : 0;
+          if (aDot !== bDot) return bDot - aDot;
+          return Number(b.count) - Number(a.count);
+        };
+        const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
+
+        listHtml = allSorted.map(g => {
+          const assignedNow = countAssignedSeatsForGuest(g.id);
+          const isP = assignedNow >= Number(g.count);
+          const isPartial = assignedNow > 0 && !isP;
+          const isS = String(state.selId) === String(g.id);
+          const hasDot = (g.note || "").includes("前日場所取");
+          const boatName = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
+          return `
+            <div class="g-row-wrap">
+              <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''} ${isPartial ? 'partial' : ''}" onclick="selectGuestFromModal('${g.id}')">
+                <div class="g-row-top">
+                  <span class="g-name-txt">${g.name}</span>
+                  <span class="g-cnt">${g.count}名</span>
+                </div>
+                <div class="g-meta ${hasDot ? 'dot-mark' : ''}">
+                  ${isP
+                    ? `✅ 座席確定済み（${boatName}）`
+                    : (isPartial
+                      ? `⏳ 分割配置中（${assignedNow}/${g.count}名配置済み・${boatName}）`
+                      : (g.note || '通常予約'))}
+                </div>
+              </button>
+              <button type="button" onclick="openEdit('${g.id}')" style="padding:0 12px; font-size:14px; flex-shrink:0;">✎ 修正</button>
+            </div>
+          `;
+        }).join("");
+      }
+
+      body.innerHTML = `
+        <div class="gs-head">
+          <div class="gs-title">未配置 ${unpCnt}名/${unplaced.length}組 ・ 計${totCnt}名</div>
+          <button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
+        </div>
+        <div class="gs-controls">
+          <button type="button" style="flex:1; padding:8px; font-size:14px;" onclick="toggleSortOrder()">
+            ${state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順"}
+          </button>
+          <button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel(); renderGuestListModal();">選択解除</button>
+        </div>
+        <div class="g-list">${listHtml}</div>
+      `;
     }
 
     function render() {
@@ -1409,7 +1469,6 @@
       });
       document.getElementById("boatTabs").innerHTML = tabsHtml;
 
-      // 選択中バナー（バラバラ配置カスタム切替付き）
       const selG = !state.menuCollapsed ? state.guests.find(g => String(g.id) === String(state.selId)) : null;
       let selBannerHtml = "";
       if (selG) {
@@ -1443,11 +1502,9 @@
         `;
       }
 
-      // ハイライト計算
       const hl = {};
       if (selG) {
         if (state.customSplitMode) {
-          // バラバラ配置時は空いている全席を案内OK表示
           state.boats.forEach((b, bi) => ["leftSeats", "rightSeats"].forEach(sk => {
             b[sk].forEach((c, i) => {
               if (c === null) hl[`${bi}-${sk}-${i}`] = "fit-ok";
@@ -1532,73 +1589,67 @@
         `;
       }
 
-      let guestSectionHtml = "";
+      // 船の座席表の下に「解析した予約表（読取一覧）」を配置
+      let parsedSheetSectionHtml = "";
       if (!state.menuCollapsed) {
-        const placed = getFullyPlacedIds();
-        const unplaced = state.guests.filter(g => !placed.has(String(g.id)));
-        const placedList = state.guests.filter(g => placed.has(String(g.id)));
-        const unpCnt = unplaced.reduce((a, g) => a + Math.max(0, Number(g.count) - countAssignedSeatsForGuest(g.id)), 0);
-        const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+        parsedSheetSectionHtml = buildParsedSheetSectionHtml();
+      }
 
-        let guestListHtml = "";
-        if (state.guests.length === 0) {
-          guestListHtml = `<div style="font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">上の「📷 読込」または右の「＋ 追加」から予約を入れてください</div>`;
-        } else {
-          const sortFn = (a, b) => {
-            if (!state.sortByCount) return 0;
-            const aDot = (a.note || "").includes("前日場所取") ? 1 : 0;
-            const bDot = (b.note || "").includes("前日場所取") ? 1 : 0;
-            if (aDot !== bDot) return bDot - aDot;
-            return Number(b.count) - Number(a.count);
-          };
-          const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
+      main.innerHTML = selBannerHtml + seatsSectionHtml + parsedSheetSectionHtml;
+    }
 
-          guestListHtml = allSorted.map(g => {
-            const assignedNow = countAssignedSeatsForGuest(g.id);
-            const isP = assignedNow >= Number(g.count);
-            const isPartial = assignedNow > 0 && !isP;
-            const isS = String(state.selId) === String(g.id);
-            const hasDot = (g.note || "").includes("前日場所取");
-            const boatName = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
-            return `
-              <div class="g-row-wrap">
-                <button type="button" class="g-row-btn ${isS ? 'sel' : ''} ${isP ? 'done' : ''} ${isPartial ? 'partial' : ''}" onclick="selectGuestById('${g.id}')">
-                  <div class="g-row-top">
-                    <span class="g-name-txt">${g.name}</span>
-                    <span class="g-cnt">${g.count}名</span>
-                  </div>
-                  <div class="g-meta ${hasDot ? 'dot-mark' : ''}">
-                    ${isP
-                      ? `✅ 座席確定済み（${boatName}）`
-                      : (isPartial
-                        ? `⏳ 分割配置中（${assignedNow}/${g.count}名配置済み・${boatName}）`
-                        : (g.note || '通常予約'))}
-                  </div>
-                </button>
-                <button type="button" onclick="openEdit('${g.id}')" style="padding:0 14px; font-size:15px; flex-shrink:0;">✎ 修正</button>
-              </div>
-            `;
-          }).join("");
-        }
-
-        guestSectionHtml = `
-          <div class="guest-section" id="guestSection">
-            <div class="gs-head">
-              <div class="gs-title">📋 予約一覧（未配置 ${unpCnt}名/${unplaced.length}組 ・ 計${totCnt}名）</div>
-              <button type="button" style="padding:7px 11px; font-size:14px;" onclick="openModal('addModal')">＋ 追加</button>
+    function buildParsedSheetSectionHtml() {
+      if (state.guests.length === 0) {
+        return `
+          <div class="parsed-sheet-section">
+            <div class="gs-title" style="margin-bottom:6px;">📄 解析した予約表（読取一覧）</div>
+            <div style="text-align:center; padding:18px 10px; color:var(--sub); font-size:15px;">
+              読み取った予約データがありません。「📷 読込」から予約表を読み込んでください。
             </div>
-            <div class="gs-controls">
-              <button type="button" style="flex:1; padding:8px; font-size:14px;" onclick="toggleSortOrder()">
-                ${state.sortByCount ? "並び順：人数が多い順 ▼" : "並び順：予約表の記載順"}
-              </button>
-              <button type="button" style="padding:8px 12px; font-size:14px;" onclick="clearSel()">選択解除</button>
-            </div>
-            <div class="g-list">${guestListHtml}</div>
           </div>
         `;
       }
 
-      main.innerHTML = selBannerHtml + seatsSectionHtml + guestSectionHtml;
+      const placed = getFullyPlacedIds();
+      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
+      const placedCnt = state.guests.reduce((a, g) => a + Math.min(Number(g.count), countAssignedSeatsForGuest(g.id)), 0);
+      const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
+
+      const rowsHtml = state.guests.map((g, idx) => {
+        const assignedNow = countAssignedSeatsForGuest(g.id);
+        const isDone = placed.has(String(g.id));
+        const boatLabel = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
+        return `
+          <div class="sheet-row ${isDone ? 'done-row' : ''}">
+            <div class="sheet-idx">${idx + 1}.</div>
+            <div class="sheet-main">
+              <div class="sheet-name-line">
+                <span style="font-size:18px; font-weight:800;" class="${isDone ? 'strike-name' : ''}">${g.name}</span>
+                <span style="font-size:16px; font-weight:800; color:#93c5fd;">${g.count}名</span>
+                ${boatLabel ? `<span class="boat-tag">${boatLabel}${!isDone ? `(${assignedNow}/${g.count})` : ""}</span>` : ""}
+              </div>
+              ${g.note ? `<div class="sheet-note">${g.note}</div>` : ""}
+            </div>
+            <button type="button" style="padding:6px 10px; font-size:13px; flex-shrink:0;" onclick="openEdit('${g.id}')">✎</button>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="parsed-sheet-section" id="parsedSheetSection">
+          <div class="gs-head">
+            <div class="gs-title">📄 解析した予約表（読取一覧）</div>
+            <button type="button" class="warning" style="padding:6px 10px; font-size:13px;" onclick="openOrigImage()">🖼 元画像</button>
+          </div>
+          <div class="sheet-summary">
+            <div>
+              <div style="font-size:13px; color:var(--sub);">読取順 一括表示（全${state.guests.length}組${writtenInfo}）</div>
+              <div style="font-size:18px; font-weight:800; color:#fff;">合計 ${totCnt}名 <span style="font-size:14px; color:#6ee7b7;">（確定済 ${placedCnt}名 / 残 ${totCnt - placedCnt}名）</span></div>
+            </div>
+          </div>
+          ${rowsHtml}
+        </div>
+      `;
     }
 
     function renderSideSeatsColumn(bi, sk, seatsArr, tot, hl) {
@@ -1656,53 +1707,6 @@
       return `<button type="button" class="${cls}" onclick="handleSeatClick(${bi},'${sk}',${i})"><div class="s-pos">${pos}</div>${body}</button>`;
     }
 
-    function renderSheetModal() {
-      const body = document.getElementById("sheetModalBody");
-      const origBtn = document.getElementById("openOrigImgBtn");
-      const hasImg = !!(lastOcrImageDataUrl || state.ocrImage);
-      origBtn.style.opacity = hasImg ? "1" : "0.45";
-
-      if (state.guests.length === 0) {
-        body.innerHTML = `<div style="text-align:center; padding:24px 10px; color:var(--sub);">読み取った予約データがありません。「📷 読込」から予約表を読み込んでください。</div>`;
-        return;
-      }
-
-      const placed = getFullyPlacedIds();
-      const totCnt = state.guests.reduce((a, g) => a + Number(g.count), 0);
-      const placedCnt = state.guests.reduce((a, g) => a + Math.min(Number(g.count), countAssignedSeatsForGuest(g.id)), 0);
-      const writtenInfo = state.ocrWrittenTotal ? ` / 紙記載:${state.ocrWrittenTotal}名` : "";
-
-      const rowsHtml = state.guests.map((g, idx) => {
-        const assignedNow = countAssignedSeatsForGuest(g.id);
-        const isDone = placed.has(String(g.id));
-        const boatLabel = assignedNow > 0 ? getGuestAssignedBoats(g.id) : "";
-        return `
-          <div class="sheet-row ${isDone ? 'done-row' : ''}">
-            <div class="sheet-idx">${idx + 1}.</div>
-            <div class="sheet-main">
-              <div class="sheet-name-line">
-                <span style="font-size:18px; font-weight:800;" class="${isDone ? 'strike-name' : ''}">${g.name}</span>
-                <span style="font-size:16px; font-weight:800; color:#93c5fd;">${g.count}名</span>
-                ${boatLabel ? `<span class="boat-tag">${boatLabel}${!isDone ? `(${assignedNow}/${g.count})` : ""}</span>` : ""}
-              </div>
-              ${g.note ? `<div class="sheet-note">${g.note}</div>` : ""}
-            </div>
-            <button type="button" style="padding:6px 10px; font-size:13px; flex-shrink:0;" onclick="closeModal('sheetModal'); openEdit('${g.id}')">✎</button>
-          </div>
-        `;
-      }).join("");
-
-      body.innerHTML = `
-        <div class="sheet-summary">
-          <div>
-            <div style="font-size:13px; color:var(--sub);">読取順 一括表示（全${state.guests.length}組${writtenInfo}）</div>
-            <div style="font-size:18px; font-weight:800; color:#fff;">合計 ${totCnt}名 <span style="font-size:14px; color:#6ee7b7;">（確定済 ${placedCnt}名 / 残 ${totCnt - placedCnt}名）</span></div>
-          </div>
-        </div>
-        ${rowsHtml}
-      `;
-    }
-
     function openOrigImage() {
       const src = lastOcrImageDataUrl || state.ocrImage;
       if (!src) {
@@ -1723,7 +1727,11 @@
       state.guests.push({ id: makeUniqueId("add"), name, count, note });
       state.ocrLoaded = true;
       document.getElementById("addName").value = ""; document.getElementById("addNote").value = "";
-      save(); render(); closeModal("addModal"); toast(`${name}様を追加しました`);
+      save(); render();
+      if (document.getElementById("guestListModal").classList.contains("open")) {
+        renderGuestListModal();
+      }
+      closeModal("addModal"); toast(`${name}様を追加しました`);
     }
 
     function openEdit(id) {
@@ -1751,7 +1759,11 @@
       if (!g) return;
       g.name = name; g.count = count; g.note = note;
       removeGuest(id);
-      save(); render(); closeModal("editModal"); toast("変更を保存しました");
+      save(); render();
+      if (document.getElementById("guestListModal").classList.contains("open")) {
+        renderGuestListModal();
+      }
+      closeModal("editModal"); toast("変更を保存しました");
     }
 
     function delGuest() {
@@ -1761,7 +1773,11 @@
       state.guests = state.guests.filter(g => String(g.id) !== String(id));
       if (String(state.selId) === String(id)) state.selId = null;
       if (state.guests.length === 0) state.ocrLoaded = false;
-      save(); render(); closeModal("editModal"); toast("削除しました");
+      save(); render();
+      if (document.getElementById("guestListModal").classList.contains("open")) {
+        renderGuestListModal();
+      }
+      closeModal("editModal"); toast("削除しました");
     }
 
     function resetSeatsOnly() {
@@ -1871,8 +1887,8 @@
           right: b32.rightSeats.map((c, i) => ({ seatNo: i + 1, name: c && c.type === "ASSIGNED" ? c.name : "", note: c && c.type === "ASSIGNED" ? c.note : "" }))
         }, null, 2) : "本日の配船に32号船がありません";
       }
-      if (id === "sheetModal") {
-        renderSheetModal();
+      if (id === "guestListModal") {
+        renderGuestListModal();
       }
       document.getElementById(id).classList.add("open");
     }
