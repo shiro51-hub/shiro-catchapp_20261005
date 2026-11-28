@@ -315,7 +315,13 @@
     .modal-bg { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.84); display: none; align-items: center; justify-content: center; padding: 10px; }
     .modal-bg.open { display: flex; }
     .modal { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 14px; }
-    .m-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bd); padding-bottom: 8px; margin-bottom: 12px; font-weight: 800; font-size: 18px; gap: 8px; }
+    .m-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bd); padding-bottom: 10px; margin-bottom: 12px; font-weight: 800; font-size: 18px; gap: 8px; }
+    .m-head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .modal-close-lg {
+      padding: 12px 18px; font-size: 17px; font-weight: 900;
+      min-width: 104px; background: #334155; border: 2px solid #94a3b8; color: #ffffff;
+      border-radius: 10px; flex-shrink: 0;
+    }
     .field { margin-bottom: 13px; }
     .field label { display: block; font-size: 14px; color: var(--sub); margin-bottom: 5px; font-weight: 700; }
     input[type="text"], input[type="password"], input[type="number"], textarea, select {
@@ -367,15 +373,15 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- 右上ボタンからすぐ開ける「予約一覧」モーダル（元画像ボタン付き） -->
+  <!-- 右上ボタンからすぐ開ける「予約一覧」モーダル（元画像ボタンをタイトル横に配置＋大きな閉じるボタン） -->
   <div class="modal-bg" id="guestListModal">
     <div class="modal">
       <div class="m-head">
-        <span>📋 予約一覧</span>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="warning" id="modalOrigImgBtn" onclick="openOrigImage()" style="padding:7px 10px; font-size:14px;">🖼 元画像</button>
-          <button type="button" onclick="closeModal('guestListModal')" style="padding:7px 10px; font-size:14px;">閉じる</button>
+        <div class="m-head-left">
+          <span style="font-size:19px;">📋 予約一覧</span>
+          <button type="button" class="warning" id="modalOrigImgBtn" onclick="openOrigImage()" style="padding:8px 11px; font-size:14px;">🖼 元画像</button>
         </div>
+        <button type="button" class="modal-close-lg" onclick="closeModal('guestListModal')">✕ 閉じる</button>
       </div>
       <div id="guestListModalBody"></div>
     </div>
@@ -384,7 +390,7 @@
   <!-- 設定モーダル（32号船連携・配船・API設定） -->
   <div class="modal-bg" id="setupModal">
     <div class="modal">
-      <div class="m-head"><span>⚙ 設定・配船・連携</span><button type="button" onclick="closeModal('setupModal')">閉じる</button></div>
+      <div class="m-head"><span>⚙ 設定・配船・連携</span><button type="button" class="modal-close-lg" onclick="closeModal('setupModal')">✕ 閉じる</button></div>
 
       <div style="background:var(--inp); border:1px solid #3b82f6; border-radius:10px; padding:11px; margin-bottom:13px;">
         <div style="font-size:15px; font-weight:800; color:#93c5fd; margin-bottom:8px;">📤 32号船 釣果アプリ連携</div>
@@ -421,7 +427,7 @@
     <div class="modal" style="max-width:540px; padding:12px;">
       <div class="m-head">
         <span>🖼 読み込んだ予約表（元画像）</span>
-        <button type="button" class="primary" onclick="closeModal('origImgModal')">戻る</button>
+        <button type="button" class="modal-close-lg" style="background:var(--blue); border-color:#60a5fa;" onclick="closeModal('origImgModal')">◀ 戻る</button>
       </div>
       <div id="origImgContainer" style="text-align:center;"></div>
     </div>
@@ -430,7 +436,7 @@
   <!-- OCR読込モーダル -->
   <div class="modal-bg" id="ocrModal">
     <div class="modal">
-      <div class="m-head"><span>📷 予約表の写真読込</span><button type="button" onclick="closeModal('ocrModal')">閉じる</button></div>
+      <div class="m-head"><span>📷 予約表の写真読込</span><button type="button" class="modal-close-lg" onclick="closeModal('ocrModal')">✕ 閉じる</button></div>
       <div class="field"><label>対象魚種（ヒント）</label><input type="text" id="fishInput" value="カワハギ" /></div>
       <div class="field"><label>予約表の写真を選択</label><input type="file" id="ocrFile" accept="image/*" /></div>
       <button type="button" class="primary" style="width:100%; padding:13px;" id="ocrBtn" onclick="runOcr()">AIで解析する</button>
@@ -441,7 +447,7 @@
   <!-- 手動追加モーダル -->
   <div class="modal-bg" id="addModal">
     <div class="modal">
-      <div class="m-head"><span>＋ 予約グループ追加</span><button type="button" onclick="closeModal('addModal')">閉じる</button></div>
+      <div class="m-head"><span>＋ 予約グループ追加</span><button type="button" class="modal-close-lg" onclick="closeModal('addModal')">✕ 閉じる</button></div>
       <div class="field"><label>代表者名</label><input type="text" id="addName" placeholder="例：井部" /></div>
       <div class="field"><label>人数</label><input type="number" id="addCount" value="1" min="1" max="15" /></div>
       <div class="field"><label>メモ（前日場所取 / 竿 / カラ）</label><input type="text" id="addNote" /></div>
@@ -452,7 +458,7 @@
   <!-- 編集・削除モーダル -->
   <div class="modal-bg" id="editModal">
     <div class="modal">
-      <div class="m-head"><span>✎ 予約の修正・削除</span><button type="button" onclick="closeModal('editModal')">閉じる</button></div>
+      <div class="m-head"><span>✎ 予約の修正・削除</span><button type="button" class="modal-close-lg" onclick="closeModal('editModal')">✕ 閉じる</button></div>
       <input type="hidden" id="editId" />
       <div class="field"><label>代表者名</label><input type="text" id="editName" /></div>
       <div class="field">
@@ -473,7 +479,7 @@
 
   <script>
     const BOAT_LIST = ["32号船", "31号船", "27号船", "25号船", "智丸"];
-    const STORE_KEY = "yamashitamaru_seat_flow_v9";
+    const STORE_KEY = "yamashitamaru_seat_flow_v10";
     const SHARED_32 = "yamashitamaru_seat_32_export";
 
     let draftBoats = [];
@@ -561,7 +567,7 @@
 
     function init() {
       const today = getTodayStr();
-      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v8");
+      const saved = localStorage.getItem(STORE_KEY) || localStorage.getItem("yamashitamaru_seat_flow_v9");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -1201,7 +1207,6 @@
       save(); render(); toast("左右の定員を入れ替えました");
     }
 
-    // 右上「予約一覧」モーダルからお客様を選んだらモーダルを閉じて即座席表へ戻す
     function selectGuestFromModal(id) {
       state.markMode = null;
       const targetId = String(id);
@@ -1589,7 +1594,6 @@
         `;
       }
 
-      // 船の座席表の下に「解析した予約表（読取一覧）」を配置
       let parsedSheetSectionHtml = "";
       if (!state.menuCollapsed) {
         parsedSheetSectionHtml = buildParsedSheetSectionHtml();
