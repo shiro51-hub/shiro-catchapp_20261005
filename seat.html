@@ -117,8 +117,7 @@
     /* ステップカード（①読取確認 / ②配船指定） */
     .step-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
     .step-badge { display: inline-block; font-size: 12px; font-weight: 800; background: var(--blue-bg); color: #93c5fd; border: 1px solid #3b82f6; padding: 2px 8px; border-radius: 5px; margin-bottom: 6px; }
-    .w-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
-    .w-title { font-size: 19px; font-weight: 800; margin: 0; }
+    .w-title { font-size: 19px; font-weight: 800; margin: 0 0 4px; }
     .w-sub { font-size: 14px; color: var(--sub); margin-bottom: 12px; }
 
     .empty-ocr-box {
@@ -129,8 +128,28 @@
     .empty-ocr-sub { font-size: 14px; color: #cbd5e1; margin-bottom: 18px; }
 
     .verify-summary {
-      background: var(--inp); border: 1px solid #3b82f6; border-radius: 9px;
-      padding: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+      background: var(--inp); border: 1px solid #3b82f6; border-radius: 10px;
+      padding: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .verify-summary-main {
+      display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1;
+    }
+    .verify-fish-edit-btn {
+      display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      background: #172e66; border: 2px solid #60a5fa; color: #ffffff;
+      font-size: 17px; font-weight: 900; text-align: left; width: fit-content; max-width: 100%;
+    }
+    .verify-fish-edit-btn.is-unknown {
+      background: #451a03; border-color: #f59e0b; color: #fcd34d;
+    }
+    .verify-fish-edit-tag {
+      font-size: 12px; font-weight: 800; padding: 2px 7px; border-radius: 5px;
+      background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.35); color: #93c5fd;
+      white-space: nowrap;
+    }
+    .verify-fish-edit-btn.is-unknown .verify-fish-edit-tag {
+      color: #fde68a; border-color: #f59e0b;
     }
     .verify-row {
       background: var(--inp); border: 1px solid var(--bd); border-radius: 9px;
@@ -149,13 +168,14 @@
     }
     .ocr-fish-group-title {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      font-size: 14px; font-weight: 900; color: #7dd3fc;
+      font-size: 15px; font-weight: 900; color: #7dd3fc;
       background: #0c2340; border: 1px solid #0284c7;
-      padding: 6px 9px; border-radius: 6px; margin: 8px 0 5px;
+      padding: 8px 10px; border-radius: 7px; margin: 8px 0 6px;
     }
     .ocr-fish-rename-btn {
-      padding: 3px 8px; font-size: 12px; font-weight: 800;
-      background: #1e293b; border: 1px solid #7dd3fc; color: #e0f2fe; border-radius: 5px;
+      padding: 6px 11px; font-size: 14px; font-weight: 800;
+      background: #1e3a8a; border: 1px solid #7dd3fc; color: #ffffff; border-radius: 6px;
+      flex-shrink: 0;
     }
     .ocr-result-list {
       max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
@@ -410,24 +430,29 @@
       width: 100%; margin-top: 6px;
     }
     .g-meta { font-size: 14px; color: #cbd5e1; line-height: 1.3; word-break: break-all; }
-    .g-meta.dot-mark { color: #94a3b8; font-weight: 700; }
+    .g-meta.dot-mark { color: #fcd34d; font-weight: 700; }
     .g-edit-mini {
       padding: 4px 8px; font-size: 14px; border-radius: 6px; flex-shrink: 0;
       background: #1e293b; border: 1px solid #475569; color: #e2e8f0;
     }
 
-    /* 解析した予約表アコーディオン */
+    /* 解析した予約表アコーディオン（ボタン・フォントを一回り拡大） */
     .parsed-sheet-accordion {
-      background: #070b14; border: 1px solid var(--bd); border-radius: 12px;
-      margin-top: 16px; overflow: hidden;
+      background: #070b14; border: 2px solid #3b4f75; border-radius: 12px;
+      margin-top: 18px; overflow: hidden;
     }
     .accordion-trigger-btn {
-      width: 100%; padding: 12px 14px; border-radius: 0; border: none;
-      background: #0f172a; color: #e2e8f0;
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      font-size: 15px; font-weight: 800; text-align: left;
+      width: 100%; min-height: 58px; padding: 16px 16px; border-radius: 0; border: none;
+      background: #13203b; color: #f8fafc;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      font-size: 18px; font-weight: 900; text-align: left;
     }
-    .accordion-body { padding: 10px 12px 14px; border-top: 1px solid var(--bd); }
+    .accordion-trigger-badge {
+      font-size: 15px; font-weight: 800; color: #7dd3fc;
+      background: #0b1324; border: 1px solid #38bdf8;
+      padding: 5px 11px; border-radius: 7px; white-space: nowrap; flex-shrink: 0;
+    }
+    .accordion-body { padding: 12px 12px 14px; border-top: 1px solid var(--bd); }
 
     .layout-scroll-wrap {
       width: 100%; max-height: 360px;
@@ -1914,10 +1939,8 @@
       if (cur.guests.length === 0) {
         listHtml = `<div style="grid-column:1 / -1; font-size:15px;color:var(--sub);padding:20px 10px;text-align:center;">「読込」または「＋ 追加」から予約を入れてください</div>`;
       } else {
+        // 前日場所取も区別せず、純粋に人数順（多い順 / 少ない順）で並べる
         const sortFn = (a, b) => {
-          const aPrev = (a.note || "").includes("前日場所取") ? 1 : 0;
-          const bPrev = (b.note || "").includes("前日場所取") ? 1 : 0;
-          if (aPrev !== bPrev) return aPrev - bPrev;
           return isAsc ? (Number(a.count) - Number(b.count)) : (Number(b.count) - Number(a.count));
         };
         const allSorted = [...[...unplaced].sort(sortFn), ...[...placedList].sort(sortFn)];
@@ -1973,7 +1996,7 @@
         </div>
         <div class="gs-controls">
           <button type="button" class="primary" style="flex:1; padding:9px; font-size:14px;" onclick="toggleSortOrder()">
-            ${isAsc ? "並び順：人数が少ない順 ▲（前日場所取は末尾）" : "並び順：人数が多い順 ▼（前日場所取は末尾）"}
+            ${isAsc ? "並び順：人数が少ない順 ▲（押して多い順へ）" : "並び順：人数が多い順 ▼（押して少ない順へ）"}
           </button>
           ${state.menuCollapsed ? "" : `<button type="button" style="padding:9px 12px; font-size:14px;" onclick="clearSel(); renderGuestListModal();">選択解除</button>`}
         </div>
@@ -2090,21 +2113,23 @@
 
         const totCnt = cur.guests.reduce((a, g) => a + Number(g.count), 0);
         const writtenInfo = cur.ocrWrittenTotal ? `（予約表の記載合計：${cur.ocrWrittenTotal}名）` : "";
+        const isUnknownFish = cur.fish === "不明" || cur.fish === "乗合";
         main.innerHTML = `
           <div class="step-card">
             <div class="step-badge">ステップ 1 / 2：予約データの確認【${cur.fish}】</div>
-            <div class="w-title-row">
-              <div class="w-title">「${cur.fish}」の予約確認・修正</div>
-              <button type="button" style="padding:6px 10px; font-size:13px;" onclick="openRenameFishModal('${cur.fish}')">釣り物名を変更</button>
-            </div>
-            <div class="w-sub">内容を確認し、合計人数が合っていれば確定して「${cur.fish}」に出船する船を選んでください。</div>
+            <div class="w-title">予約確認・修正</div>
+            <div class="w-sub">釣り物名や人数を確認し、合っていれば確定して出船する船を選んでください。</div>
 
             <div class="verify-summary">
-              <div>
-                <div style="font-size:14px; color:#93c5fd; font-weight:700;">「${cur.fish}」予約合計 ${writtenInfo}</div>
+              <div class="verify-summary-main">
+                <button type="button" class="verify-fish-edit-btn ${isUnknownFish ? 'is-unknown' : ''}" onclick="openRenameFishModal('${cur.fish}')">
+                  <span>${cur.fish}</span>
+                  <span class="verify-fish-edit-tag">釣り物編集</span>
+                </button>
+                <div style="font-size:13px; color:#93c5fd; font-weight:700;">予約合計 ${writtenInfo}</div>
                 <div style="font-size:24px; font-weight:800; color:#fff;">${totCnt} 名 <span style="font-size:16px; color:var(--sub);">（${cur.guests.length} 組）</span></div>
               </div>
-              <button type="button" onclick="openAddModalForFish('${cur.fish}')">＋ 1組追加</button>
+              <button type="button" onclick="openAddModalForFish('${cur.fish}')" style="flex-shrink:0;">＋ 1組追加</button>
             </div>
 
             ${cur.guests.map(g => `
@@ -2472,7 +2497,7 @@
         <div class="parsed-sheet-accordion" id="parsedSheetSection">
           <button type="button" class="accordion-trigger-btn" onclick="toggleParsedSheetAccordion()">
             <span>解析した予約表【${cur.fish}】（${cur.guests.length}組 / 計${totCnt}名）</span>
-            <span style="font-size:13px; color:#38bdf8;">${arrow}</span>
+            <span class="accordion-trigger-badge">${arrow}</span>
           </button>
           ${bodyHtml}
         </div>
